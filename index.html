@@ -474,6 +474,10 @@
         <div class="subsection">
           <div class="subsection-title">Net Worth History</div>
           <div id="nw-history-empty" style="display:none;text-align:center;padding:32px;background:var(--card);border:1px solid var(--border);border-radius:var(--radius);color:var(--text-3);font-size:13px;">No snapshots yet. Click "Save Snapshot" to record your current net worth.</div>
+          <div id="nw-chart-card" class="chart-card" style="display:none;margin-bottom:20px;">
+            <h3>Net Worth Over Time</h3>
+            <canvas id="chart-nw" style="max-height:280px"></canvas>
+          </div>
           <div class="table-wrap" id="nw-history-wrap" style="display:none"></div>
         </div>
       </div>
@@ -1092,9 +1096,47 @@ function deleteSnapshot(i){
 
 function renderNwHistory(){
   const hist=appData.netWorth?.history||[];
-  const emptyEl=document.getElementById('nw-history-empty'), wrapEl=document.getElementById('nw-history-wrap');
-  if(!hist.length){ emptyEl.style.display='block'; wrapEl.style.display='none'; return; }
-  emptyEl.style.display='none'; wrapEl.style.display='';
+  const emptyEl=document.getElementById('nw-history-empty');
+  const chartCard=document.getElementById('nw-chart-card');
+  const wrapEl=document.getElementById('nw-history-wrap');
+  if(!hist.length){
+    emptyEl.style.display='block'; chartCard.style.display='none'; wrapEl.style.display='none';
+    if(charts.nw){ charts.nw.destroy(); delete charts.nw; }
+    return;
+  }
+  emptyEl.style.display='none'; chartCard.style.display='block'; wrapEl.style.display='';
+
+  // Chart
+  const labels=hist.map(s=>s.date);
+  const netData=hist.map(s=>s.net);
+  const assetsData=hist.map(s=>s.assets);
+  const liabData=hist.map(s=>s.liabilities);
+  if(charts.nw){ charts.nw.destroy(); }
+  charts.nw=new Chart(document.getElementById('chart-nw'),{
+    type:'line',
+    data:{
+      labels,
+      datasets:[
+        {label:'Net Worth',   data:netData,   borderColor:CC.blue,  backgroundColor:'rgba(0,82,255,0.12)',  fill:true, tension:.4, pointRadius:5, pointBackgroundColor:CC.blue,  borderWidth:2.5},
+        {label:'Assets',      data:assetsData,borderColor:CC.green, backgroundColor:'transparent', fill:false,tension:.4, pointRadius:4, pointBackgroundColor:CC.green, borderWidth:2, borderDash:[5,4]},
+        {label:'Liabilities', data:liabData,  borderColor:CC.red,   backgroundColor:'transparent', fill:false,tension:.4, pointRadius:4, pointBackgroundColor:CC.red,   borderWidth:2, borderDash:[5,4]},
+      ]
+    },
+    options:{
+      responsive:true, maintainAspectRatio:true,
+      interaction:{mode:'index',intersect:false},
+      plugins:{
+        legend:{labels:{color:'#8A919E',font:{size:11,family:'Inter'}}},
+        tooltip:{callbacks:{label:ctx=>' '+ctx.dataset.label+': '+(ctx.parsed.y<0?'-':'')+fmt$(ctx.parsed.y)}}
+      },
+      scales:{
+        x:{ticks:{color:'#5B616E',font:{size:11}},grid:{color:'rgba(44,48,56,0.5)'}},
+        y:{ticks:{color:'#5B616E',font:{size:11},callback:v=>'$'+Math.abs(v/1000).toFixed(0)+'k'},grid:{color:'rgba(44,48,56,0.5)'}}
+      }
+    }
+  });
+
+  // Table
   let html=`<table><thead><tr><th>Date</th><th>Total Assets</th><th>Total Liabilities</th><th>Net Worth</th><th>Change</th><th></th></tr></thead><tbody>`;
   [...hist].reverse().forEach((s,ri)=>{
     const i=hist.length-1-ri;
