@@ -183,6 +183,53 @@
     .login-btn:hover { background: var(--blue-hover); }
     .login-hint { font-size: 11.5px; color: var(--text-3); text-align: center; margin-top: 20px; line-height: 1.6; }
 
+    /* ── INSIGHTS PANEL ── */
+    .insights-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,.45); z-index: 300; opacity: 0; pointer-events: none; transition: opacity .3s; }
+    .insights-backdrop.open { opacity: 1; pointer-events: all; }
+    .insights-panel { position: fixed; top: 0; right: 0; width: 360px; height: 100vh; background: var(--surface); border-left: 1px solid var(--border); z-index: 400; display: flex; flex-direction: column; transform: translateX(100%); transition: transform .32s cubic-bezier(.4,0,.2,1); }
+    .insights-panel.open { transform: translateX(0); }
+    .insights-header { padding: 20px 20px 16px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; }
+    .insights-header-left { display: flex; align-items: center; gap: 10px; }
+    .insights-icon { width: 34px; height: 34px; background: linear-gradient(135deg, #F5A623 0%, #FF6B35 100%); border-radius: 9px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .insights-title { font-size: 14px; font-weight: 700; }
+    .insights-sub { font-size: 11px; color: var(--text-3); margin-top: 1px; }
+    .insights-close { background: none; border: none; color: var(--text-3); cursor: pointer; padding: 4px; border-radius: 6px; display: flex; align-items: center; transition: color .15s, background .15s; }
+    .insights-close:hover { color: var(--text); background: var(--elevated); }
+    .insights-refresh { background: none; border: 1px solid var(--border); color: var(--text-2); cursor: pointer; padding: 5px 10px; border-radius: 999px; font-size: 11px; font-weight: 500; font-family: 'Inter', sans-serif; display: flex; align-items: center; gap: 5px; transition: all .15s; }
+    .insights-refresh:hover { border-color: var(--text-3); color: var(--text); }
+    .insights-body { flex: 1; overflow-y: auto; padding: 16px; }
+    .insights-body::-webkit-scrollbar { width: 4px; }
+    .insights-body::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+    .insight-card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px 16px; margin-bottom: 12px; border-left: 3px solid var(--border); transition: border-color .15s; }
+    .insight-card:hover { border-color: var(--border); }
+    .insight-card.priority-high { border-left-color: var(--red); }
+    .insight-card.priority-medium { border-left-color: var(--yellow); }
+    .insight-card.priority-low { border-left-color: var(--green); }
+    .insight-card.priority-info { border-left-color: var(--blue); }
+    .insight-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; margin-bottom: 6px; }
+    .insight-badge { font-size: 9.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .6px; padding: 2px 7px; border-radius: 999px; flex-shrink: 0; margin-top: 1px; }
+    .badge-high   { background: var(--red-dim);    color: var(--red); }
+    .badge-medium { background: var(--yellow-dim); color: var(--yellow); }
+    .badge-low    { background: var(--green-dim);  color: var(--green); }
+    .badge-info   { background: var(--blue-dim);   color: var(--blue); }
+    .insight-title { font-size: 13px; font-weight: 700; line-height: 1.3; flex: 1; }
+    .insight-body { font-size: 12px; color: var(--text-2); line-height: 1.55; margin-bottom: 8px; }
+    .insight-analyst { display: flex; align-items: center; gap: 6px; }
+    .analyst-avatar { width: 20px; height: 20px; border-radius: 999px; display: flex; align-items: center; justify-content: center; font-size: 9px; font-weight: 700; flex-shrink: 0; }
+    .insight-analyst span { font-size: 10.5px; color: var(--text-3); }
+    .insight-analyst strong { font-size: 10.5px; color: var(--text-2); }
+    .insights-section-label { font-size: 10px; font-weight: 700; color: var(--text-3); text-transform: uppercase; letter-spacing: .8px; margin: 16px 0 8px; padding: 0 2px; }
+    .insights-score { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; margin-bottom: 16px; text-align: center; }
+    .insights-score-num { font-size: 42px; font-weight: 800; line-height: 1; letter-spacing: -2px; }
+    .insights-score-label { font-size: 11px; color: var(--text-2); margin-top: 4px; }
+    .insights-score-bar { height: 6px; background: var(--border); border-radius: 3px; margin: 12px 0 6px; overflow: hidden; }
+    .insights-score-fill { height: 100%; border-radius: 3px; transition: width .6s cubic-bezier(.4,0,.2,1); }
+    .score-grade { font-size: 11px; font-weight: 600; display: flex; justify-content: space-between; color: var(--text-3); }
+    .insights-btn { position: relative; }
+    .insights-dot { position: absolute; top: -2px; right: -2px; width: 8px; height: 8px; background: var(--red); border-radius: 999px; border: 2px solid var(--surface); display: none; }
+    .insights-dot.show { display: block; }
+    @media (max-width: 600px) { .insights-panel { width: 100vw; } }
+
     /* ── TOAST ── */
     #toast { position: fixed; bottom: 28px; right: 28px; background: var(--blue); color: #fff; padding: 10px 20px; border-radius: 999px; font-size: 13px; font-weight: 600; opacity: 0; transform: translateY(8px); transition: all .25s; pointer-events: none; z-index: 999; box-shadow: 0 4px 20px rgba(0,82,255,.4); }
     #toast.show { opacity: 1; transform: translateY(0); }
@@ -299,10 +346,17 @@
         <div class="topbar-title" id="topbar-title">Dashboard</div>
         <div class="topbar-sub" id="topbar-sub">Track · Analyze · Grow</div>
       </div>
+      <div style="display:flex;align-items:center;gap:10px;">
+      <button class="btn insights-btn" onclick="toggleInsights()" id="insights-toggle-btn" title="Analyst Suggestions">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        Analyst Tips
+        <span class="insights-dot" id="insights-dot"></span>
+      </button>
       <button class="btn btn-danger" onclick="logOut()" title="Lock &amp; Log Out">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
         Log Out
       </button>
+      </div>
     </header>
 
     <main>
@@ -942,7 +996,281 @@ document.addEventListener('DOMContentLoaded',()=>{
   if(!appData.notes) appData.notes=Object.fromEntries(MK.map(m=>[m,{wins:'',challenges:'',actions:'',notes:''}]));
   refreshAll();
   initCharts();
+  setTimeout(()=>{ if(generateInsights().filter(i=>i.priority==='high').length>0) document.getElementById('insights-dot').classList.add('show'); },600);
 });
+
+// ── ANALYST INSIGHTS ──
+const ANALYSTS = [
+  {name:'Dave Ramsey',       color:'#E8A317', bg:'rgba(232,163,23,.18)',  initials:'DR'},
+  {name:'Warren Buffett',    color:'#05B169', bg:'rgba(5,177,105,.18)',   initials:'WB'},
+  {name:'Suze Orman',        color:'#C084FC', bg:'rgba(192,132,252,.18)', initials:'SO'},
+  {name:'Ray Dalio',         color:'#0052FF', bg:'rgba(0,82,255,.18)',    initials:'RD'},
+  {name:'Tony Robbins',      color:'#FF6B35', bg:'rgba(255,107,53,.18)',  initials:'TR'},
+  {name:'Ramit Sethi',       color:'#22D3EE', bg:'rgba(34,211,238,.18)',  initials:'RS'},
+  {name:'Robert Kiyosaki',   color:'#F43F5E', bg:'rgba(244,63,94,.18)',   initials:'RK'},
+  {name:'Peter Lynch',       color:'#A3E635', bg:'rgba(163,230,53,.18)',  initials:'PL'},
+  {name:'John Bogle',        color:'#818CF8', bg:'rgba(129,140,248,.18)', initials:'JB'},
+  {name:'Morgan Housel',     color:'#FB923C', bg:'rgba(251,146,60,.18)',  initials:'MH'},
+];
+
+function analystAvatar(idx){
+  const a=ANALYSTS[idx];
+  return `<span class="analyst-avatar" style="background:${a.bg};color:${a.color}">${a.initials}</span>`;
+}
+
+function generateInsights(){
+  const ai=annualTotal(monthIncome);
+  const ae=annualTotal(monthExpense);
+  const as=annualTotal(monthSavings);
+  const av=annualTotal(monthInvest);
+  const apl=ai-ae;
+  const sr=ai>0?as/ai:0;
+  const er=ai>0?ae/ai:0;
+  const ir=ai>0?av/ai:0;
+  const monthlyInc=ai/12;
+  const monthlyExp=ae/12;
+  const ccAnnual=MK.reduce((s,m)=>s+(parseFloat(appData.expenses[m].creditCard)||0),0);
+  const emergAnnual=MK.reduce((s,m)=>s+(parseFloat(appData.savings[m].emergency)||0),0);
+  const rothAnnual=MK.reduce((s,m)=>s+(parseFloat(appData.savings[m].roth)||0),0);
+  const k401Annual=MK.reduce((s,m)=>s+(parseFloat(appData.savings[m].k401)||0),0);
+  const bitcoinAnnual=MK.reduce((s,m)=>s+(parseFloat(appData.savings[m].bitcoin)||0),0);
+  const hasIncome=ai>0;
+  const insights=[];
+
+  // ── DEBT & CASH FLOW ──
+  if(hasIncome && ccAnnual>0){
+    const ccPct=ccAnnual/ai;
+    if(ccPct>0.1){
+      insights.push({priority:'high',section:'Debt',analystIdx:0,title:'Credit Card Debt is Too High',
+        body:`Your credit card payments are ${(ccPct*100).toFixed(1)}% of annual income ($${Math.round(ccAnnual).toLocaleString()}). Use the debt snowball — attack the smallest balances first while paying minimums on the rest. This behavior shift builds momentum.`});
+    } else {
+      insights.push({priority:'medium',section:'Debt',analystIdx:0,title:'Keep Crushing Credit Card Debt',
+        body:`Credit cards represent ${(ccPct*100).toFixed(1)}% of income. You're managing it, but aim for $0 revolving balance. Every dollar in interest paid is money stolen from your future wealth.`});
+    }
+  }
+
+  if(hasIncome && monthlyExp>0){
+    const monthsOfExpenses=emergAnnual/monthlyExp;
+    if(monthsOfExpenses<3){
+      insights.push({priority:'high',section:'Safety Net',analystIdx:0,title:'Emergency Fund Below 3 Months',
+        body:`You have ~${monthsOfExpenses.toFixed(1)} months of expenses saved. Dave Ramsey's Baby Step 3 calls for 3–6 months fully funded before aggressive investing. Aim for $${Math.round(monthlyExp*3).toLocaleString()} minimum.`});
+    } else if(monthsOfExpenses<6){
+      insights.push({priority:'medium',section:'Safety Net',analystIdx:4,title:'Build to 6-Month Emergency Fund',
+        body:`You have ~${monthsOfExpenses.toFixed(1)} months covered. Tony Robbins calls this your "Freedom Fund" — the first layer of financial security. Push to 6 months to sleep easy no matter what happens.`});
+    } else {
+      insights.push({priority:'low',section:'Safety Net',analystIdx:4,title:'Emergency Fund is Solid',
+        body:`With ${monthsOfExpenses.toFixed(1)} months of coverage, your safety net is strong. You can now redirect energy toward accelerating wealth-building contributions.`});
+    }
+  }
+
+  // ── SAVINGS RATE ──
+  if(hasIncome){
+    if(sr<0.1){
+      insights.push({priority:'high',section:'Savings',analystIdx:5,title:'Savings Rate Needs Immediate Attention',
+        body:`Your savings rate is ${(sr*100).toFixed(1)}%. Ramit Sethi's golden rule: automate at least 10% of take-home pay the moment it hits your account. If you never see it, you never spend it. Set a calendar reminder today.`});
+    } else if(sr<0.2){
+      insights.push({priority:'medium',section:'Savings',analystIdx:1,title:'Push Savings Rate to 20%+',
+        body:`At ${(sr*100).toFixed(1)}%, you're saving but haven't hit the wealth-building threshold. Warren Buffett started saving 20–30% of everything he earned as a teenager. The gap between 15% and 20% is where fortunes are made.`});
+    } else if(sr>=0.2 && sr<0.3){
+      insights.push({priority:'low',section:'Savings',analystIdx:1,title:'Good Savings Rate — Keep Going',
+        body:`${(sr*100).toFixed(1)}% savings rate is excellent. Buffett's core principle: "Do not save what is left after spending, but spend what is left after saving." You're living it.`});
+    } else {
+      insights.push({priority:'info',section:'Savings',analystIdx:9,title:'Outstanding Savings Discipline',
+        body:`${(sr*100).toFixed(1)}% savings rate puts you in the top tier of earners. Morgan Housel notes: "Wealth is what you don't spend." You're accumulating real optionality.`});
+    }
+  }
+
+  // ── ROTH IRA ──
+  if(hasIncome){
+    const rothMax=7000;
+    if(rothAnnual===0){
+      insights.push({priority:'high',section:'Retirement',analystIdx:2,title:'Open a ROTH IRA Immediately',
+        body:`You have $0 in ROTH IRA contributions this year. Suze Orman says the ROTH IRA is the single most important retirement account available. Contributions grow tax-free. The 2026 limit is $7,000 — start with whatever you can.`});
+    } else if(rothAnnual<rothMax){
+      const gap=rothMax-rothAnnual;
+      insights.push({priority:'medium',section:'Retirement',analystIdx:2,title:`Max Out Your ROTH IRA — $${gap.toLocaleString()} to Go`,
+        body:`You've contributed $${rothAnnual.toLocaleString()} of the $${rothMax.toLocaleString()} annual limit. Orman's rule: max this account every single year. $${Math.round(gap/12).toLocaleString()}/month will close the gap by year-end.`});
+    } else {
+      insights.push({priority:'info',section:'Retirement',analystIdx:2,title:'ROTH IRA Maxed — Excellent',
+        body:`You've maxed your ROTH IRA. Suze Orman's top achievement unlocked. Now redirect surplus toward taxable brokerage accounts or accelerate 401(k) contributions.`});
+    }
+  }
+
+  // ── 401K ──
+  if(hasIncome){
+    if(k401Annual===0){
+      insights.push({priority:'high',section:'Retirement',analystIdx:8,title:'Contribute to Your 401(k)',
+        body:`No 401(k) contributions detected. John Bogle, founder of Vanguard, built his legacy teaching one rule: get the employer match first — it's an instant 50–100% return. Don't leave free money on the table.`});
+    } else {
+      const k401Limit=23000;
+      const k401Pct=(k401Annual/k401Limit)*100;
+      if(k401Pct<50){
+        insights.push({priority:'medium',section:'Retirement',analystIdx:8,title:'Increase 401(k) Contributions',
+          body:`Contributing $${k401Annual.toLocaleString()} (${k401Pct.toFixed(0)}% of the $23,000 limit). Bogle's advice: maximize tax-advantaged accounts before taxable investing. Index funds in a 401(k) compound quietly for decades.`});
+      }
+    }
+  }
+
+  // ── EXPENSE RATIO ──
+  if(hasIncome){
+    if(er>0.6){
+      insights.push({priority:'high',section:'Spending',analystIdx:6,title:'Expenses Consuming Over 60% of Income',
+        body:`Your expense ratio is ${(er*100).toFixed(1)}%. Robert Kiyosaki's "Rich Dad" principle: your home and car are not assets — they're liabilities if they consume all your cash flow. Find one large expense to reduce by 10%.`});
+    } else if(er>0.5){
+      insights.push({priority:'medium',section:'Spending',analystIdx:5,title:'Apply the 50/30/20 Rule',
+        body:`Expenses are ${(er*100).toFixed(1)}% of income. Ramit Sethi's conscious spending plan: 50% needs, 30% wants, 20% savings/debt. You're above the "needs" ceiling — audit fixed costs like subscriptions and utilities first.`});
+    } else if(er<=0.4 && er>0){
+      insights.push({priority:'info',section:'Spending',analystIdx:5,title:'Expense Ratio is Healthy',
+        body:`At ${(er*100).toFixed(1)}%, your spending is well-controlled. Sethi's advice: now that you've mastered the numbers, make sure your spending is aligned with what actually brings you joy.`});
+    }
+  }
+
+  // ── INVESTMENT DIVERSIFICATION ──
+  if(hasIncome && av>0){
+    if(ir<0.05){
+      insights.push({priority:'medium',section:'Investing',analystIdx:3,title:'Increase Investment Allocation',
+        body:`Only ${(ir*100).toFixed(1)}% of income goes to investments. Ray Dalio's All-Weather principle: allocate across uncorrelated assets. Start with 5–10% of income, then automate annual increases of 1%.`});
+    }
+    if(bitcoinAnnual>0){
+      const btcPct=bitcoinAnnual/as;
+      if(btcPct>0.3){
+        insights.push({priority:'medium',section:'Investing',analystIdx:3,title:'Crypto Concentration Risk',
+          body:`Bitcoin represents ${(btcPct*100).toFixed(0)}% of your savings contributions. Dalio's rule: no single asset should make or break your portfolio. Consider capping speculative assets at 5–10% of total portfolio.`});
+      } else {
+        insights.push({priority:'info',section:'Investing',analystIdx:7,title:'Bitcoin Position is Proportional',
+          body:`Bitcoin at ${(btcPct*100).toFixed(0)}% of savings. Peter Lynch: "Know what you own, and know why you own it." If you understand the thesis and it's within risk tolerance, conviction-based positions make sense.`});
+      }
+    }
+  }
+
+  // ── NET P&L ──
+  if(hasIncome){
+    if(apl<0){
+      insights.push({priority:'high',section:'Cash Flow',analystIdx:6,title:'Spending More Than You Earn',
+        body:`Net P&L is -$${Math.abs(Math.round(apl)).toLocaleString()} for the year. Kiyosaki's warning: spending more than you earn is the #1 cause of financial stress. Every month this continues widens the gap. Cut one recurring expense this week.`});
+    } else if(apl>0 && apl<monthlyInc){
+      insights.push({priority:'medium',section:'Cash Flow',analystIdx:9,title:'Profitable, But Margin is Thin',
+        body:`Net surplus is $${Math.round(apl).toLocaleString()} — less than one month of income. Morgan Housel: "The ability to do what you want, when you want is the highest dividend money pays." Widen your margin by $500/month.`});
+    } else if(apl>=monthlyInc){
+      insights.push({priority:'info',section:'Cash Flow',analystIdx:9,title:'Strong Cash Flow Position',
+        body:`$${Math.round(apl).toLocaleString()} annual surplus — ${(apl/ai*100).toFixed(0)}% of income retained. Housel's insight: this surplus is your compounding engine. Every dollar kept is a dollar that can work for you.`});
+    }
+  }
+
+  // ── GOALS ──
+  const offTrack=appData.goals.filter(g=>g.status==='Off Track');
+  if(offTrack.length>0){
+    insights.push({priority:'high',section:'Goals',analystIdx:4,title:`${offTrack.length} Goal${offTrack.length>1?'s':''} Off Track`,
+      body:`"${offTrack[0].name}" is off track. Tony Robbins: goals without a plan are just wishes. Assign a specific monthly dollar amount to this goal and automate the transfer today.`});
+  }
+
+  if(!hasIncome){
+    insights.push({priority:'high',section:'Setup',analystIdx:0,title:'Enter Your Income Data to Get Insights',
+      body:`Your income fields are empty. All analyst recommendations are based on your actual numbers — visit the P&L tab and enter your income to unlock personalized financial advice.`});
+  }
+
+  return insights;
+}
+
+function monthsOfExpresses(v){ return v.toFixed(1); }
+
+function calcFinancialScore(){
+  const ai=annualTotal(monthIncome);if(!ai)return 0;
+  const ae=annualTotal(monthExpense),as=annualTotal(monthSavings),av=annualTotal(monthInvest);
+  const sr=as/ai,er=ae/ai,ir=av/ai,apl=ai-ae;
+  const rothAnnual=MK.reduce((s,m)=>s+(parseFloat(appData.savings[m].roth)||0),0);
+  const k401Annual=MK.reduce((s,m)=>s+(parseFloat(appData.savings[m].k401)||0),0);
+  const emergAnnual=MK.reduce((s,m)=>s+(parseFloat(appData.savings[m].emergency)||0),0);
+  const monthlyExp=ae/12;
+  let score=0;
+  if(sr>=0.1)score+=15;else score+=Math.round((sr/0.1)*15);
+  if(sr>=0.2)score+=10;
+  if(er<=0.5&&er>0)score+=15;else if(er>0)score+=Math.max(0,Math.round((1-(er-0.5)/0.3)*15));
+  if(apl>=0)score+=15;
+  if(rothAnnual>=7000)score+=10;else if(rothAnnual>0)score+=Math.round((rothAnnual/7000)*10);
+  if(k401Annual>0)score+=10;
+  if(emergAnnual>=monthlyExp*3)score+=10;else if(emergAnnual>0)score+=Math.round((emergAnnual/(monthlyExp*3))*10);
+  if(ir>=0.05)score+=5;
+  if(apl>0&&apl/ai>=0.1)score+=5;
+  return Math.min(100,Math.round(score));
+}
+
+function toggleInsights(){
+  const panel=document.getElementById('insights-panel'),bd=document.getElementById('insights-backdrop');
+  const isOpen=panel.classList.contains('open');
+  if(!isOpen){ renderInsightsPanel(); }
+  panel.classList.toggle('open',!isOpen);
+  bd.classList.toggle('open',!isOpen);
+}
+
+function renderInsightsPanel(){
+  const insights=generateInsights();
+  const score=calcFinancialScore();
+  const scoreColor=score>=80?'var(--green)':score>=50?'var(--yellow)':'var(--red)';
+  const scoreLabel=score>=80?'Excellent':score>=60?'Strong':score>=40?'Good':score>=25?'Needs Work':'Needs Attention';
+  const high=insights.filter(i=>i.priority==='high').length;
+  document.getElementById('insights-dot').classList.toggle('show',high>0);
+
+  const sections={};
+  insights.forEach(i=>{ if(!sections[i.section])sections[i.section]=[]; sections[i.section].push(i); });
+
+  let html=`
+  <div class="insights-score">
+    <div class="insights-score-num" style="color:${scoreColor}">${score}</div>
+    <div class="insights-score-label">Financial Health Score <strong style="color:${scoreColor}">${scoreLabel}</strong></div>
+    <div class="insights-score-bar"><div class="insights-score-fill" style="width:${score}%;background:${scoreColor}"></div></div>
+    <div class="score-grade"><span>0 Poor</span><span>50 Good</span><span>100 Excellent</span></div>
+  </div>`;
+
+  Object.entries(sections).forEach(([section,cards])=>{
+    html+=`<div class="insights-section-label">${section}</div>`;
+    cards.forEach(c=>{
+      const a=ANALYSTS[c.analystIdx];
+      html+=`
+      <div class="insight-card priority-${c.priority}">
+        <div class="insight-top">
+          <div class="insight-title">${c.title}</div>
+          <span class="insight-badge badge-${c.priority}">${c.priority==='info'?'Tip':c.priority.charAt(0).toUpperCase()+c.priority.slice(1)}</span>
+        </div>
+        <div class="insight-body">${c.body}</div>
+        <div class="insight-analyst">
+          ${analystAvatar(c.analystIdx)}
+          <span><strong>${a.name}</strong> · Top Analyst</span>
+        </div>
+      </div>`;
+    });
+  });
+
+  document.getElementById('insights-body').innerHTML=html;
+}
 </script>
+
+<!-- ── INSIGHTS PANEL ── -->
+<div class="insights-backdrop" id="insights-backdrop" onclick="toggleInsights()"></div>
+<div class="insights-panel" id="insights-panel">
+  <div class="insights-header">
+    <div class="insights-header-left">
+      <div class="insights-icon">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+      </div>
+      <div>
+        <div class="insights-title">Analyst Recommendations</div>
+        <div class="insights-sub">Based on your actual data</div>
+      </div>
+    </div>
+    <div style="display:flex;align-items:center;gap:8px;">
+      <button class="insights-refresh" onclick="renderInsightsPanel()">
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 11-2.12-9.36L23 10"/></svg>
+        Refresh
+      </button>
+      <button class="insights-close" onclick="toggleInsights()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+  </div>
+  <div class="insights-body" id="insights-body">
+    <div style="text-align:center;padding:40px 20px;color:var(--text-3);font-size:13px;">Loading insights...</div>
+  </div>
+</div>
 </body>
 </html>
