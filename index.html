@@ -191,6 +191,16 @@
     @media (max-width: 900px) { .nw-split { grid-template-columns: 1fr; } }
     .nw-net-badge { display: inline-flex; align-items: center; gap: 6px; padding: 5px 14px; border-radius: 999px; font-size: 13px; font-weight: 700; margin-top: 8px; }
 
+    /* ── DEMO VIDEO ── */
+    .video-embed-wrap { position: relative; width: 100%; padding-bottom: 56.25%; border-radius: 10px; overflow: hidden; background: #000; margin-bottom: 14px; }
+    .video-embed-wrap iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: none; }
+    .video-share-box { display: flex; align-items: center; gap: 8px; background: var(--elevated); border: 1px solid var(--border); border-radius: 10px; padding: 10px 14px; }
+    .video-share-url { flex: 1; font-size: 12px; color: var(--text-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-family: 'Inter', sans-serif; background: none; border: none; outline: none; cursor: default; }
+    .video-input-wrap { display: flex; flex-direction: column; gap: 10px; }
+    .video-input-wrap input { width: 100%; background: var(--elevated); border: 1px solid var(--border); color: var(--text); border-radius: 10px; padding: 11px 14px; font-size: 13px; font-family: 'Inter', sans-serif; outline: none; transition: border-color .15s; }
+    .video-input-wrap input:focus { border-color: var(--blue); }
+    .video-input-hint { font-size: 11.5px; color: var(--text-3); line-height: 1.5; }
+
     /* ── TUTORIAL ── */
     .tutorial-overlay { position: fixed; inset: 0; background: rgba(0,0,0,.72); z-index: 700; display: flex; align-items: center; justify-content: center; padding: 20px; }
     .tutorial-card { background: var(--card); border: 1px solid var(--border); border-radius: 20px; width: 100%; max-width: 480px; padding: 36px 40px 28px; position: relative; animation: fadeUp .3s ease; }
@@ -748,14 +758,40 @@
           <div class="settings-card">
             <div class="settings-card-header">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-              <div><div class="settings-card-title">Help</div><div class="settings-card-sub">App tour &amp; getting started guide</div></div>
+              <div><div class="settings-card-title">Help</div><div class="settings-card-sub">App tour, demo video &amp; getting started</div></div>
             </div>
             <div class="settings-card-body">
-              <div style="font-size:13px;color:var(--text-2);margin-bottom:18px;line-height:1.6;">New to the app? Take the 7-step tour to learn how every feature works and get the most out of your financial tracker.</div>
-              <button class="btn btn-primary" onclick="startTutorial()" style="width:100%;justify-content:center;padding:12px;">
+              <div style="font-size:13px;color:var(--text-2);margin-bottom:18px;line-height:1.6;">New to the app? Take the 7-step tour or watch the demo video below.</div>
+              <button class="btn btn-primary" onclick="startTutorial()" style="width:100%;justify-content:center;padding:12px;margin-bottom:24px;">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
                 Launch App Tour
               </button>
+
+              <div style="font-size:11px;font-weight:700;color:var(--text-3);text-transform:uppercase;letter-spacing:.7px;margin-bottom:12px;">Demo Video</div>
+              <div id="demo-video-player" style="display:none">
+                <div class="video-embed-wrap" id="demo-embed-wrap"></div>
+                <div class="video-share-box" style="margin-bottom:12px;">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--text-3)" stroke-width="2"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>
+                  <input class="video-share-url" id="demo-share-url" readonly />
+                  <button class="btn" onclick="copyVideoLink()" id="demo-copy-btn" style="padding:5px 12px;font-size:11.5px;flex-shrink:0;">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+                    Copy Link
+                  </button>
+                  <button class="btn" onclick="shareVideoLink()" style="padding:5px 12px;font-size:11.5px;flex-shrink:0;" id="demo-share-btn">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+                    Share
+                  </button>
+                </div>
+                <button class="btn" onclick="showVideoInput()" style="width:100%;justify-content:center;font-size:12px;">Change Video</button>
+              </div>
+              <div id="demo-video-input" class="video-input-wrap">
+                <div class="video-input-hint">Paste a YouTube, Loom, or Vimeo link to embed a demo video. Anyone you share the link with can watch it directly.</div>
+                <input type="url" id="demo-url-input" placeholder="https://www.youtube.com/watch?v=… or loom.com/share/…" />
+                <button class="btn btn-primary" onclick="saveVideoLink()" style="justify-content:center;">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+                  Save &amp; Embed Video
+                </button>
+              </div>
             </div>
           </div>
 
@@ -1592,6 +1628,7 @@ function updateNote(mk,f,v){ appData.notes[mk][f]=v; saveData(); }
 
 // ── SETTINGS ──
 function renderSettings(){
+  renderVideoSection();
   const m=appData.meta||{};
   const n=document.getElementById('settings-name');if(n)n.value=m.name||'';
   const y=document.getElementById('settings-year');if(y)y.value=m.year||'2026';
@@ -1764,6 +1801,88 @@ function renderTutorialStep() {
 }
 
 function tutorialGoTo(i) { tutorialIdx = i; renderTutorialStep(); }
+
+// ── DEMO VIDEO ──
+const DEMO_VIDEO_KEY = 'sft_demo_video_v1';
+
+function getEmbedUrl(url) {
+  if(!url) return null;
+  url = url.trim();
+  // YouTube watch
+  let m = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([A-Za-z0-9_-]{11})/);
+  if(m) return 'https://www.youtube.com/embed/' + m[1] + '?rel=0&modestbranding=1';
+  // YouTube embed already
+  if(url.includes('youtube.com/embed/')) return url;
+  // Loom share
+  m = url.match(/loom\.com\/share\/([a-f0-9]+)/i);
+  if(m) return 'https://www.loom.com/embed/' + m[1];
+  // Loom embed already
+  if(url.includes('loom.com/embed/')) return url;
+  // Vimeo
+  m = url.match(/vimeo\.com\/(\d+)/);
+  if(m) return 'https://player.vimeo.com/video/' + m[1];
+  return null;
+}
+
+function renderVideoSection() {
+  const stored = localStorage.getItem(DEMO_VIDEO_KEY);
+  const playerEl = document.getElementById('demo-video-player');
+  const inputEl  = document.getElementById('demo-video-input');
+  if(!playerEl || !inputEl) return;
+  if(stored) {
+    const embedUrl = getEmbedUrl(stored);
+    if(embedUrl) {
+      document.getElementById('demo-embed-wrap').innerHTML =
+        `<iframe src="${embedUrl}" allowfullscreen allow="autoplay; fullscreen"></iframe>`;
+      document.getElementById('demo-share-url').value = stored;
+      playerEl.style.display = 'block';
+      inputEl.style.display  = 'none';
+      // Hide native share button if API unavailable
+      document.getElementById('demo-share-btn').style.display = navigator.share ? '' : 'none';
+      return;
+    }
+  }
+  playerEl.style.display = 'none';
+  inputEl.style.display  = 'flex';
+}
+
+function saveVideoLink() {
+  const url = document.getElementById('demo-url-input').value.trim();
+  if(!url) { document.getElementById('demo-url-input').style.borderColor='var(--red)'; return; }
+  const embed = getEmbedUrl(url);
+  if(!embed) {
+    document.getElementById('demo-url-input').style.borderColor='var(--red)';
+    showToast('Unsupported URL — use YouTube, Loom, or Vimeo');
+    return;
+  }
+  document.getElementById('demo-url-input').style.borderColor='';
+  localStorage.setItem(DEMO_VIDEO_KEY, url);
+  renderVideoSection();
+  showToast('Demo video saved!');
+}
+
+function showVideoInput() {
+  document.getElementById('demo-video-player').style.display = 'none';
+  document.getElementById('demo-video-input').style.display  = 'flex';
+  document.getElementById('demo-url-input').value = localStorage.getItem(DEMO_VIDEO_KEY)||'';
+  document.getElementById('demo-url-input').focus();
+}
+
+function copyVideoLink() {
+  const url = localStorage.getItem(DEMO_VIDEO_KEY);
+  if(!url) return;
+  navigator.clipboard.writeText(url).then(()=>{
+    const btn = document.getElementById('demo-copy-btn');
+    btn.textContent = 'Copied!';
+    setTimeout(()=>{ btn.innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg> Copy Link'; }, 2000);
+  });
+}
+
+function shareVideoLink() {
+  const url = localStorage.getItem(DEMO_VIDEO_KEY);
+  if(!url || !navigator.share) return;
+  navigator.share({ title: 'Stanton Financial Tracker — Demo', url }).catch(()=>{});
+}
 
 // ── INIT ──
 document.addEventListener('DOMContentLoaded',()=>{
