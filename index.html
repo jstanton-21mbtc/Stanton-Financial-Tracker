@@ -414,12 +414,20 @@
           <div class="subsection-title">YTD Cumulative Savings</div>
           <div class="table-wrap" id="savings-ytd-wrap"></div>
         </div>
+        <div class="subsection">
+          <div class="subsection-title">Current Balances &amp; Growth</div>
+          <div class="table-wrap" id="savings-balances-wrap"></div>
+        </div>
       </div>
 
       <!-- INVESTMENTS -->
       <div id="tab-investments" class="tab-panel">
         <div class="section-title">Investments — Property &amp; Growth</div>
         <div class="table-wrap" id="investments-wrap"></div>
+        <div class="subsection">
+          <div class="subsection-title">Current Balances &amp; Growth</div>
+          <div class="table-wrap" id="investments-balances-wrap"></div>
+        </div>
       </div>
 
       <!-- GOALS -->
@@ -673,6 +681,10 @@ function getDefaultData() {
       jul:{...ZERO_INV},aug:{...ZERO_INV},sep:{...ZERO_INV},oct:{...ZERO_INV},nov:{...ZERO_INV},dec:{...ZERO_INV},
     },
     goals: [],
+    balances: {
+      savings:     {emergency:0,general:0,k401:0,roth:0,bitcoin:0,bitcoinIRA:0,cryptoOther:0,lifeInsurance:0,other:0},
+      investments: {property:0,homeImprovement:0,health:0,vehicle:0,education:0,other:0},
+    },
     scorecard: Object.fromEntries(MK.map(m=>[m,{wins:'',challenges:'',actions:'',notes:''}])),
     notes:     Object.fromEntries(MK.map(m=>[m,{wins:'',challenges:'',actions:'',notes:''}])),
   };
@@ -871,6 +883,56 @@ function renderSavings(){
   html+=`<tr><td>YTD Cumulative</td>${cumul.map(v=>`<td>${fmt$(v)}</td>`).join('')}</tr>`;
   html+='</tbody></table>';
   document.getElementById('savings-ytd-wrap').innerHTML=html;
+  renderBalances('savings-balances-wrap', SAVINGS_CATS, 'savings');
+}
+
+// ── BALANCES TABLE ──
+function renderBalances(containerId, cats, section){
+  if(!appData.balances) appData.balances={savings:{},investments:{}};
+  if(!appData.balances[section]) appData.balances[section]={};
+  const bal=appData.balances[section];
+  let totalYTD=0, totalBal=0;
+  let html=`<table><thead><tr>
+    <th>Account / Category</th>
+    <th>YTD Contributions</th>
+    <th>Current Balance</th>
+    <th>Growth / Gain</th>
+    <th>Return %</th>
+  </tr></thead><tbody>`;
+  cats.forEach(cat=>{
+    const ytd=MK.reduce((a,m)=>a+(parseFloat(appData[section][m][cat.key])||0),0);
+    const current=parseFloat(bal[cat.key])||0;
+    const gain=current-ytd;
+    const ret=ytd>0?(gain/ytd):null;
+    totalYTD+=ytd; totalBal+=current;
+    const gainHtml=ytd>0||current>0 ? `<span class="${gain>=0?'val-positive':'val-negative'}">${gain>=0?'+':''}${fmt$(gain)}</span>` : '<span class="val-neutral">—</span>';
+    const retHtml=ret!=null ? `<span class="${ret>=0?'val-positive':'val-negative'}">${ret>=0?'+':''}${fmtPct(ret)}</span>` : '<span class="val-neutral">—</span>';
+    html+=`<tr>
+      <td>${cat.label}</td>
+      <td>${ytd>0?fmt$(ytd):'<span class="val-neutral">—</span>'}</td>
+      <td><input type="number" step="0.01" min="0" value="${current>0?current:''}" placeholder="Enter balance" onchange="updateBalance('${section}','${cat.key}',this.value)" /></td>
+      <td>${gainHtml}</td>
+      <td>${retHtml}</td>
+    </tr>`;
+  });
+  const totalGain=totalBal-totalYTD;
+  const totalRet=totalYTD>0?(totalGain/totalYTD):null;
+  html+=`<tr class="total-row">
+    <td>Total</td>
+    <td>${fmt$(totalYTD)}</td>
+    <td>${totalBal>0?fmt$(totalBal):'—'}</td>
+    <td>${totalBal>0?`<span class="${totalGain>=0?'val-positive':'val-negative'}">${totalGain>=0?'+':''}${fmt$(totalGain)}</span>`:'—'}</td>
+    <td>${totalRet!=null?`<span class="${totalRet>=0?'val-positive':'val-negative'}">${totalRet>=0?'+':''}${fmtPct(totalRet)}</span>`:'—'}</td>
+  </tr></tbody></table>`;
+  document.getElementById(containerId).innerHTML=html;
+}
+
+function updateBalance(section,key,val){
+  if(!appData.balances) appData.balances={savings:{},investments:{}};
+  if(!appData.balances[section]) appData.balances[section]={};
+  appData.balances[section][key]=parseFloat(val)||0;
+  saveData();
+  renderBalances(section==='savings'?'savings-balances-wrap':'investments-balances-wrap', section==='savings'?SAVINGS_CATS:INVEST_CATS, section);
 }
 
 // ── GOALS ──
@@ -1032,6 +1094,7 @@ function refreshAll(){
   renderDataTable('expenses-wrap',EXPENSE_CATS,'expenses');
   renderSavings();
   renderDataTable('investments-wrap',INVEST_CATS,'investments');
+  renderBalances('investments-balances-wrap',INVEST_CATS,'investments');
   renderGoals();renderScorecard();renderNotes();renderSettings();
   updateCharts();
 }
@@ -1063,6 +1126,7 @@ document.addEventListener('DOMContentLoaded',()=>{
   appData=loadData()||getDefaultData();
   if(!appData.meta) appData.meta={name:'Stanton',year:'2026',currency:'$'};
   if(!appData.notes) appData.notes=Object.fromEntries(MK.map(m=>[m,{wins:'',challenges:'',actions:'',notes:''}]));
+  if(!appData.balances) appData.balances={savings:{},investments:{}};
   refreshAll();
   initCharts();
   setTimeout(()=>{ if(generateInsights().filter(i=>i.priority==='high').length>0) document.getElementById('insights-dot').classList.add('show'); },600);
