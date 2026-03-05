@@ -20,6 +20,45 @@
       --text: #FFFFFF; --text-2: #8A919E; --text-3: #5B616E;
       --radius: 12px; --radius-sm: 8px; --sidebar-w: 230px;
     }
+    /* ── THEME: LIGHT ── */
+    [data-theme="light"] {
+      --bg: #F0F4F8; --surface: #FFFFFF; --card: #FFFFFF; --card-hover: #F5F8FF;
+      --elevated: #F0F4F8; --border: #DDE3EE; --border-dim: #EBF0F7;
+      --blue: #0052FF; --blue-dim: rgba(0,82,255,0.08); --blue-hover: #0045D8;
+      --green: #00A86B; --green-dim: rgba(0,168,107,0.1);
+      --red: #E02D3C; --red-dim: rgba(224,45,60,0.1);
+      --yellow: #D97706; --yellow-dim: rgba(217,119,6,0.1);
+      --text: #0A0B0D; --text-2: #4B5563; --text-3: #9CA3AF;
+    }
+    /* ── THEME: MIDNIGHT ── */
+    [data-theme="midnight"] {
+      --bg: #05091A; --surface: #0C1228; --card: #101830; --card-hover: #141E3C;
+      --elevated: #18203A; --border: #1E2D52; --border-dim: #131C3A;
+      --blue: #00C2FF; --blue-dim: rgba(0,194,255,0.12); --blue-hover: #00A8E0;
+      --green: #00E5A0; --green-dim: rgba(0,229,160,0.12);
+      --red: #FF4D6A; --red-dim: rgba(255,77,106,0.12);
+      --yellow: #FFB547; --yellow-dim: rgba(255,181,71,0.12);
+      --text: #E4EEFF; --text-2: #6B8BAF; --text-3: #344F6E;
+    }
+    /* ── THEME PICKER ── */
+    .theme-picker-overlay { position: fixed; inset: 0; background: rgba(0,0,0,.65); z-index: 650; display: flex; align-items: center; justify-content: center; padding: 20px; }
+    .theme-picker-card { background: var(--card); border: 1px solid var(--border); border-radius: 20px; width: 100%; max-width: 560px; padding: 36px 40px 32px; animation: fadeUp .3s ease; }
+    .theme-picker-title { font-size: 21px; font-weight: 800; margin-bottom: 6px; }
+    .theme-picker-sub { font-size: 13px; color: var(--text-2); margin-bottom: 28px; line-height: 1.5; }
+    .theme-options { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-bottom: 28px; }
+    .theme-option { border: 2px solid var(--border); border-radius: 14px; overflow: hidden; cursor: pointer; transition: border-color .2s, transform .15s; }
+    .theme-option:hover { transform: translateY(-2px); }
+    .theme-option.selected { border-color: var(--blue); }
+    .theme-preview { height: 90px; padding: 10px; display: flex; flex-direction: column; gap: 5px; }
+    .tp-bar { height: 7px; border-radius: 4px; }
+    .tp-card { border-radius: 6px; flex: 1; display: flex; align-items: flex-end; padding: 5px; gap: 3px; }
+    .tp-col { border-radius: 2px; flex: 1; }
+    .theme-option-label { padding: 10px 12px; display: flex; align-items: center; justify-content: space-between; }
+    .theme-option-name { font-size: 12px; font-weight: 700; }
+    .theme-check { width: 16px; height: 16px; border-radius: 999px; border: 2px solid var(--border); display: flex; align-items: center; justify-content: center; transition: all .2s; }
+    .theme-option.selected .theme-check { background: var(--blue); border-color: var(--blue); }
+    .theme-picker-actions { display: flex; gap: 10px; justify-content: flex-end; }
+
     html, body { height: 100%; }
     body { background: var(--bg); color: var(--text); font-family: 'Inter', system-ui, sans-serif; font-size: 14px; display: flex; min-height: 100vh; }
 
@@ -757,6 +796,20 @@
 
           <div class="settings-card">
             <div class="settings-card-header">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="4"/><path d="M1.05 12a11 11 0 0121.9 0M1.05 12a11 11 0 0021.9 0"/></svg>
+              <div><div class="settings-card-title">Appearance</div><div class="settings-card-sub">Choose your theme</div></div>
+            </div>
+            <div class="settings-card-body">
+              <div id="settings-theme-preview" style="display:flex;gap:10px;margin-bottom:18px"></div>
+              <button class="btn btn-primary" onclick="showThemePicker(false)" style="width:100%;justify-content:center;padding:12px;">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="4"/><path d="M1.05 12a11 11 0 0121.9 0M1.05 12a11 11 0 0021.9 0"/></svg>
+                Change Theme
+              </button>
+            </div>
+          </div>
+
+          <div class="settings-card">
+            <div class="settings-card-header">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
               <div><div class="settings-card-title">Help</div><div class="settings-card-sub">App tour, demo video &amp; getting started</div></div>
             </div>
@@ -983,6 +1036,7 @@ function submitLogin() {
     localStorage.setItem(PW_KEY, hashPw(input.value));
     document.getElementById('login-overlay').style.display='none';
     input.value=''; confirm.value='';
+    showThemePicker(true);
   } else {
     if (hashPw(input.value)===getStoredHash()) {
       document.getElementById('login-overlay').style.display='none';
@@ -1627,6 +1681,7 @@ function updateNote(mk,f,v){ appData.notes[mk][f]=v; saveData(); }
 // ── SETTINGS ──
 function renderSettings(){
   renderVideoSection();
+  renderThemePreview(localStorage.getItem(THEME_KEY)||'dark');
   const m=appData.meta||{};
   const n=document.getElementById('settings-name');if(n)n.value=m.name||'';
   const y=document.getElementById('settings-year');if(y)y.value=m.year||'2026';
@@ -1712,6 +1767,79 @@ function confirmReset(){
 // ── TOAST ──
 let toastTimer;
 function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>t.classList.remove('show'),1800);}
+
+// ── THEMES ──
+const THEME_KEY = 'sft_theme_v1';
+const THEMES = {
+  dark:     { name: 'Dark',     desc: 'Deep dark · Blue accent' },
+  light:    { name: 'Light',    desc: 'Clean white · Blue accent' },
+  midnight: { name: 'Midnight', desc: 'Deep space · Cyan accent' },
+};
+let _pendingTheme = 'dark';
+
+function applyTheme(name) {
+  const t = THEMES[name] ? name : 'dark';
+  document.documentElement.setAttribute('data-theme', t === 'dark' ? '' : t);
+  localStorage.setItem(THEME_KEY, t);
+  _pendingTheme = t;
+  updateThemeChecks(t);
+  renderThemePreview(t);
+}
+
+function updateThemeChecks(active) {
+  ['dark','light','midnight'].forEach(t => {
+    const opt = document.getElementById('theme-opt-' + t);
+    if(opt) opt.classList.toggle('selected', t === active);
+  });
+}
+
+function renderThemePreview(active) {
+  const el = document.getElementById('settings-theme-preview');
+  if(!el) return;
+  const colors = {
+    dark:     { bg:'#0A0B0D', accent:'#0052FF', label:'Dark',     lc:'#fff',   lb:'#131519', bb:'#2C3038' },
+    light:    { bg:'#F0F4F8', accent:'#0052FF', label:'Light',    lc:'#0A0B0D',lb:'#FFFFFF', bb:'#DDE3EE' },
+    midnight: { bg:'#05091A', accent:'#00C2FF', label:'Midnight', lc:'#E4EEFF',lb:'#0C1228', bb:'#1E2D52' },
+  };
+  el.innerHTML = Object.entries(colors).map(([key, c]) => `
+    <div onclick="selectTheme('${key}');confirmTheme()" style="flex:1;border:2px solid ${key===active?'var(--blue)':'var(--border)'};border-radius:10px;overflow:hidden;cursor:pointer;transition:border-color .2s;">
+      <div style="background:${c.bg};padding:8px;height:52px;display:flex;align-items:flex-end;gap:3px;">
+        <div style="flex:1;height:28px;background:${c.accent};border-radius:3px;opacity:.9"></div>
+        <div style="flex:1;height:20px;background:${c.accent};border-radius:3px;opacity:.5"></div>
+        <div style="flex:1;height:34px;background:${c.accent};border-radius:3px;opacity:.7"></div>
+      </div>
+      <div style="background:${c.lb};border-top:1px solid ${c.bb};padding:6px 8px;font-size:11px;font-weight:700;color:${c.lc}">${c.label}</div>
+    </div>`).join('');
+}
+
+function showThemePicker(isFirstLogin = false) {
+  _pendingTheme = localStorage.getItem(THEME_KEY) || 'dark';
+  updateThemeChecks(_pendingTheme);
+  const el = document.getElementById('theme-picker');
+  el.style.display = 'flex';
+  el._isFirstLogin = isFirstLogin;
+}
+
+function selectTheme(name) {
+  _pendingTheme = name;
+  updateThemeChecks(name);
+  // Live preview
+  document.documentElement.setAttribute('data-theme', name === 'dark' ? '' : name);
+}
+
+function confirmTheme() {
+  applyTheme(_pendingTheme);
+  closeThemePicker();
+}
+
+function closeThemePicker() {
+  const el = document.getElementById('theme-picker');
+  const isFirst = el._isFirstLogin;
+  el.style.display = 'none';
+  if(isFirst && !localStorage.getItem(TUTORIAL_KEY) ) {
+    setTimeout(startTutorial, 300);
+  }
+}
 
 // ── TUTORIAL ──
 const TUTORIAL_KEY = 'sft_tutorial_done_v1';
@@ -1884,6 +2012,7 @@ function shareVideoLink() {
 
 // ── INIT ──
 document.addEventListener('DOMContentLoaded',()=>{
+  applyTheme(localStorage.getItem(THEME_KEY)||'dark');
   initLoginScreen();
   appData=loadData()||getDefaultData();
   if(!appData.meta) appData.meta={name:'',year:new Date().getFullYear().toString(),currency:'$'};
@@ -2145,6 +2274,69 @@ function renderInsightsPanel(){
   document.getElementById('insights-body').innerHTML=html;
 }
 </script>
+
+<!-- ── THEME PICKER ── -->
+<div class="theme-picker-overlay" id="theme-picker" style="display:none">
+  <div class="theme-picker-card">
+    <div class="theme-picker-title">Choose your theme</div>
+    <div class="theme-picker-sub">Pick a look that feels right. You can change it anytime in Settings → Appearance.</div>
+    <div class="theme-options">
+
+      <div class="theme-option" id="theme-opt-dark" onclick="selectTheme('dark')">
+        <div class="theme-preview" style="background:#0A0B0D">
+          <div class="tp-bar" style="background:#0052FF;width:60%"></div>
+          <div class="tp-card" style="background:#1A1D23">
+            <div class="tp-col" style="background:#0052FF;height:45px"></div>
+            <div class="tp-col" style="background:#05B169;height:32px"></div>
+            <div class="tp-col" style="background:#CF5252;height:55px"></div>
+            <div class="tp-col" style="background:#F5A623;height:38px"></div>
+          </div>
+        </div>
+        <div class="theme-option-label" style="background:#131519;border-top:1px solid #2C3038">
+          <span class="theme-option-name" style="color:#fff">Dark</span>
+          <div class="theme-check" id="check-dark"><svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></div>
+        </div>
+      </div>
+
+      <div class="theme-option" id="theme-opt-light" onclick="selectTheme('light')">
+        <div class="theme-preview" style="background:#F0F4F8">
+          <div class="tp-bar" style="background:#0052FF;width:60%"></div>
+          <div class="tp-card" style="background:#FFFFFF;border:1px solid #DDE3EE">
+            <div class="tp-col" style="background:#0052FF;height:45px"></div>
+            <div class="tp-col" style="background:#00A86B;height:32px"></div>
+            <div class="tp-col" style="background:#E02D3C;height:55px"></div>
+            <div class="tp-col" style="background:#D97706;height:38px"></div>
+          </div>
+        </div>
+        <div class="theme-option-label" style="background:#fff;border-top:1px solid #DDE3EE">
+          <span class="theme-option-name" style="color:#0A0B0D">Light</span>
+          <div class="theme-check" id="check-light"><svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></div>
+        </div>
+      </div>
+
+      <div class="theme-option" id="theme-opt-midnight" onclick="selectTheme('midnight')">
+        <div class="theme-preview" style="background:#05091A">
+          <div class="tp-bar" style="background:#00C2FF;width:60%"></div>
+          <div class="tp-card" style="background:#101830">
+            <div class="tp-col" style="background:#00C2FF;height:45px"></div>
+            <div class="tp-col" style="background:#00E5A0;height:32px"></div>
+            <div class="tp-col" style="background:#FF4D6A;height:55px"></div>
+            <div class="tp-col" style="background:#FFB547;height:38px"></div>
+          </div>
+        </div>
+        <div class="theme-option-label" style="background:#0C1228;border-top:1px solid #1E2D52">
+          <span class="theme-option-name" style="color:#E4EEFF">Midnight</span>
+          <div class="theme-check" id="check-midnight"><svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></div>
+        </div>
+      </div>
+
+    </div>
+    <div class="theme-picker-actions">
+      <button class="btn" onclick="closeThemePicker()">Skip for now</button>
+      <button class="btn btn-primary" onclick="confirmTheme()">Apply Theme</button>
+    </div>
+  </div>
+</div>
 
 <!-- ── TUTORIAL OVERLAY ── -->
 <div class="tutorial-overlay" id="tutorial-overlay" style="display:none">
