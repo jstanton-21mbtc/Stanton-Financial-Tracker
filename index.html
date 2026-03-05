@@ -183,6 +183,20 @@
     .login-btn:hover { background: var(--blue-hover); }
     .login-hint { font-size: 11.5px; color: var(--text-3); text-align: center; margin-top: 20px; line-height: 1.6; }
 
+    /* ── GOAL MODAL ── */
+    .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,.55); z-index: 500; display: flex; align-items: center; justify-content: center; opacity: 0; pointer-events: none; transition: opacity .2s; }
+    .modal-overlay.open { opacity: 1; pointer-events: all; }
+    .modal-card { background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 32px; width: 100%; max-width: 460px; animation: fadeUp .25s ease; }
+    .modal-title { font-size: 17px; font-weight: 700; margin-bottom: 6px; }
+    .modal-sub { font-size: 12.5px; color: var(--text-2); margin-bottom: 24px; }
+    .modal-field { margin-bottom: 16px; }
+    .modal-field label { display: block; font-size: 11px; font-weight: 600; color: var(--text-3); text-transform: uppercase; letter-spacing: .6px; margin-bottom: 7px; }
+    .modal-field input, .modal-field select, .modal-field textarea { width: 100%; background: var(--elevated); border: 1px solid var(--border); color: var(--text); border-radius: 10px; padding: 11px 14px; font-size: 13.5px; font-family: 'Inter', sans-serif; outline: none; transition: border-color .15s; }
+    .modal-field input:focus, .modal-field select:focus, .modal-field textarea:focus { border-color: var(--blue); }
+    .modal-field textarea { resize: vertical; min-height: 60px; }
+    .modal-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+    .modal-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 24px; padding-top: 18px; border-top: 1px solid var(--border-dim); }
+
     /* ── INSIGHTS PANEL ── */
     .insights-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,.45); z-index: 300; opacity: 0; pointer-events: none; transition: opacity .3s; }
     .insights-backdrop.open { opacity: 1; pointer-events: all; }
@@ -410,9 +424,25 @@
 
       <!-- GOALS -->
       <div id="tab-goals" class="tab-panel">
-        <div class="section-title">2026 Goals</div>
-        <div class="table-wrap" id="goals-wrap"></div>
-        <div class="mt-4"><button class="btn btn-primary" onclick="addGoal()">+ Add Goal</button></div>
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;">
+          <div class="section-title" style="margin-bottom:0">Goals</div>
+          <button class="btn btn-primary" onclick="openAddGoalModal()">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            Add Goal
+          </button>
+        </div>
+        <div id="goals-empty" style="display:none;text-align:center;padding:56px 24px;background:var(--card);border:1px solid var(--border);border-radius:var(--radius);">
+          <div style="width:52px;height:52px;background:var(--blue-dim);border-radius:14px;display:flex;align-items:center;justify-content:center;margin:0 auto 18px;">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--blue)" stroke-width="2"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>
+          </div>
+          <div style="font-size:16px;font-weight:700;margin-bottom:8px;">No goals yet</div>
+          <div style="font-size:13px;color:var(--text-2);max-width:320px;margin:0 auto 24px;line-height:1.6;">Set your financial goals — pay off debt, build savings, max your ROTH IRA, or anything else you're working toward.</div>
+          <button class="btn btn-primary" onclick="openAddGoalModal()" style="font-size:13px;padding:10px 22px;">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            Create your first goal
+          </button>
+        </div>
+        <div class="table-wrap" id="goals-wrap" style="display:none"></div>
       </div>
 
       <!-- SCORECARD -->
@@ -642,14 +672,7 @@ function getDefaultData() {
       apr:{...ZERO_INV},may:{...ZERO_INV},jun:{...ZERO_INV},
       jul:{...ZERO_INV},aug:{...ZERO_INV},sep:{...ZERO_INV},oct:{...ZERO_INV},nov:{...ZERO_INV},dec:{...ZERO_INV},
     },
-    goals: [
-      {name:'Pay Off Mortgage',                    target:null, current:null, status:'In Progress',notes:'Goal set for 2026'},
-      {name:'Pay Off Vehicle (Traverse)',           target:null, current:null, status:'In Progress',notes:'$750/mo payment started Feb 2026'},
-      {name:'$20k Cash Reserve',                   target:20000,current:null, status:'In Progress',notes:''},
-      {name:'Emergency Fund > 50% Annual Expenses',target:25200,current:null, status:'In Progress',notes:'Target = 50% of ~$50,400'},
-      {name:'Max ROTH IRA ($7,000)',                target:7000, current:2400, status:'On Track',   notes:'$200/mo = $2,400/yr'},
-      {name:'Bitcoin Accumulation',                 target:null, current:null, status:'Active',     notes:'Consistent monthly contributions'},
-    ],
+    goals: [],
     scorecard: Object.fromEntries(MK.map(m=>[m,{wins:'',challenges:'',actions:'',notes:''}])),
     notes:     Object.fromEntries(MK.map(m=>[m,{wins:'',challenges:'',actions:'',notes:''}])),
   };
@@ -852,26 +875,72 @@ function renderSavings(){
 
 // ── GOALS ──
 function renderGoals(){
+  const empty=document.getElementById('goals-empty'), wrap=document.getElementById('goals-wrap');
+  if(!appData.goals.length){ empty.style.display='block'; wrap.style.display='none'; return; }
+  empty.style.display='none'; wrap.style.display='';
   let html=`<table><thead><tr><th>Goal</th><th>Target</th><th>Current</th><th>Progress</th><th>Status</th><th>Notes</th><th></th></tr></thead><tbody>`;
-  if(!appData.goals.length) html+=`<tr><td colspan="7" style="text-align:center;padding:32px;color:var(--text-3)">No goals yet. Click "+ Add Goal".</td></tr>`;
   appData.goals.forEach((g,i)=>{
     const pct=(g.target&&g.current)?Math.min(100,(g.current/g.target)*100):0,showBar=g.target&&g.current;
+    const statusCls={'On Track':'s-on-track','In Progress':'s-in-progress','Active':'s-active','Complete':'s-complete','Off Track':'s-off-track'}[g.status]||'s-in-progress';
     html+=`<tr>
-      <td><input type="text" value="${esc(g.name)}" onchange="updateGoal(${i},'name',this.value)" style="min-width:200px"/></td>
-      <td><input type="number" step="1" value="${g.target||''}" placeholder="—" onchange="updateGoal(${i},'target',this.value)"/></td>
-      <td><input type="number" step="0.01" value="${g.current||''}" placeholder="—" onchange="updateGoal(${i},'current',this.value)"/></td>
+      <td style="font-weight:600;color:var(--text);min-width:180px">${esc(g.name)}</td>
+      <td>${g.target?fmt$(g.target):'<span class="val-neutral">—</span>'}</td>
+      <td>${g.current?fmt$(g.current):'<span class="val-neutral">—</span>'}</td>
       <td style="min-width:130px">${showBar?`<div class="progress-bar-wrap"><div class="progress-bar-fill" style="width:${pct.toFixed(1)}%"></div></div><div style="font-size:11px;color:var(--text-3);margin-top:4px">${pct.toFixed(1)}%</div>`:'<span class="val-neutral">—</span>'}</td>
-      <td><select onchange="updateGoal(${i},'status',this.value)">${['On Track','In Progress','Active','Complete','Off Track'].map(s=>`<option value="${s}"${g.status===s?' selected':''}>${s}</option>`).join('')}</select></td>
-      <td><input type="text" value="${esc(g.notes)}" onchange="updateGoal(${i},'notes',this.value)" style="min-width:180px"/></td>
-      <td><button class="btn btn-danger" onclick="removeGoal(${i})" style="padding:5px 10px;font-size:11px;border-radius:6px">✕</button></td>
+      <td><span class="status-badge ${statusCls}">${g.status}</span></td>
+      <td style="color:var(--text-2);font-size:12px;max-width:220px">${esc(g.notes)||'<span class="val-neutral">—</span>'}</td>
+      <td style="white-space:nowrap">
+        <button class="btn" onclick="openEditGoalModal(${i})" style="padding:5px 10px;font-size:11px;border-radius:6px;margin-right:4px">Edit</button>
+        <button class="btn btn-danger" onclick="removeGoal(${i})" style="padding:5px 10px;font-size:11px;border-radius:6px">✕</button>
+      </td>
     </tr>`;
   });
   html+='</tbody></table>';
   document.getElementById('goals-wrap').innerHTML=html;
 }
 function updateGoal(i,f,v){ appData.goals[i][f]=(f==='target'||f==='current')?(parseFloat(v)||null):v; saveData(); renderGoals(); }
-function removeGoal(i){ appData.goals.splice(i,1); saveData(); renderGoals(); }
-function addGoal(){ appData.goals.push({name:'New Goal',target:null,current:null,status:'In Progress',notes:''}); saveData(); renderGoals(); }
+function removeGoal(i){ if(confirm('Remove this goal?')){ appData.goals.splice(i,1); saveData(); renderGoals(); } }
+function openAddGoalModal(){
+  document.getElementById('goal-modal-title').textContent='Add a Goal';
+  document.getElementById('goal-edit-index').value='-1';
+  document.getElementById('gf-name').value='';
+  document.getElementById('gf-target').value='';
+  document.getElementById('gf-current').value='';
+  document.getElementById('gf-status').value='In Progress';
+  document.getElementById('gf-notes').value='';
+  document.getElementById('goal-modal').classList.add('open');
+  setTimeout(()=>document.getElementById('gf-name').focus(),120);
+}
+function openEditGoalModal(i){
+  const g=appData.goals[i];
+  document.getElementById('goal-modal-title').textContent='Edit Goal';
+  document.getElementById('goal-edit-index').value=i;
+  document.getElementById('gf-name').value=g.name||'';
+  document.getElementById('gf-target').value=g.target||'';
+  document.getElementById('gf-current').value=g.current||'';
+  document.getElementById('gf-status').value=g.status||'In Progress';
+  document.getElementById('gf-notes').value=g.notes||'';
+  document.getElementById('goal-modal').classList.add('open');
+  setTimeout(()=>document.getElementById('gf-name').focus(),120);
+}
+function closeGoalModal(e){ if(!e||e.target===document.getElementById('goal-modal')) document.getElementById('goal-modal').classList.remove('open'); }
+function saveGoalModal(){
+  const name=document.getElementById('gf-name').value.trim();
+  if(!name){ document.getElementById('gf-name').style.borderColor='var(--red)'; document.getElementById('gf-name').focus(); return; }
+  document.getElementById('gf-name').style.borderColor='';
+  const idx=parseInt(document.getElementById('goal-edit-index').value);
+  const goal={
+    name,
+    target:parseFloat(document.getElementById('gf-target').value)||null,
+    current:parseFloat(document.getElementById('gf-current').value)||null,
+    status:document.getElementById('gf-status').value,
+    notes:document.getElementById('gf-notes').value.trim()
+  };
+  if(idx===-1) appData.goals.push(goal);
+  else appData.goals[idx]=goal;
+  saveData(); renderGoals();
+  document.getElementById('goal-modal').classList.remove('open');
+}
 
 // ── SCORECARD ──
 function renderScorecard(){
@@ -1244,6 +1313,47 @@ function renderInsightsPanel(){
   document.getElementById('insights-body').innerHTML=html;
 }
 </script>
+
+<!-- ── ADD GOAL MODAL ── -->
+<div class="modal-overlay" id="goal-modal" onclick="closeGoalModal(event)">
+  <div class="modal-card" onclick="event.stopPropagation()">
+    <div class="modal-title" id="goal-modal-title">Add a Goal</div>
+    <div class="modal-sub">Define what you're working toward — track progress and stay motivated.</div>
+    <input type="hidden" id="goal-edit-index" value="-1" />
+    <div class="modal-field">
+      <label>Goal Name</label>
+      <input type="text" id="gf-name" placeholder="e.g. Pay off car, Max ROTH IRA, Emergency Fund…" />
+    </div>
+    <div class="modal-row">
+      <div class="modal-field">
+        <label>Target Amount ($)</label>
+        <input type="number" id="gf-target" placeholder="Optional" step="1" min="0" />
+      </div>
+      <div class="modal-field">
+        <label>Current Amount ($)</label>
+        <input type="number" id="gf-current" placeholder="Optional" step="0.01" min="0" />
+      </div>
+    </div>
+    <div class="modal-field">
+      <label>Status</label>
+      <select id="gf-status">
+        <option value="In Progress">In Progress</option>
+        <option value="On Track">On Track</option>
+        <option value="Active">Active</option>
+        <option value="Off Track">Off Track</option>
+        <option value="Complete">Complete</option>
+      </select>
+    </div>
+    <div class="modal-field">
+      <label>Notes</label>
+      <textarea id="gf-notes" placeholder="Any details, strategy, or milestones…"></textarea>
+    </div>
+    <div class="modal-actions">
+      <button class="btn" onclick="closeGoalModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="saveGoalModal()">Save Goal</button>
+    </div>
+  </div>
+</div>
 
 <!-- ── INSIGHTS PANEL ── -->
 <div class="insights-backdrop" id="insights-backdrop" onclick="toggleInsights()"></div>
