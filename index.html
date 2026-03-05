@@ -183,6 +183,11 @@
     .login-btn:hover { background: var(--blue-hover); }
     .login-hint { font-size: 11.5px; color: var(--text-3); text-align: center; margin-top: 20px; line-height: 1.6; }
 
+    /* ── NET WORTH ── */
+    .nw-split { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 8px; }
+    @media (max-width: 900px) { .nw-split { grid-template-columns: 1fr; } }
+    .nw-net-badge { display: inline-flex; align-items: center; gap: 6px; padding: 5px 14px; border-radius: 999px; font-size: 13px; font-weight: 700; margin-top: 8px; }
+
     /* ── GOAL MODAL ── */
     .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,.55); z-index: 500; display: flex; align-items: center; justify-content: center; opacity: 0; pointer-events: none; transition: opacity .2s; }
     .modal-overlay.open { opacity: 1; pointer-events: all; }
@@ -321,6 +326,10 @@
 
     <div class="sidebar-section">
       <div class="sidebar-label">Planning</div>
+      <button class="nav-item" onclick="showTab('networth')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v2"/><line x1="12" y1="12" x2="12" y2="16"/><line x1="10" y1="14" x2="14" y2="14"/></svg>
+        Net Worth
+      </button>
       <button class="nav-item" onclick="showTab('goals')">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>
         Goals
@@ -427,6 +436,45 @@
         <div class="subsection">
           <div class="subsection-title">Current Balances &amp; Growth</div>
           <div class="table-wrap" id="investments-balances-wrap"></div>
+        </div>
+      </div>
+
+      <!-- NET WORTH -->
+      <div id="tab-networth" class="tab-panel">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:28px;flex-wrap:wrap;gap:12px;">
+          <div class="section-title" style="margin-bottom:0">Net Worth</div>
+          <button class="btn btn-primary" onclick="takeSnapshot()">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            Save Snapshot
+          </button>
+        </div>
+
+        <!-- KPI row -->
+        <div class="kpi-grid" id="nw-kpi" style="margin-bottom:32px"></div>
+
+        <!-- Assets & Liabilities side by side -->
+        <div class="nw-split">
+          <div>
+            <div class="subsection-title" style="margin-bottom:12px">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="2.5" style="vertical-align:middle;margin-right:5px"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/></svg>
+              Assets
+            </div>
+            <div class="table-wrap" id="nw-assets-wrap"></div>
+          </div>
+          <div>
+            <div class="subsection-title" style="margin-bottom:12px">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--red)" stroke-width="2.5" style="vertical-align:middle;margin-right:5px"><polyline points="23 18 13.5 8.5 8.5 13.5 1 6"/></svg>
+              Liabilities
+            </div>
+            <div class="table-wrap" id="nw-liabilities-wrap"></div>
+          </div>
+        </div>
+
+        <!-- Snapshot history -->
+        <div class="subsection">
+          <div class="subsection-title">Net Worth History</div>
+          <div id="nw-history-empty" style="display:none;text-align:center;padding:32px;background:var(--card);border:1px solid var(--border);border-radius:var(--radius);color:var(--text-3);font-size:13px;">No snapshots yet. Click "Save Snapshot" to record your current net worth.</div>
+          <div class="table-wrap" id="nw-history-wrap" style="display:none"></div>
         </div>
       </div>
 
@@ -685,6 +733,21 @@ function getDefaultData() {
       savings:     {emergency:0,general:0,k401:0,roth:0,bitcoin:0,bitcoinIRA:0,cryptoOther:0,lifeInsurance:0,other:0},
       investments: {property:0,homeImprovement:0,health:0,vehicle:0,education:0,other:0},
     },
+    netWorth: {
+      assets: {
+        cashChecking:0, cashSavings:0, emergencyFund:0,
+        retirement401k:0, rothIRA:0, brokerageAccount:0,
+        bitcoin:0, cryptoOther:0,
+        primaryHome:0, rentalProperty:0,
+        vehicle:0, lifeInsuranceCash:0, otherAssets:0,
+      },
+      liabilities: {
+        mortgageBalance:0, homeLoanOther:0,
+        vehicleLoan:0, creditCardDebt:0,
+        studentLoan:0, medicalDebt:0, otherDebt:0,
+      },
+      history: [],
+    },
     scorecard: Object.fromEntries(MK.map(m=>[m,{wins:'',challenges:'',actions:'',notes:''}])),
     notes:     Object.fromEntries(MK.map(m=>[m,{wins:'',challenges:'',actions:'',notes:''}])),
   };
@@ -770,6 +833,7 @@ const TAB_META = {
   expenses:    ['Expenses',          'Monthly expense breakdown'],
   savings:     ['Savings',           'Savings & wealth building'],
   investments: ['Investments',       'Property & growth investments'],
+  networth:    ['Net Worth',         'Total assets minus liabilities'],
   goals:       ['Goals',             '2026 financial goals'],
   scorecard:   ['Monthly Scorecard', 'Goal tracking & performance review'],
   notes:       ['Monthly Notes',     'Wins, challenges, and action items'],
@@ -935,6 +999,121 @@ function updateBalance(section,key,val){
   renderBalances(section==='savings'?'savings-balances-wrap':'investments-balances-wrap', section==='savings'?SAVINGS_CATS:INVEST_CATS, section);
 }
 
+// ── NET WORTH ──
+const NW_ASSETS = [
+  {key:'cashChecking',      label:'Checking Account',              group:'Cash & Bank'},
+  {key:'cashSavings',       label:'Savings Account',               group:'Cash & Bank'},
+  {key:'emergencyFund',     label:'Emergency Fund',                group:'Cash & Bank'},
+  {key:'retirement401k',    label:'401(k)',                        group:'Retirement'},
+  {key:'rothIRA',           label:'ROTH IRA',                      group:'Retirement'},
+  {key:'brokerageAccount',  label:'Brokerage / Index Funds',       group:'Retirement'},
+  {key:'bitcoin',           label:'Bitcoin',                       group:'Crypto'},
+  {key:'cryptoOther',       label:'Other Crypto',                  group:'Crypto'},
+  {key:'primaryHome',       label:'Primary Home (Market Value)',   group:'Real Estate'},
+  {key:'rentalProperty',    label:'Rental / Investment Property',  group:'Real Estate'},
+  {key:'vehicle',           label:'Vehicle (Current Value)',       group:'Personal'},
+  {key:'lifeInsuranceCash', label:'Life Insurance (Cash Value)',   group:'Personal'},
+  {key:'otherAssets',       label:'Other Assets',                  group:'Personal'},
+];
+const NW_LIABILITIES = [
+  {key:'mortgageBalance',  label:'Mortgage Balance',               group:'Home'},
+  {key:'homeLoanOther',    label:'Home Equity / 2nd Mortgage',     group:'Home'},
+  {key:'vehicleLoan',      label:'Vehicle Loan Balance',           group:'Loans'},
+  {key:'studentLoan',      label:'Student Loans',                  group:'Loans'},
+  {key:'creditCardDebt',   label:'Credit Card Balances',           group:'Revolving'},
+  {key:'medicalDebt',      label:'Medical Debt',                   group:'Other'},
+  {key:'otherDebt',        label:'Other Debt',                     group:'Other'},
+];
+
+function nwTotalAssets()      { if(!appData.netWorth) return 0; return Object.values(appData.netWorth.assets).reduce((a,v)=>a+(parseFloat(v)||0),0); }
+function nwTotalLiabilities() { if(!appData.netWorth) return 0; return Object.values(appData.netWorth.liabilities).reduce((a,v)=>a+(parseFloat(v)||0),0); }
+function nwNet()              { return nwTotalAssets()-nwTotalLiabilities(); }
+
+function renderNetWorth() {
+  if(!appData.netWorth) appData.netWorth={assets:{},liabilities:{},history:[]};
+  const totalA=nwTotalAssets(), totalL=nwTotalLiabilities(), net=nwNet();
+  const debtRatio=totalA>0?(totalL/totalA):0;
+  const hist=appData.netWorth.history||[];
+  const prev=hist.length>=2?hist[hist.length-2].net:null;
+  const change=prev!=null?net-prev:null;
+
+  const kpis=[
+    {label:'Total Assets',       value:fmt$(totalA),  sub:'Everything you own',           cls:'positive'},
+    {label:'Total Liabilities',  value:fmt$(totalL),  sub:'Everything you owe',            cls:totalL>0?'negative':'white'},
+    {label:'Net Worth',          value:(net<0?'-':'')+fmt$(net), sub:'Assets minus liabilities', cls:net>=0?'positive':'negative'},
+    {label:'Debt-to-Asset Ratio',value:fmtPct(debtRatio), sub:'Goal: below 50%',           cls:debtRatio<0.5&&totalA>0?'positive':totalA>0?'negative':'white'},
+  ];
+  if(change!=null) kpis.push({label:'Change vs Prior Snapshot',value:(change>=0?'+':'')+fmt$(change),sub:'vs previous saved snapshot',cls:change>=0?'positive':'negative'});
+  document.getElementById('nw-kpi').innerHTML=kpis.map(k=>`<div class="kpi-card ${k.cls}"><div class="kpi-label">${k.label}</div><div class="kpi-value">${k.value}</div><div class="kpi-sub">${k.sub}</div></div>`).join('');
+
+  document.getElementById('nw-assets-wrap').innerHTML      = buildNwTable(NW_ASSETS,      'assets',      totalA, 'var(--green)');
+  document.getElementById('nw-liabilities-wrap').innerHTML = buildNwTable(NW_LIABILITIES, 'liabilities', totalL, 'var(--red)');
+  renderNwHistory();
+}
+
+function buildNwTable(cats, section, total, accentColor) {
+  const data=appData.netWorth[section]||{};
+  let lastGroup='';
+  let html=`<table><thead><tr><th>Category</th><th style="min-width:155px">Current Value</th><th>% of Total</th></tr></thead><tbody>`;
+  cats.forEach(cat=>{
+    const val=parseFloat(data[cat.key])||0;
+    const pct=total>0?((val/total)*100):0;
+    if(cat.group!==lastGroup){
+      html+=`<tr><td colspan="3" style="background:var(--elevated);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--text-3);padding:8px 14px;">${cat.group}</td></tr>`;
+      lastGroup=cat.group;
+    }
+    html+=`<tr>
+      <td>${cat.label}</td>
+      <td><input type="number" step="0.01" min="0" value="${val>0?val:''}" placeholder="$0" onchange="updateNW('${section}','${cat.key}',this.value)"/></td>
+      <td>${val>0?`<div style="display:flex;align-items:center;gap:8px;"><div style="flex:1;background:var(--border);border-radius:999px;height:4px;overflow:hidden;min-width:44px"><div style="width:${Math.min(pct,100).toFixed(1)}%;height:100%;background:${accentColor};border-radius:999px"></div></div><span style="font-size:11px;color:var(--text-3);white-space:nowrap">${pct.toFixed(1)}%</span></div>`:'<span class="val-neutral">—</span>'}</td>
+    </tr>`;
+  });
+  html+=`<tr class="total-row"><td>Total</td><td><strong>${fmt$(total)}</strong></td><td></td></tr></tbody></table>`;
+  return html;
+}
+
+function updateNW(section,key,val){
+  if(!appData.netWorth) appData.netWorth={assets:{},liabilities:{},history:[]};
+  appData.netWorth[section][key]=parseFloat(val)||0;
+  saveData(); renderNetWorth();
+}
+
+function takeSnapshot(){
+  if(!appData.netWorth) appData.netWorth={assets:{},liabilities:{},history:[]};
+  if(!appData.netWorth.history) appData.netWorth.history=[];
+  const date=new Date().toLocaleDateString('en-US',{year:'numeric',month:'short',day:'numeric'});
+  appData.netWorth.history.push({date, assets:nwTotalAssets(), liabilities:nwTotalLiabilities(), net:nwNet()});
+  saveData(); renderNetWorth(); showToast('Snapshot saved!');
+}
+
+function deleteSnapshot(i){
+  if(confirm('Delete this snapshot?')){ appData.netWorth.history.splice(i,1); saveData(); renderNetWorth(); }
+}
+
+function renderNwHistory(){
+  const hist=appData.netWorth?.history||[];
+  const emptyEl=document.getElementById('nw-history-empty'), wrapEl=document.getElementById('nw-history-wrap');
+  if(!hist.length){ emptyEl.style.display='block'; wrapEl.style.display='none'; return; }
+  emptyEl.style.display='none'; wrapEl.style.display='';
+  let html=`<table><thead><tr><th>Date</th><th>Total Assets</th><th>Total Liabilities</th><th>Net Worth</th><th>Change</th><th></th></tr></thead><tbody>`;
+  [...hist].reverse().forEach((s,ri)=>{
+    const i=hist.length-1-ri;
+    const prev=i>0?hist[i-1].net:null;
+    const change=prev!=null?s.net-prev:null;
+    const chgHtml=change!=null?`<span class="${change>=0?'val-positive':'val-negative'}">${change>=0?'+':''}${fmt$(change)}</span>`:'<span class="val-neutral">—</span>';
+    html+=`<tr>
+      <td style="font-weight:600;color:var(--text);white-space:nowrap">${s.date}</td>
+      <td class="val-positive">${fmt$(s.assets)}</td>
+      <td class="val-negative">${fmt$(s.liabilities)}</td>
+      <td style="font-weight:700;color:${s.net>=0?'var(--green)':'var(--red)'}">${s.net<0?'-':''}${fmt$(s.net)}</td>
+      <td>${chgHtml}</td>
+      <td><button class="btn btn-danger" onclick="deleteSnapshot(${i})" style="padding:4px 9px;font-size:11px;border-radius:6px">✕</button></td>
+    </tr>`;
+  });
+  html+='</tbody></table>';
+  wrapEl.innerHTML=html;
+}
+
 // ── GOALS ──
 function renderGoals(){
   const empty=document.getElementById('goals-empty'), wrap=document.getElementById('goals-wrap');
@@ -1095,7 +1274,7 @@ function refreshAll(){
   renderSavings();
   renderDataTable('investments-wrap',INVEST_CATS,'investments');
   renderBalances('investments-balances-wrap',INVEST_CATS,'investments');
-  renderGoals();renderScorecard();renderNotes();renderSettings();
+  renderNetWorth();renderGoals();renderScorecard();renderNotes();renderSettings();
   updateCharts();
 }
 
@@ -1127,6 +1306,7 @@ document.addEventListener('DOMContentLoaded',()=>{
   if(!appData.meta) appData.meta={name:'Stanton',year:'2026',currency:'$'};
   if(!appData.notes) appData.notes=Object.fromEntries(MK.map(m=>[m,{wins:'',challenges:'',actions:'',notes:''}]));
   if(!appData.balances) appData.balances={savings:{},investments:{}};
+  if(!appData.netWorth) appData.netWorth={assets:{},liabilities:{},history:[]};
   refreshAll();
   initCharts();
   setTimeout(()=>{ if(generateInsights().filter(i=>i.priority==='high').length>0) document.getElementById('insights-dot').classList.add('show'); },600);
