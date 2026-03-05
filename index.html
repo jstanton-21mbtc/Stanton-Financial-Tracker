@@ -24,7 +24,10 @@
     body { background: var(--bg); color: var(--text); font-family: 'Inter', system-ui, sans-serif; font-size: 14px; display: flex; min-height: 100vh; }
 
     /* ── SIDEBAR ── */
-    .sidebar { width: var(--sidebar-w); min-height: 100vh; background: var(--surface); border-right: 1px solid var(--border); display: flex; flex-direction: column; position: fixed; top: 0; left: 0; bottom: 0; z-index: 200; overflow-y: auto; }
+    .brand-banner { position: fixed; top: 0; left: 0; right: 0; height: 36px; background: var(--blue); z-index: 250; display: flex; align-items: center; justify-content: center; gap: 8px; font-size: 13px; font-weight: 800; color: #fff; letter-spacing: .5px; }
+    .brand-banner-dot { width: 6px; height: 6px; background: rgba(255,255,255,.5); border-radius: 999px; }
+    body { padding-top: 36px; }
+    .sidebar { width: var(--sidebar-w); min-height: 100vh; background: var(--surface); border-right: 1px solid var(--border); display: flex; flex-direction: column; position: fixed; top: 36px; left: 0; bottom: 0; z-index: 200; overflow-y: auto; }
     .sidebar::-webkit-scrollbar { display: none; }
     .sidebar-logo { padding: 24px 20px 20px; border-bottom: 1px solid var(--border-dim); display: flex; align-items: center; gap: 12px; }
     .logo-mark { width: 36px; height: 36px; background: var(--blue); border-radius: 10px; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 18px; color: #fff; flex-shrink: 0; }
@@ -188,6 +191,22 @@
     @media (max-width: 900px) { .nw-split { grid-template-columns: 1fr; } }
     .nw-net-badge { display: inline-flex; align-items: center; gap: 6px; padding: 5px 14px; border-radius: 999px; font-size: 13px; font-weight: 700; margin-top: 8px; }
 
+    /* ── TUTORIAL ── */
+    .tutorial-overlay { position: fixed; inset: 0; background: rgba(0,0,0,.72); z-index: 700; display: flex; align-items: center; justify-content: center; padding: 20px; }
+    .tutorial-card { background: var(--card); border: 1px solid var(--border); border-radius: 20px; width: 100%; max-width: 480px; padding: 36px 40px 28px; position: relative; animation: fadeUp .3s ease; }
+    .tutorial-progress-bar { height: 3px; background: var(--border); border-radius: 2px; margin-bottom: 24px; overflow: hidden; }
+    .tutorial-progress-fill { height: 100%; background: var(--blue); border-radius: 2px; transition: width .4s cubic-bezier(.4,0,.2,1); }
+    .tutorial-step-badge { font-size: 11px; font-weight: 700; color: var(--text-3); text-transform: uppercase; letter-spacing: .8px; margin-bottom: 20px; }
+    .tutorial-icon { width: 56px; height: 56px; border-radius: 16px; display: flex; align-items: center; justify-content: center; margin-bottom: 20px; }
+    .tutorial-title { font-size: 20px; font-weight: 800; margin-bottom: 12px; line-height: 1.25; }
+    .tutorial-body { font-size: 13.5px; color: var(--text-2); line-height: 1.7; margin-bottom: 32px; }
+    .tutorial-body strong { color: var(--text); }
+    .tutorial-actions { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 18px; }
+    .tutorial-dot { width: 7px; height: 7px; border-radius: 999px; background: var(--border); transition: background .2s, width .2s; cursor: pointer; }
+    .tutorial-dot.active { background: var(--blue); width: 18px; }
+    .tutorial-skip { background: none; border: none; color: var(--text-3); font-size: 12px; font-family: 'Inter', sans-serif; cursor: pointer; padding: 4px; width: 100%; text-align: center; transition: color .15s; }
+    .tutorial-skip:hover { color: var(--text-2); }
+
     /* ── DEBT PAYOFF ── */
     .debt-cards-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 16px; margin-bottom: 8px; }
     .debt-card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; border-top: 3px solid var(--red); transition: border-color .15s; }
@@ -292,6 +311,13 @@
   </style>
 </head>
 <body>
+
+<!-- ── BRAND BANNER ── -->
+<div class="brand-banner">
+  <div class="brand-banner-dot"></div>
+  Stanton.ai
+  <div class="brand-banner-dot"></div>
+</div>
 
 <!-- ── LOGIN ── -->
 <div class="login-overlay" id="login-overlay">
@@ -716,6 +742,20 @@
                   <div class="settings-data-btn-text"><strong>Reset to Defaults</strong><span>Restore all Stanton 2026 data</span></div>
                 </button>
               </div>
+            </div>
+          </div>
+
+          <div class="settings-card">
+            <div class="settings-card-header">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+              <div><div class="settings-card-title">Help</div><div class="settings-card-sub">App tour &amp; getting started guide</div></div>
+            </div>
+            <div class="settings-card-body">
+              <div style="font-size:13px;color:var(--text-2);margin-bottom:18px;line-height:1.6;">New to the app? Take the 7-step tour to learn how every feature works and get the most out of your financial tracker.</div>
+              <button class="btn btn-primary" onclick="startTutorial()" style="width:100%;justify-content:center;padding:12px;">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                Launch App Tour
+              </button>
             </div>
           </div>
 
@@ -1638,6 +1678,93 @@ function confirmReset(){
 let toastTimer;
 function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>t.classList.remove('show'),1800);}
 
+// ── TUTORIAL ──
+const TUTORIAL_KEY = 'sft_tutorial_done_v1';
+const TUTORIAL_STEPS = [
+  {
+    icon: `<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>`,
+    color: '#0052FF', bg: 'rgba(0,82,255,.15)',
+    title: 'Welcome to Your Financial Tracker',
+    body: 'This app helps you track every dollar — income, expenses, savings, investments, debt, and net worth — all in one place, privately stored in your browser.\n\nUse the <strong>left sidebar</strong> to navigate between tabs. Let\'s take a quick tour of each section.'
+  },
+  {
+    icon: `<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/></svg>`,
+    color: '#05B169', bg: 'rgba(5,177,105,.15)',
+    title: 'Track Income & Expenses (P&L)',
+    body: 'Go to the <strong>P&L tab</strong> to enter your monthly income by category — salary, bonus, freelance, rental, and more.\n\nThe <strong>Expenses tab</strong> lets you track every spending category month by month. All numbers auto-calculate your Net P&L, savings rate, and expense ratio on the Dashboard.'
+  },
+  {
+    icon: `<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>`,
+    color: '#F5A623', bg: 'rgba(245,166,35,.15)',
+    title: 'Savings & Investments',
+    body: 'The <strong>Savings tab</strong> tracks monthly contributions to your emergency fund, 401(k), ROTH IRA, Bitcoin, and more.\n\nThe <strong>Current Balances & Growth</strong> section at the bottom lets you enter your actual account balances to see real-time gains versus what you\'ve contributed this year.'
+  },
+  {
+    icon: `<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v2"/></svg>`,
+    color: '#7B61FF', bg: 'rgba(123,97,255,.15)',
+    title: 'Net Worth Tracker',
+    body: 'The <strong>Net Worth tab</strong> gives you a full picture of your financial position.\n\nEnter your assets (home, retirement, crypto, vehicles) and liabilities (mortgage, loans, credit cards). Your net worth calculates instantly.\n\nClick <strong>Save Snapshot</strong> to record your net worth over time and see a growth chart.'
+  },
+  {
+    icon: `<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>`,
+    color: '#CF5252', bg: 'rgba(207,82,82,.15)',
+    title: 'Debt Payoff Tracker',
+    body: 'The <strong>Debt Payoff tab</strong> shows exactly how long it takes to eliminate each debt.\n\nAdd each debt with its balance, interest rate, and minimum payment. The app compares the <strong>Snowball</strong> (smallest balance first) and <strong>Avalanche</strong> (highest APR first) strategies side by side — and shows a chart of your debt declining to zero.'
+  },
+  {
+    icon: `<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>`,
+    color: '#22D3EE', bg: 'rgba(34,211,238,.15)',
+    title: 'Goals & Scorecard',
+    body: 'Create custom <strong>financial goals</strong> — pay off debt, build savings, max your ROTH IRA. Set a target amount and track progress with a visual bar.\n\nThe <strong>Scorecard tab</strong> tracks monthly metrics (savings rate, expense ratio, P&L) and lets you journal wins, challenges, and action items for every month of the year.'
+  },
+  {
+    icon: `<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>`,
+    color: '#F5A623', bg: 'rgba(245,166,35,.15)',
+    title: 'Analyst Tips & Settings',
+    body: 'Click <strong>Analyst Tips</strong> in the top bar anytime to get personalized recommendations from 10 top financial analysts — based on your actual data.\n\nIn <strong>Settings</strong> you can update your profile, change your password, export/import your data as a backup, and re-launch this tour anytime from the <strong>Help</strong> card.\n\nYou\'re all set — let\'s build some wealth! 🚀'
+  },
+];
+
+let tutorialIdx = 0;
+
+function startTutorial() {
+  tutorialIdx = 0;
+  document.getElementById('tutorial-overlay').style.display = 'flex';
+  renderTutorialStep();
+}
+
+function closeTutorial() {
+  document.getElementById('tutorial-overlay').style.display = 'none';
+  localStorage.setItem(TUTORIAL_KEY, '1');
+}
+
+function tutorialStep(dir) {
+  tutorialIdx += dir;
+  if(tutorialIdx >= TUTORIAL_STEPS.length) { closeTutorial(); return; }
+  if(tutorialIdx < 0) tutorialIdx = 0;
+  renderTutorialStep();
+}
+
+function renderTutorialStep() {
+  const s = TUTORIAL_STEPS[tutorialIdx];
+  const total = TUTORIAL_STEPS.length;
+  document.getElementById('tutorial-progress').style.width = ((tutorialIdx + 1) / total * 100) + '%';
+  document.getElementById('tutorial-badge').textContent = `Step ${tutorialIdx + 1} of ${total}`;
+  document.getElementById('tutorial-icon').innerHTML = s.icon;
+  document.getElementById('tutorial-icon').style.background = s.bg;
+  document.getElementById('tutorial-icon').style.color = s.color;
+  document.getElementById('tutorial-title').textContent = s.title;
+  document.getElementById('tutorial-body').innerHTML = s.body.replace(/\n/g,'<br>');
+  document.getElementById('tutorial-next-btn').textContent = tutorialIdx === total - 1 ? 'Get Started' : 'Next';
+  document.getElementById('tutorial-back-btn').style.visibility = tutorialIdx === 0 ? 'hidden' : 'visible';
+  const dots = Array.from({length: total}, (_,i) =>
+    `<div class="tutorial-dot ${i===tutorialIdx?'active':''}" onclick="tutorialGoTo(${i})"></div>`
+  ).join('');
+  document.getElementById('tutorial-dots').innerHTML = dots;
+}
+
+function tutorialGoTo(i) { tutorialIdx = i; renderTutorialStep(); }
+
 // ── INIT ──
 document.addEventListener('DOMContentLoaded',()=>{
   initLoginScreen();
@@ -1650,6 +1777,10 @@ document.addEventListener('DOMContentLoaded',()=>{
   refreshAll();
   initCharts();
   setTimeout(()=>{ if(generateInsights().filter(i=>i.priority==='high').length>0) document.getElementById('insights-dot').classList.add('show'); },600);
+  // Auto-launch tutorial for first-time users
+  if(!localStorage.getItem(TUTORIAL_KEY) && !localStorage.getItem(PW_KEY)) {
+    setTimeout(startTutorial, 800);
+  }
 });
 
 // ── ANALYST INSIGHTS ──
@@ -1897,6 +2028,23 @@ function renderInsightsPanel(){
   document.getElementById('insights-body').innerHTML=html;
 }
 </script>
+
+<!-- ── TUTORIAL OVERLAY ── -->
+<div class="tutorial-overlay" id="tutorial-overlay" style="display:none">
+  <div class="tutorial-card" id="tutorial-card">
+    <div class="tutorial-progress-bar"><div class="tutorial-progress-fill" id="tutorial-progress"></div></div>
+    <div class="tutorial-step-badge" id="tutorial-badge">Step 1 of 7</div>
+    <div class="tutorial-icon" id="tutorial-icon"></div>
+    <div class="tutorial-title" id="tutorial-title"></div>
+    <div class="tutorial-body" id="tutorial-body"></div>
+    <div class="tutorial-actions">
+      <button class="btn" id="tutorial-back-btn" onclick="tutorialStep(-1)">Back</button>
+      <div style="display:flex;gap:8px;align-items:center" id="tutorial-dots"></div>
+      <button class="btn btn-primary" id="tutorial-next-btn" onclick="tutorialStep(1)">Next</button>
+    </div>
+    <button class="tutorial-skip" onclick="closeTutorial()">Skip tour</button>
+  </div>
+</div>
 
 <!-- ── ADD DEBT MODAL ── -->
 <div class="modal-overlay" id="debt-modal" onclick="closeDebtModal(event)">
