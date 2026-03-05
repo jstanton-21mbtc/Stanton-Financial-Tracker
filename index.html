@@ -883,35 +883,33 @@ const SCORECARD_GOALS = [
 const RECUR_EXP = {mortgage:2640.85,vehicle:750,insurance:0,phone:25,electric:250,propane:0,water:0,tv:220.58,groceries:0,dining:0,gas:0,creditCard:0,subscriptions:0,health:0,other:0};
 const RECUR_SAV = {emergency:600,general:1930,k401:920,roth:200,bitcoin:200,bitcoinIRA:0,cryptoOther:0,lifeInsurance:13.81,other:0};
 const ZERO_INC  = {salary:0,bonus:0,freelance:0,rental:0,other:0};
+const ZERO_EXP  = {mortgage:0,vehicle:0,insurance:0,phone:0,electric:0,propane:0,water:0,tv:0,groceries:0,dining:0,gas:0,creditCard:0,subscriptions:0,health:0,other:0};
+const ZERO_SAV  = {emergency:0,general:0,k401:0,roth:0,bitcoin:0,bitcoinIRA:0,cryptoOther:0,lifeInsurance:0,other:0};
 const ZERO_INV  = {property:0,homeImprovement:0,health:0,vehicle:0,education:0,other:0};
 
 function getDefaultData() {
+  const yr = new Date().getFullYear().toString();
   return {
-    meta: {name:'Stanton', year:'2026', currency:'$'},
+    meta: {name:'', year:yr, currency:'$'},
     income: {
-      jan:{salary:9344.94,bonus:0,freelance:0,rental:0,other:0},
-      feb:{salary:4646.31,bonus:0,freelance:0,rental:0,other:0},
-      mar:{...ZERO_INC},apr:{...ZERO_INC},may:{...ZERO_INC},jun:{...ZERO_INC},
-      jul:{...ZERO_INC},aug:{...ZERO_INC},sep:{...ZERO_INC},oct:{...ZERO_INC},nov:{...ZERO_INC},dec:{...ZERO_INC},
+      jan:{...ZERO_INC},feb:{...ZERO_INC},mar:{...ZERO_INC},apr:{...ZERO_INC},
+      may:{...ZERO_INC},jun:{...ZERO_INC},jul:{...ZERO_INC},aug:{...ZERO_INC},
+      sep:{...ZERO_INC},oct:{...ZERO_INC},nov:{...ZERO_INC},dec:{...ZERO_INC},
     },
     expenses: {
-      jan:{mortgage:2640.85,vehicle:0,insurance:0,phone:25,electric:250,propane:42,water:0,tv:220.58,groceries:0,dining:0,gas:140,creditCard:875,subscriptions:0,health:0,other:0},
-      feb:{mortgage:2640.85,vehicle:750,insurance:0,phone:25,electric:250,propane:334.98,water:0,tv:220.58,groceries:0,dining:0,gas:90,creditCard:630,subscriptions:0,health:0,other:0},
-      mar:{...RECUR_EXP},apr:{...RECUR_EXP},may:{...RECUR_EXP},jun:{...RECUR_EXP},
-      jul:{...RECUR_EXP},aug:{...RECUR_EXP},sep:{...RECUR_EXP},oct:{...RECUR_EXP},nov:{...RECUR_EXP},dec:{...RECUR_EXP},
+      jan:{...ZERO_EXP},feb:{...ZERO_EXP},mar:{...ZERO_EXP},apr:{...ZERO_EXP},
+      may:{...ZERO_EXP},jun:{...ZERO_EXP},jul:{...ZERO_EXP},aug:{...ZERO_EXP},
+      sep:{...ZERO_EXP},oct:{...ZERO_EXP},nov:{...ZERO_EXP},dec:{...ZERO_EXP},
     },
     savings: {
-      jan:{emergency:600,general:1930,k401:1000,roth:200,bitcoin:563.51,bitcoinIRA:0,cryptoOther:0,lifeInsurance:13.81,other:0},
-      feb:{emergency:600,general:1930,k401:539,roth:200,bitcoin:713.51,bitcoinIRA:0,cryptoOther:0,lifeInsurance:13.81,other:0},
-      mar:{...RECUR_SAV},apr:{...RECUR_SAV},may:{...RECUR_SAV},jun:{...RECUR_SAV},
-      jul:{...RECUR_SAV},aug:{...RECUR_SAV},sep:{...RECUR_SAV},oct:{...RECUR_SAV},nov:{...RECUR_SAV},dec:{...RECUR_SAV},
+      jan:{...ZERO_SAV},feb:{...ZERO_SAV},mar:{...ZERO_SAV},apr:{...ZERO_SAV},
+      may:{...ZERO_SAV},jun:{...ZERO_SAV},jul:{...ZERO_SAV},aug:{...ZERO_SAV},
+      sep:{...ZERO_SAV},oct:{...ZERO_SAV},nov:{...ZERO_SAV},dec:{...ZERO_SAV},
     },
     investments: {
-      jan:{property:150,homeImprovement:0,health:800,vehicle:0,education:0,other:0},
-      feb:{property:380,homeImprovement:0,health:0,vehicle:0,education:0,other:500},
-      mar:{property:3875,homeImprovement:0,health:0,vehicle:0,education:0,other:0},
-      apr:{...ZERO_INV},may:{...ZERO_INV},jun:{...ZERO_INV},
-      jul:{...ZERO_INV},aug:{...ZERO_INV},sep:{...ZERO_INV},oct:{...ZERO_INV},nov:{...ZERO_INV},dec:{...ZERO_INV},
+      jan:{...ZERO_INV},feb:{...ZERO_INV},mar:{...ZERO_INV},apr:{...ZERO_INV},
+      may:{...ZERO_INV},jun:{...ZERO_INV},jul:{...ZERO_INV},aug:{...ZERO_INV},
+      sep:{...ZERO_INV},oct:{...ZERO_INV},nov:{...ZERO_INV},dec:{...ZERO_INV},
     },
     goals: [],
     balances: {
@@ -1888,7 +1886,7 @@ function shareVideoLink() {
 document.addEventListener('DOMContentLoaded',()=>{
   initLoginScreen();
   appData=loadData()||getDefaultData();
-  if(!appData.meta) appData.meta={name:'Stanton',year:'2026',currency:'$'};
+  if(!appData.meta) appData.meta={name:'',year:new Date().getFullYear().toString(),currency:'$'};
   if(!appData.notes) appData.notes=Object.fromEntries(MK.map(m=>[m,{wins:'',challenges:'',actions:'',notes:''}]));
   if(!appData.balances) appData.balances={savings:{},investments:{}};
   if(!appData.debts)    appData.debts=[];
