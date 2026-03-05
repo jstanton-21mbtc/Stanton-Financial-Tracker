@@ -188,6 +188,38 @@
     @media (max-width: 900px) { .nw-split { grid-template-columns: 1fr; } }
     .nw-net-badge { display: inline-flex; align-items: center; gap: 6px; padding: 5px 14px; border-radius: 999px; font-size: 13px; font-weight: 700; margin-top: 8px; }
 
+    /* ── DEBT PAYOFF ── */
+    .debt-cards-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 16px; margin-bottom: 8px; }
+    .debt-card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; border-top: 3px solid var(--red); transition: border-color .15s; }
+    .debt-card:hover { border-color: var(--text-3); border-top-color: var(--red); }
+    .debt-card-top { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 14px; }
+    .debt-card-name { font-size: 14px; font-weight: 700; }
+    .debt-type-badge { font-size: 10px; font-weight: 600; padding: 2px 8px; border-radius: 999px; background: var(--red-dim); color: var(--red); }
+    .debt-card-bal { font-size: 26px; font-weight: 800; color: var(--red); letter-spacing: -.5px; margin-bottom: 4px; }
+    .debt-card-orig { font-size: 11px; color: var(--text-3); margin-bottom: 14px; }
+    .debt-progress-wrap { background: var(--border); border-radius: 999px; height: 5px; margin-bottom: 5px; overflow: hidden; }
+    .debt-progress-fill { height: 100%; background: var(--green); border-radius: 999px; transition: width .4s; }
+    .debt-meta-row { display: flex; gap: 16px; margin-top: 14px; flex-wrap: wrap; }
+    .debt-meta-item { flex: 1; min-width: 80px; }
+    .debt-meta-label { font-size: 10px; font-weight: 600; color: var(--text-3); text-transform: uppercase; letter-spacing: .5px; margin-bottom: 3px; }
+    .debt-meta-value { font-size: 13px; font-weight: 600; }
+    .debt-card-actions { display: flex; gap: 8px; margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--border-dim); }
+    .debt-strategy-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+    @media (max-width: 800px) { .debt-strategy-grid { grid-template-columns: 1fr; } }
+    .debt-strategy-card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+    .debt-strategy-header { display: flex; align-items: center; gap: 8px; padding: 14px 16px; font-size: 13px; font-weight: 700; border-bottom: 1px solid var(--border); }
+    .debt-strategy-header.snowball { background: rgba(5,177,105,.08); color: var(--green); }
+    .debt-strategy-header.avalanche { background: rgba(0,82,255,.08); color: var(--blue); }
+    .debt-strategy-tag { margin-left: auto; font-size: 10px; font-weight: 600; padding: 2px 8px; border-radius: 999px; background: var(--elevated); color: var(--text-3); }
+    .debt-strategy-item { display: flex; align-items: center; gap: 10px; padding: 10px 0; border-bottom: 1px solid var(--border-dim); }
+    .debt-strategy-item:last-child { border-bottom: none; }
+    .debt-strategy-rank { width: 22px; height: 22px; border-radius: 999px; background: var(--elevated); color: var(--text-2); font-size: 11px; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .debt-strategy-rank.rank-1 { background: var(--yellow-dim); color: var(--yellow); }
+    .debt-strategy-info { flex: 1; }
+    .debt-strategy-name { font-size: 12.5px; font-weight: 600; }
+    .debt-strategy-detail { font-size: 11px; color: var(--text-3); margin-top: 2px; }
+    .debt-strategy-months { font-size: 12px; font-weight: 700; color: var(--text-2); white-space: nowrap; }
+
     /* ── GOAL MODAL ── */
     .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,.55); z-index: 500; display: flex; align-items: center; justify-content: center; opacity: 0; pointer-events: none; transition: opacity .2s; }
     .modal-overlay.open { opacity: 1; pointer-events: all; }
@@ -329,6 +361,10 @@
       <button class="nav-item" onclick="showTab('networth')">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v2"/><line x1="12" y1="12" x2="12" y2="16"/><line x1="10" y1="14" x2="14" y2="14"/></svg>
         Net Worth
+      </button>
+      <button class="nav-item" onclick="showTab('debt')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/><line x1="8" y1="15" x2="12" y2="15"/><line x1="16" y1="15" x2="16" y2="15"/></svg>
+        Debt Payoff
       </button>
       <button class="nav-item" onclick="showTab('goals')">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>
@@ -479,6 +515,75 @@
             <canvas id="chart-nw" style="max-height:280px"></canvas>
           </div>
           <div class="table-wrap" id="nw-history-wrap" style="display:none"></div>
+        </div>
+      </div>
+
+      <!-- DEBT PAYOFF -->
+      <div id="tab-debt" class="tab-panel">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:28px;flex-wrap:wrap;gap:12px;">
+          <div class="section-title" style="margin-bottom:0">Debt Payoff Tracker</div>
+          <button class="btn btn-primary" onclick="openDebtModal()">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            Add Debt
+          </button>
+        </div>
+
+        <div class="kpi-grid" id="debt-kpi" style="margin-bottom:32px"></div>
+
+        <div id="debt-empty" style="display:none;text-align:center;padding:56px 24px;background:var(--card);border:1px solid var(--border);border-radius:var(--radius);">
+          <div style="width:52px;height:52px;background:var(--red-dim);border-radius:14px;display:flex;align-items:center;justify-content:center;margin:0 auto 18px;">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--red)" stroke-width="2"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
+          </div>
+          <div style="font-size:16px;font-weight:700;margin-bottom:8px;">No debts tracked</div>
+          <div style="font-size:13px;color:var(--text-2);max-width:320px;margin:0 auto 24px;line-height:1.6;">Add your debts to see payoff timelines, interest costs, and which strategy saves you the most money.</div>
+          <button class="btn btn-primary" onclick="openDebtModal()" style="font-size:13px;padding:10px 22px;">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            Add your first debt
+          </button>
+        </div>
+
+        <div id="debt-content" style="display:none">
+          <!-- Debt cards -->
+          <div id="debt-cards" class="debt-cards-grid"></div>
+
+          <!-- Strategy comparison -->
+          <div class="subsection">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+              <div class="subsection-title" style="margin-bottom:0">Payoff Strategy Comparison</div>
+              <div style="display:flex;align-items:center;gap:8px;font-size:12px;color:var(--text-2);">
+                Extra monthly budget: <input type="number" id="debt-extra" value="0" min="0" step="50" style="width:80px;background:var(--elevated);border:1px solid var(--border);color:var(--text);border-radius:8px;padding:5px 8px;font-size:12px;font-family:Inter,sans-serif;outline:none;" onchange="renderDebt()" /> /mo
+              </div>
+            </div>
+            <div class="debt-strategy-grid">
+              <div class="debt-strategy-card">
+                <div class="debt-strategy-header snowball">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>
+                  Debt Snowball
+                  <span class="debt-strategy-tag">Dave Ramsey</span>
+                </div>
+                <div style="font-size:11.5px;color:var(--text-2);padding:12px 16px 8px;line-height:1.5;">Pay minimums on all debts. Throw extra cash at the <strong style="color:var(--text)">smallest balance</strong> first. Builds momentum and motivation.</div>
+                <div id="debt-snowball-list" style="padding:0 16px 16px"></div>
+              </div>
+              <div class="debt-strategy-card">
+                <div class="debt-strategy-header avalanche">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
+                  Debt Avalanche
+                  <span class="debt-strategy-tag">Optimal</span>
+                </div>
+                <div style="font-size:11.5px;color:var(--text-2);padding:12px 16px 8px;line-height:1.5;">Pay minimums on all debts. Throw extra cash at the <strong style="color:var(--text)">highest interest rate</strong> first. Saves the most money.</div>
+                <div id="debt-avalanche-list" style="padding:0 16px 16px"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Payoff chart -->
+          <div class="subsection">
+            <div class="subsection-title">Balance Over Time</div>
+            <div class="chart-card">
+              <h3>Projected Debt Payoff (Avalanche Strategy)</h3>
+              <canvas id="chart-debt" style="max-height:300px"></canvas>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -737,6 +842,7 @@ function getDefaultData() {
       savings:     {emergency:0,general:0,k401:0,roth:0,bitcoin:0,bitcoinIRA:0,cryptoOther:0,lifeInsurance:0,other:0},
       investments: {property:0,homeImprovement:0,health:0,vehicle:0,education:0,other:0},
     },
+    debts: [],
     netWorth: {
       assets: {
         cashChecking:0, cashSavings:0, emergencyFund:0,
@@ -838,6 +944,7 @@ const TAB_META = {
   savings:     ['Savings',           'Savings & wealth building'],
   investments: ['Investments',       'Property & growth investments'],
   networth:    ['Net Worth',         'Total assets minus liabilities'],
+  debt:        ['Debt Payoff',       'Track balances, interest & payoff strategies'],
   goals:       ['Goals',             '2026 financial goals'],
   scorecard:   ['Monthly Scorecard', 'Goal tracking & performance review'],
   notes:       ['Monthly Notes',     'Wins, challenges, and action items'],
@@ -1002,6 +1109,196 @@ function updateBalance(section,key,val){
   saveData();
   renderBalances(section==='savings'?'savings-balances-wrap':'investments-balances-wrap', section==='savings'?SAVINGS_CATS:INVEST_CATS, section);
 }
+
+// ── DEBT PAYOFF ──
+function monthsToPayoff(balance, aprPct, monthlyPayment) {
+  if(!balance || balance<=0) return 0;
+  const r = aprPct / 100 / 12;
+  if(monthlyPayment <= 0) return Infinity;
+  if(r === 0) return Math.ceil(balance / monthlyPayment);
+  if(monthlyPayment <= r * balance) return Infinity;
+  return Math.ceil(-Math.log(1 - (r * balance) / monthlyPayment) / Math.log(1 + r));
+}
+
+function totalInterest(balance, aprPct, monthlyPayment) {
+  const r = aprPct / 100 / 12;
+  const n = monthsToPayoff(balance, aprPct, monthlyPayment);
+  if(!isFinite(n)) return Infinity;
+  return Math.max(0, monthlyPayment * n - balance);
+}
+
+function fmtMonths(n) {
+  if(!isFinite(n) || n <= 0) return '—';
+  const yr = Math.floor(n / 12), mo = n % 12;
+  if(yr === 0) return mo + ' mo';
+  return yr + 'y ' + (mo > 0 ? mo + 'm' : '');
+}
+
+function renderDebt() {
+  if(!appData.debts) appData.debts = [];
+  const debts = appData.debts;
+  const extra = parseFloat(document.getElementById('debt-extra')?.value) || 0;
+  const empty = document.getElementById('debt-empty');
+  const content = document.getElementById('debt-content');
+
+  if(!debts.length) { empty.style.display='block'; content.style.display='none'; renderDebtKPI([]); return; }
+  empty.style.display='none'; content.style.display='block';
+
+  const totalBal   = debts.reduce((s,d)=>s+(d.balance||0),0);
+  const totalMin   = debts.reduce((s,d)=>s+(d.minPayment||0),0);
+  const totalOrig  = debts.reduce((s,d)=>s+(d.originalBalance||d.balance||0),0);
+  const highestAPR = debts.reduce((m,d)=>Math.max(m, d.rate||0), 0);
+  renderDebtKPI([totalBal, totalMin, totalOrig, highestAPR]);
+
+  // Debt cards
+  document.getElementById('debt-cards').innerHTML = debts.map((d,i) => {
+    const orig  = d.originalBalance || d.balance || 0;
+    const pct   = orig > 0 ? Math.min(100, ((orig - d.balance) / orig) * 100) : 0;
+    const mos   = monthsToPayoff(d.balance, d.rate||0, d.minPayment||0);
+    const color = pct >= 75 ? 'var(--green)' : pct >= 40 ? 'var(--yellow)' : 'var(--red)';
+    return `<div class="debt-card">
+      <div class="debt-card-top">
+        <div class="debt-card-name">${esc(d.name)}</div>
+        <span class="debt-type-badge">${esc(d.type||'Debt')}</span>
+      </div>
+      <div class="debt-card-bal">${fmt$(d.balance||0)}</div>
+      <div class="debt-card-orig">of ${fmt$(orig)} original</div>
+      <div class="debt-progress-wrap"><div class="debt-progress-fill" style="width:${pct.toFixed(1)}%;background:${color}"></div></div>
+      <div style="font-size:11px;color:var(--text-3);margin-top:4px">${pct.toFixed(1)}% paid off</div>
+      <div class="debt-meta-row">
+        <div class="debt-meta-item"><div class="debt-meta-label">APR</div><div class="debt-meta-value" style="color:${(d.rate||0)>15?'var(--red)':'var(--text)'}">${(d.rate||0).toFixed(2)}%</div></div>
+        <div class="debt-meta-item"><div class="debt-meta-label">Min/mo</div><div class="debt-meta-value">${fmt$(d.minPayment||0)}</div></div>
+        <div class="debt-meta-item"><div class="debt-meta-label">Payoff</div><div class="debt-meta-value" style="color:var(--blue)">${fmtMonths(mos)}</div></div>
+        <div class="debt-meta-item"><div class="debt-meta-label">Interest</div><div class="debt-meta-value" style="color:var(--yellow)">${isFinite(totalInterest(d.balance,d.rate||0,d.minPayment||0))?fmt$(totalInterest(d.balance,d.rate||0,d.minPayment||0)):'—'}</div></div>
+      </div>
+      ${d.notes?`<div style="font-size:11.5px;color:var(--text-3);margin-top:10px;padding-top:10px;border-top:1px solid var(--border-dim)">${esc(d.notes)}</div>`:''}
+      <div class="debt-card-actions">
+        <button class="btn" onclick="openDebtModal(${i})" style="flex:1;justify-content:center">Edit</button>
+        <button class="btn btn-danger" onclick="removeDebt(${i})" style="padding:8px 12px">✕</button>
+      </div>
+    </div>`;
+  }).join('');
+
+  // Strategies
+  renderDebtStrategy(debts, extra);
+  // Chart
+  renderDebtChart(debts, extra);
+}
+
+function renderDebtKPI(vals) {
+  const [totalBal=0, totalMin=0, totalOrig=0, highAPR=0] = vals;
+  const paidOff = totalOrig > 0 ? ((totalOrig - totalBal) / totalOrig * 100) : 0;
+  const kpis = [
+    {label:'Total Debt',        value:fmt$(totalBal),      sub:'Current outstanding',    cls:totalBal>0?'negative':'positive'},
+    {label:'Monthly Minimums',  value:fmt$(totalMin),      sub:'Combined min payments',  cls:'white'},
+    {label:'Overall Paid Off',  value:fmtPct(paidOff/100), sub:'vs original balances',   cls:paidOff>=50?'positive':'neutral'},
+    {label:'Highest APR',       value:(highAPR).toFixed(2)+'%', sub:'Most expensive debt', cls:highAPR>20?'negative':highAPR>0?'white':'white'},
+  ];
+  document.getElementById('debt-kpi').innerHTML = kpis.map(k=>`<div class="kpi-card ${k.cls}"><div class="kpi-label">${k.label}</div><div class="kpi-value">${k.value}</div><div class="kpi-sub">${k.sub}</div></div>`).join('');
+}
+
+function renderDebtStrategy(debts, extra) {
+  const snowball = [...debts].sort((a,b)=>(a.balance||0)-(b.balance||0));
+  const avalanche = [...debts].sort((a,b)=>(b.rate||0)-(a.rate||0));
+  const totalMin = debts.reduce((s,d)=>s+(d.minPayment||0),0);
+
+  function buildList(ordered, id) {
+    let freed = 0, html = '';
+    ordered.forEach((d, rank) => {
+      const pay = (d.minPayment||0) + (rank===0 ? extra + freed : 0);
+      const mos = monthsToPayoff(d.balance||0, d.rate||0, pay);
+      const int = totalInterest(d.balance||0, d.rate||0, pay);
+      html += `<div class="debt-strategy-item">
+        <div class="debt-strategy-rank ${rank===0?'rank-1':''}">${rank+1}</div>
+        <div class="debt-strategy-info">
+          <div class="debt-strategy-name">${esc(d.name)}</div>
+          <div class="debt-strategy-detail">${fmt$(d.balance||0)} · ${(d.rate||0).toFixed(2)}% APR · ${fmt$(pay)}/mo${isFinite(int)?' · '+fmt$(int)+' interest':''}</div>
+        </div>
+        <div class="debt-strategy-months">${fmtMonths(mos)}</div>
+      </div>`;
+      if(isFinite(mos)) freed += (d.minPayment||0);
+    });
+    document.getElementById(id).innerHTML = html;
+  }
+
+  buildList(snowball, 'debt-snowball-list');
+  buildList(avalanche, 'debt-avalanche-list');
+}
+
+function renderDebtChart(debts, extra) {
+  if(!debts.length) return;
+  const ordered = [...debts].sort((a,b)=>(b.rate||0)-(a.rate||0));
+  const maxMos = Math.min(360, Math.max(...debts.map(d=>monthsToPayoff(d.balance||0,d.rate||0,(d.minPayment||0))).filter(isFinite), 12));
+  const step = Math.ceil(maxMos / 24);
+  const labels = [];
+  for(let m=0; m<=maxMos; m+=step) labels.push(m===0?'Now':fmtMonths(m));
+
+  let freed = 0;
+  const datasets = ordered.map((d, rank) => {
+    const r = (d.rate||0) / 100 / 12;
+    const pay = (d.minPayment||0) + (rank===0 ? extra + freed : 0);
+    const data = labels.map((_,li)=>{
+      const mo = li * step;
+      if(r===0) return Math.max(0, (d.balance||0) - pay * mo);
+      const b = (d.balance||0) * Math.pow(1+r,mo) - (pay * (Math.pow(1+r,mo)-1)/r);
+      return Math.max(0, b);
+    });
+    const color = CC.palette[rank % CC.palette.length];
+    if(isFinite(monthsToPayoff(d.balance||0,d.rate||0,pay))) freed += (d.minPayment||0);
+    return {label:d.name, data, borderColor:color, backgroundColor:'transparent', borderWidth:2, tension:.3, pointRadius:0, fill:false};
+  });
+
+  if(charts.debt) { charts.debt.destroy(); }
+  charts.debt = new Chart(document.getElementById('chart-debt'), {
+    type: 'line',
+    data: {labels, datasets},
+    options: {
+      responsive:true, maintainAspectRatio:true,
+      interaction:{mode:'index',intersect:false},
+      plugins:{legend:{labels:{color:'#8A919E',font:{size:11,family:'Inter'}}}},
+      scales:{
+        x:{ticks:{color:'#5B616E',font:{size:11}},grid:{color:'rgba(44,48,56,0.5)'}},
+        y:{ticks:{color:'#5B616E',font:{size:11},callback:v=>'$'+Math.round(v/1000)+'k'},grid:{color:'rgba(44,48,56,0.5)'},min:0},
+      }
+    }
+  });
+}
+
+function openDebtModal(i) {
+  const isEdit = i !== undefined;
+  document.getElementById('debt-modal-title').textContent = isEdit ? 'Edit Debt' : 'Add a Debt';
+  document.getElementById('debt-edit-index').value = isEdit ? i : -1;
+  const d = isEdit ? appData.debts[i] : {};
+  document.getElementById('df-name').value     = d.name||'';
+  document.getElementById('df-type').value     = d.type||'Credit Card';
+  document.getElementById('df-balance').value  = d.balance||'';
+  document.getElementById('df-original').value = d.originalBalance||'';
+  document.getElementById('df-rate').value     = d.rate||'';
+  document.getElementById('df-minpay').value   = d.minPayment||'';
+  document.getElementById('df-notes').value    = d.notes||'';
+  document.getElementById('debt-modal').classList.add('open');
+  setTimeout(()=>document.getElementById('df-name').focus(), 120);
+}
+function closeDebtModal(e) { if(!e||e.target===document.getElementById('debt-modal')) document.getElementById('debt-modal').classList.remove('open'); }
+function saveDebtModal() {
+  const name = document.getElementById('df-name').value.trim();
+  if(!name) { document.getElementById('df-name').style.borderColor='var(--red)'; document.getElementById('df-name').focus(); return; }
+  document.getElementById('df-name').style.borderColor='';
+  const idx = parseInt(document.getElementById('debt-edit-index').value);
+  const debt = {
+    name, type: document.getElementById('df-type').value,
+    balance:         parseFloat(document.getElementById('df-balance').value)||0,
+    originalBalance: parseFloat(document.getElementById('df-original').value)||0,
+    rate:            parseFloat(document.getElementById('df-rate').value)||0,
+    minPayment:      parseFloat(document.getElementById('df-minpay').value)||0,
+    notes:           document.getElementById('df-notes').value.trim(),
+  };
+  if(!debt.originalBalance) debt.originalBalance = debt.balance;
+  if(idx===-1) appData.debts.push(debt); else appData.debts[idx]=debt;
+  saveData(); renderDebt();
+  document.getElementById('debt-modal').classList.remove('open');
+}
+function removeDebt(i) { if(confirm('Remove this debt?')){ appData.debts.splice(i,1); saveData(); renderDebt(); } }
 
 // ── NET WORTH ──
 const NW_ASSETS = [
@@ -1316,7 +1613,7 @@ function refreshAll(){
   renderSavings();
   renderDataTable('investments-wrap',INVEST_CATS,'investments');
   renderBalances('investments-balances-wrap',INVEST_CATS,'investments');
-  renderNetWorth();renderGoals();renderScorecard();renderNotes();renderSettings();
+  renderDebt();renderNetWorth();renderGoals();renderScorecard();renderNotes();renderSettings();
   updateCharts();
 }
 
@@ -1348,6 +1645,7 @@ document.addEventListener('DOMContentLoaded',()=>{
   if(!appData.meta) appData.meta={name:'Stanton',year:'2026',currency:'$'};
   if(!appData.notes) appData.notes=Object.fromEntries(MK.map(m=>[m,{wins:'',challenges:'',actions:'',notes:''}]));
   if(!appData.balances) appData.balances={savings:{},investments:{}};
+  if(!appData.debts)    appData.debts=[];
   if(!appData.netWorth) appData.netWorth={assets:{},liabilities:{},history:[]};
   refreshAll();
   initCharts();
@@ -1599,6 +1897,61 @@ function renderInsightsPanel(){
   document.getElementById('insights-body').innerHTML=html;
 }
 </script>
+
+<!-- ── ADD DEBT MODAL ── -->
+<div class="modal-overlay" id="debt-modal" onclick="closeDebtModal(event)">
+  <div class="modal-card" onclick="event.stopPropagation()">
+    <div class="modal-title" id="debt-modal-title">Add a Debt</div>
+    <div class="modal-sub">Track balances, interest rates, and payments to plan your payoff.</div>
+    <input type="hidden" id="debt-edit-index" value="-1" />
+    <div class="modal-row">
+      <div class="modal-field">
+        <label>Debt Name</label>
+        <input type="text" id="df-name" placeholder="e.g. Car Loan, Visa Card…" />
+      </div>
+      <div class="modal-field">
+        <label>Type</label>
+        <select id="df-type">
+          <option value="Credit Card">Credit Card</option>
+          <option value="Auto Loan">Auto Loan</option>
+          <option value="Mortgage">Mortgage</option>
+          <option value="Student Loan">Student Loan</option>
+          <option value="Medical">Medical</option>
+          <option value="Personal Loan">Personal Loan</option>
+          <option value="Other">Other</option>
+        </select>
+      </div>
+    </div>
+    <div class="modal-row">
+      <div class="modal-field">
+        <label>Current Balance ($)</label>
+        <input type="number" id="df-balance" placeholder="0.00" step="0.01" min="0" />
+      </div>
+      <div class="modal-field">
+        <label>Original Balance ($)</label>
+        <input type="number" id="df-original" placeholder="0.00" step="0.01" min="0" />
+      </div>
+    </div>
+    <div class="modal-row">
+      <div class="modal-field">
+        <label>Interest Rate (APR %)</label>
+        <input type="number" id="df-rate" placeholder="e.g. 5.9" step="0.01" min="0" max="100" />
+      </div>
+      <div class="modal-field">
+        <label>Minimum Payment ($/mo)</label>
+        <input type="number" id="df-minpay" placeholder="0.00" step="0.01" min="0" />
+      </div>
+    </div>
+    <div class="modal-field">
+      <label>Notes</label>
+      <input type="text" id="df-notes" placeholder="Optional notes…" />
+    </div>
+    <div class="modal-actions">
+      <button class="btn" onclick="closeDebtModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="saveDebtModal()">Save Debt</button>
+    </div>
+  </div>
+</div>
 
 <!-- ── ADD GOAL MODAL ── -->
 <div class="modal-overlay" id="goal-modal" onclick="closeGoalModal(event)">
