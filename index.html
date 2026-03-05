@@ -288,6 +288,19 @@
     .debt-strategy-detail { font-size: 11px; color: var(--text-3); margin-top: 2px; }
     .debt-strategy-months { font-size: 12px; font-weight: 700; color: var(--text-2); white-space: nowrap; }
 
+    /* ── BUDGET PLANNER ── */
+    .budget-layout { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 8px; }
+    @media (max-width: 960px) { .budget-layout { grid-template-columns: 1fr; } }
+    .budget-cat-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 14px; }
+    .budget-cat-card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px 18px; }
+    .budget-cat-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px; }
+    .budget-cat-name { font-size: 13px; font-weight: 600; }
+    .budget-status-badge { font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 999px; }
+    .budget-bar-wrap { background: var(--border); border-radius: 999px; height: 5px; margin-bottom: 8px; overflow: hidden; }
+    .budget-bar-fill { height: 100%; border-radius: 999px; transition: width .4s; }
+    .budget-cat-nums { display: flex; justify-content: space-between; font-size: 11px; color: var(--text-3); }
+    .budget-cat-nums strong { color: var(--text-2); }
+
     /* ── GOAL MODAL ── */
     .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,.55); z-index: 500; display: flex; align-items: center; justify-content: center; opacity: 0; pointer-events: none; transition: opacity .2s; }
     .modal-overlay.open { opacity: 1; pointer-events: all; }
@@ -436,6 +449,10 @@
       <button class="nav-item" onclick="showTab('networth')">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v2"/><line x1="12" y1="12" x2="12" y2="16"/><line x1="10" y1="14" x2="14" y2="14"/></svg>
         Net Worth
+      </button>
+      <button class="nav-item" onclick="showTab('budget')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
+        Budget
       </button>
       <button class="nav-item" onclick="showTab('debt')">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/><line x1="8" y1="15" x2="12" y2="15"/><line x1="16" y1="15" x2="16" y2="15"/></svg>
@@ -590,6 +607,41 @@
             <canvas id="chart-nw" style="max-height:280px"></canvas>
           </div>
           <div class="table-wrap" id="nw-history-wrap" style="display:none"></div>
+        </div>
+      </div>
+
+      <!-- BUDGET PLANNER -->
+      <div id="tab-budget" class="tab-panel">
+        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:28px;">
+          <div class="section-title" style="margin-bottom:0">Budget Planner</div>
+          <div style="display:flex;align-items:center;gap:10px;">
+            <label style="font-size:12px;color:var(--text-2);">Compare month:</label>
+            <select id="budget-month-select" onchange="renderBudget()" style="font-size:12.5px;padding:6px 10px;">
+              <option value="all">Full Year</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="kpi-grid" id="budget-kpi" style="margin-bottom:32px"></div>
+
+        <div class="budget-layout">
+          <!-- Left: set budgets -->
+          <div>
+            <div class="subsection-title" style="margin-bottom:14px">Monthly Budget Targets</div>
+            <div class="table-wrap" id="budget-table-wrap"></div>
+          </div>
+          <!-- Right: chart -->
+          <div>
+            <div class="subsection-title" style="margin-bottom:14px">Budget vs Actual</div>
+            <div class="chart-card" style="padding:20px;">
+              <canvas id="chart-budget" style="max-height:420px"></canvas>
+            </div>
+          </div>
+        </div>
+
+        <div class="subsection">
+          <div class="subsection-title">Category Breakdown</div>
+          <div id="budget-category-cards" class="budget-cat-grid"></div>
         </div>
       </div>
 
@@ -970,6 +1022,7 @@ function getDefaultData() {
       investments: {property:0,homeImprovement:0,health:0,vehicle:0,education:0,other:0},
     },
     debts: [],
+    budget: {mortgage:0,vehicle:0,insurance:0,phone:0,electric:0,propane:0,water:0,tv:0,groceries:0,dining:0,gas:0,creditCard:0,subscriptions:0,health:0,other:0},
     netWorth: {
       assets: {
         cashChecking:0, cashSavings:0, emergencyFund:0,
@@ -1072,6 +1125,7 @@ const TAB_META = {
   savings:     ['Savings',           'Savings & wealth building'],
   investments: ['Investments',       'Property & growth investments'],
   networth:    ['Net Worth',         'Total assets minus liabilities'],
+  budget:      ['Budget Planner',    'Set targets and track spending vs plan'],
   debt:        ['Debt Payoff',       'Track balances, interest & payoff strategies'],
   goals:       ['Goals',             '2026 financial goals'],
   scorecard:   ['Monthly Scorecard', 'Goal tracking & performance review'],
@@ -1428,6 +1482,148 @@ function saveDebtModal() {
 }
 function removeDebt(i) { if(confirm('Remove this debt?')){ appData.debts.splice(i,1); saveData(); renderDebt(); } }
 
+// ── BUDGET PLANNER ──
+function initBudgetMonthSelect() {
+  const sel = document.getElementById('budget-month-select');
+  if(!sel || sel.options.length > 1) return;
+  MK.forEach((m,i) => { const o = document.createElement('option'); o.value=m; o.textContent=MONTHS[i]; sel.appendChild(o); });
+}
+
+function getBudgetActuals(monthKey) {
+  if(monthKey === 'all') {
+    const t = {};
+    EXPENSE_CATS.forEach(c => { t[c.key] = MK.reduce((s,m)=>s+(parseFloat(appData.expenses[m][c.key])||0),0); });
+    return t;
+  }
+  const t = {};
+  EXPENSE_CATS.forEach(c => { t[c.key] = parseFloat(appData.expenses[monthKey][c.key])||0; });
+  return t;
+}
+
+function renderBudget() {
+  if(!appData.budget) appData.budget = {};
+  initBudgetMonthSelect();
+  const sel = document.getElementById('budget-month-select');
+  const monthKey = sel ? sel.value : 'all';
+  const isYear = monthKey === 'all';
+  const actuals = getBudgetActuals(monthKey);
+
+  // If year view, budget targets × 12 for comparison
+  const mult = isYear ? 12 : 1;
+  let totalBudget=0, totalActual=0;
+  EXPENSE_CATS.forEach(c => {
+    const b = (parseFloat(appData.budget[c.key])||0) * mult;
+    const a = actuals[c.key]||0;
+    totalBudget += b; totalActual += a;
+  });
+  const remaining = totalBudget - totalActual;
+  const pctUsed = totalBudget > 0 ? (totalActual/totalBudget) : 0;
+
+  // KPI cards
+  const kpis = [
+    {label:'Total Budget',    value:fmt$(totalBudget),  sub:isYear?'Annual (12 × monthly)':'This month',   cls:'white'},
+    {label:'Total Spent',     value:fmt$(totalActual),  sub:'Actual expenses',                              cls:totalActual>totalBudget?'negative':'positive'},
+    {label:'Remaining',       value:(remaining<0?'-':'')+fmt$(remaining), sub:remaining<0?'Over budget':'Left to spend', cls:remaining>=0?'positive':'negative'},
+    {label:'Budget Used',     value:fmtPct(pctUsed),    sub:'Goal: stay under 100%',                        cls:pctUsed<=1&&totalBudget>0?'positive':totalBudget>0?'negative':'white'},
+  ];
+  document.getElementById('budget-kpi').innerHTML = kpis.map(k=>`<div class="kpi-card ${k.cls}"><div class="kpi-label">${k.label}</div><div class="kpi-value">${k.value}</div><div class="kpi-sub">${k.sub}</div></div>`).join('');
+
+  // Budget input table
+  let html = `<table><thead><tr><th>Category</th><th>Monthly Budget</th><th>Actual ${isYear?'(Year)':'(Month)'}</th><th>Difference</th></tr></thead><tbody>`;
+  EXPENSE_CATS.forEach(c => {
+    const bRaw = parseFloat(appData.budget[c.key])||0;
+    const b = bRaw * mult;
+    const a = actuals[c.key]||0;
+    const diff = b - a;
+    const diffHtml = b>0||a>0 ? `<span class="${diff>=0?'val-positive':'val-negative'}">${diff>=0?'+':''}${fmt$(diff)}</span>` : '<span class="val-neutral">—</span>';
+    html += `<tr>
+      <td>${c.label}</td>
+      <td><input type="number" step="1" min="0" value="${bRaw>0?bRaw:''}" placeholder="$0" onchange="updateBudget('${c.key}',this.value)"/></td>
+      <td>${a>0?fmt$(a):'<span class="val-neutral">—</span>'}</td>
+      <td>${diffHtml}</td>
+    </tr>`;
+  });
+  // Totals row
+  const totalDiff = totalBudget - totalActual;
+  html += `<tr class="total-row"><td>Total</td><td><strong>${fmt$(totalBudget)}</strong></td><td><strong>${fmt$(totalActual)}</strong></td><td><span class="${totalDiff>=0?'val-positive':'val-negative'}">${totalDiff>=0?'+':''}${fmt$(totalDiff)}</span></td></tr>`;
+  html += '</tbody></table>';
+  document.getElementById('budget-table-wrap').innerHTML = html;
+
+  // Category cards
+  document.getElementById('budget-category-cards').innerHTML = EXPENSE_CATS.map(c => {
+    const bRaw = parseFloat(appData.budget[c.key])||0;
+    const b = bRaw * mult;
+    const a = actuals[c.key]||0;
+    if(b===0 && a===0) return '';
+    const pct = b>0 ? Math.min(130, (a/b)*100) : (a>0?100:0);
+    const over = b>0 && a>b;
+    const warn = b>0 && (a/b) >= 0.8 && !over;
+    const color = over ? 'var(--red)' : warn ? 'var(--yellow)' : 'var(--green)';
+    const badgeCls = over ? 'background:var(--red-dim);color:var(--red)' : warn ? 'background:var(--yellow-dim);color:var(--yellow)' : 'background:var(--green-dim);color:var(--green)';
+    const badgeTxt = over ? 'Over' : warn ? 'Near Limit' : b>0 ? 'On Track' : 'No Budget';
+    return `<div class="budget-cat-card">
+      <div class="budget-cat-top">
+        <div class="budget-cat-name">${c.label}</div>
+        <span class="budget-status-badge" style="${badgeCls}">${badgeTxt}</span>
+      </div>
+      <div class="budget-bar-wrap"><div class="budget-bar-fill" style="width:${Math.min(100,pct).toFixed(1)}%;background:${color}"></div></div>
+      <div class="budget-cat-nums">
+        <span>Spent: <strong>${fmt$(a)}</strong></span>
+        <span>${b>0?`Budget: <strong>${fmt$(b)}</strong>`:'<em>No target set</em>'}</span>
+      </div>
+    </div>`;
+  }).join('');
+
+  // Chart
+  renderBudgetChart(actuals, mult);
+}
+
+function renderBudgetChart(actuals, mult) {
+  const cats = EXPENSE_CATS.filter(c => {
+    const b = (parseFloat(appData.budget[c.key])||0)*mult;
+    const a = actuals[c.key]||0;
+    return b>0 || a>0;
+  });
+  if(!cats.length) { if(charts.budget){charts.budget.destroy();delete charts.budget;} return; }
+
+  const labels  = cats.map(c => c.label);
+  const budgets = cats.map(c => (parseFloat(appData.budget[c.key])||0)*mult);
+  const actual  = cats.map(c => actuals[c.key]||0);
+  const barColors = actual.map((a,i) => a > budgets[i] ? CC.red : a/budgets[i] >= 0.8 ? CC.yellow : CC.green);
+  const barFades  = actual.map((a,i) => a > budgets[i] ? CC.redFade : a/budgets[i] >= 0.8 ? 'rgba(245,166,35,0.15)' : CC.greenFade);
+
+  if(charts.budget) { charts.budget.destroy(); }
+  charts.budget = new Chart(document.getElementById('chart-budget'), {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [
+        { label:'Budget', data:budgets, backgroundColor:'rgba(0,82,255,0.15)', borderColor:CC.blue, borderWidth:2, borderRadius:4 },
+        { label:'Actual', data:actual,  backgroundColor:barFades, borderColor:barColors, borderWidth:2, borderRadius:4 },
+      ]
+    },
+    options: {
+      indexAxis: 'y',
+      responsive: true, maintainAspectRatio: false,
+      interaction: {mode:'index', intersect:false},
+      plugins: { legend:{labels:{color:'#8A919E',font:{size:11,family:'Inter'}}} },
+      scales: {
+        x: { ticks:{color:'#5B616E',font:{size:10},callback:v=>'$'+Math.round(v/1000)+'k'}, grid:{color:'rgba(44,48,56,0.5)'} },
+        y: { ticks:{color:'#5B616E',font:{size:10}}, grid:{color:'rgba(44,48,56,0.5)'} }
+      }
+    }
+  });
+  // Fix canvas height for horizontal bar
+  const canvas = document.getElementById('chart-budget');
+  canvas.style.height = Math.max(220, cats.length * 32) + 'px';
+}
+
+function updateBudget(key, val) {
+  if(!appData.budget) appData.budget = {};
+  appData.budget[key] = parseFloat(val)||0;
+  saveData(); renderBudget();
+}
+
 // ── NET WORTH ──
 const NW_ASSETS = [
   {key:'cashChecking',      label:'Checking Account',              group:'Cash & Bank'},
@@ -1743,7 +1939,7 @@ function refreshAll(){
   renderSavings();
   renderDataTable('investments-wrap',INVEST_CATS,'investments');
   renderBalances('investments-balances-wrap',INVEST_CATS,'investments');
-  renderDebt();renderNetWorth();renderGoals();renderScorecard();renderNotes();renderSettings();
+  renderBudget();renderDebt();renderNetWorth();renderGoals();renderScorecard();renderNotes();renderSettings();
   updateCharts();
 }
 
@@ -2019,6 +2215,7 @@ document.addEventListener('DOMContentLoaded',()=>{
   if(!appData.notes) appData.notes=Object.fromEntries(MK.map(m=>[m,{wins:'',challenges:'',actions:'',notes:''}]));
   if(!appData.balances) appData.balances={savings:{},investments:{}};
   if(!appData.debts)    appData.debts=[];
+  if(!appData.budget)   appData.budget={};
   if(!appData.netWorth) appData.netWorth={assets:{},liabilities:{},history:[]};
   refreshAll();
   initCharts();
