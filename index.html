@@ -624,10 +624,22 @@
 
         <div class="kpi-grid" id="budget-kpi" style="margin-bottom:32px"></div>
 
+        <!-- Income section -->
+        <div style="margin-bottom:28px;">
+          <div class="subsection-title" style="margin-bottom:14px;">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="2.5" style="vertical-align:middle;margin-right:5px"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/></svg>
+            Monthly Income Targets
+          </div>
+          <div class="table-wrap" id="budget-income-wrap"></div>
+        </div>
+
         <div class="budget-layout">
-          <!-- Left: set budgets -->
+          <!-- Left: expense budgets -->
           <div>
-            <div class="subsection-title" style="margin-bottom:14px">Monthly Budget Targets</div>
+            <div class="subsection-title" style="margin-bottom:14px;">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--red)" stroke-width="2.5" style="vertical-align:middle;margin-right:5px"><polyline points="23 18 13.5 8.5 8.5 13.5 1 6"/></svg>
+              Monthly Expense Targets
+            </div>
             <div class="table-wrap" id="budget-table-wrap"></div>
           </div>
           <!-- Right: chart -->
@@ -1022,7 +1034,10 @@ function getDefaultData() {
       investments: {property:0,homeImprovement:0,health:0,vehicle:0,education:0,other:0},
     },
     debts: [],
-    budget: {mortgage:0,vehicle:0,insurance:0,phone:0,electric:0,propane:0,water:0,tv:0,groceries:0,dining:0,gas:0,creditCard:0,subscriptions:0,health:0,other:0},
+    budget: {
+      income: {salary:0,bonus:0,freelance:0,rental:0,other:0},
+      expenses: {mortgage:0,vehicle:0,insurance:0,phone:0,electric:0,propane:0,water:0,tv:0,groceries:0,dining:0,gas:0,creditCard:0,subscriptions:0,health:0,other:0},
+    },
     netWorth: {
       assets: {
         cashChecking:0, cashSavings:0, emergencyFund:0,
@@ -1489,138 +1504,163 @@ function initBudgetMonthSelect() {
   MK.forEach((m,i) => { const o = document.createElement('option'); o.value=m; o.textContent=MONTHS[i]; sel.appendChild(o); });
 }
 
-function getBudgetActuals(monthKey) {
-  if(monthKey === 'all') {
-    const t = {};
-    EXPENSE_CATS.forEach(c => { t[c.key] = MK.reduce((s,m)=>s+(parseFloat(appData.expenses[m][c.key])||0),0); });
-    return t;
+function budgetData() {
+  // Migrate flat old format to nested {income, expenses}
+  if(!appData.budget) appData.budget = { income:{}, expenses:{} };
+  if(!appData.budget.income)   appData.budget.income   = {};
+  if(!appData.budget.expenses) appData.budget.expenses = {};
+  // If old flat format (keys like 'mortgage' at top level), migrate
+  if(appData.budget.mortgage !== undefined) {
+    const old = {...appData.budget};
+    appData.budget = { income:{}, expenses:{} };
+    EXPENSE_CATS.forEach(c => { if(old[c.key]!==undefined) appData.budget.expenses[c.key]=old[c.key]; });
   }
+  return appData.budget;
+}
+
+function getActuals(monthKey, section) {
+  const cats = section === 'income' ? INCOME_CATS : EXPENSE_CATS;
+  const dataKey = section === 'income' ? 'income' : 'expenses';
   const t = {};
-  EXPENSE_CATS.forEach(c => { t[c.key] = parseFloat(appData.expenses[monthKey][c.key])||0; });
+  if(monthKey === 'all') {
+    cats.forEach(c => { t[c.key] = MK.reduce((s,m)=>s+(parseFloat(appData[dataKey][m][c.key])||0),0); });
+  } else {
+    cats.forEach(c => { t[c.key] = parseFloat(appData[dataKey][monthKey][c.key])||0; });
+  }
   return t;
 }
 
 function renderBudget() {
-  if(!appData.budget) appData.budget = {};
+  const bd = budgetData();
   initBudgetMonthSelect();
   const sel = document.getElementById('budget-month-select');
   const monthKey = sel ? sel.value : 'all';
   const isYear = monthKey === 'all';
-  const actuals = getBudgetActuals(monthKey);
-
-  // If year view, budget targets × 12 for comparison
   const mult = isYear ? 12 : 1;
-  let totalBudget=0, totalActual=0;
-  EXPENSE_CATS.forEach(c => {
-    const b = (parseFloat(appData.budget[c.key])||0) * mult;
-    const a = actuals[c.key]||0;
-    totalBudget += b; totalActual += a;
+
+  const incActuals = getActuals(monthKey, 'income');
+  const expActuals = getActuals(monthKey, 'expenses');
+
+  let totalIncBudget=0, totalIncActual=0;
+  INCOME_CATS.forEach(c => {
+    totalIncBudget  += (parseFloat(bd.income[c.key])||0) * mult;
+    totalIncActual  += incActuals[c.key]||0;
   });
-  const remaining = totalBudget - totalActual;
-  const pctUsed = totalBudget > 0 ? (totalActual/totalBudget) : 0;
+
+  let totalExpBudget=0, totalExpActual=0;
+  EXPENSE_CATS.forEach(c => {
+    totalExpBudget  += (parseFloat(bd.expenses[c.key])||0) * mult;
+    totalExpActual  += expActuals[c.key]||0;
+  });
+
+  const netBudget  = totalIncBudget  - totalExpBudget;
+  const netActual  = totalIncActual  - totalExpActual;
+  const expPctUsed = totalExpBudget > 0 ? totalExpActual / totalExpBudget : 0;
+  const incPctMet  = totalIncBudget  > 0 ? totalIncActual / totalIncBudget  : 0;
 
   // KPI cards
   const kpis = [
-    {label:'Total Budget',    value:fmt$(totalBudget),  sub:isYear?'Annual (12 × monthly)':'This month',   cls:'white'},
-    {label:'Total Spent',     value:fmt$(totalActual),  sub:'Actual expenses',                              cls:totalActual>totalBudget?'negative':'positive'},
-    {label:'Remaining',       value:(remaining<0?'-':'')+fmt$(remaining), sub:remaining<0?'Over budget':'Left to spend', cls:remaining>=0?'positive':'negative'},
-    {label:'Budget Used',     value:fmtPct(pctUsed),    sub:'Goal: stay under 100%',                        cls:pctUsed<=1&&totalBudget>0?'positive':totalBudget>0?'negative':'white'},
+    {label:'Income Target',     value:fmt$(totalIncBudget),  sub:isYear?'Annual goal':'Monthly goal',           cls:'white'},
+    {label:'Actual Income',     value:fmt$(totalIncActual),  sub:incPctMet>=1?'Target met!':'vs income target', cls:incPctMet>=1?'positive':totalIncBudget>0?'negative':'white'},
+    {label:'Expense Budget',    value:fmt$(totalExpBudget),  sub:isYear?'Annual (12 × monthly)':'This month',   cls:'white'},
+    {label:'Actual Expenses',   value:fmt$(totalExpActual),  sub:'vs expense budget',                           cls:totalExpActual<=totalExpBudget&&totalExpBudget>0?'positive':totalExpBudget>0?'negative':'white'},
+    {label:'Budgeted Net',      value:(netBudget<0?'-':'')+fmt$(netBudget),  sub:'Income target − Expense budget', cls:netBudget>=0?'positive':'negative'},
+    {label:'Actual Net',        value:(netActual<0?'-':'')+fmt$(netActual),  sub:'Actual income − Actual expenses',cls:netActual>=0?'positive':'negative'},
   ];
   document.getElementById('budget-kpi').innerHTML = kpis.map(k=>`<div class="kpi-card ${k.cls}"><div class="kpi-label">${k.label}</div><div class="kpi-value">${k.value}</div><div class="kpi-sub">${k.sub}</div></div>`).join('');
 
-  // Budget input table
-  let html = `<table><thead><tr><th>Category</th><th>Monthly Budget</th><th>Actual ${isYear?'(Year)':'(Month)'}</th><th>Difference</th></tr></thead><tbody>`;
-  EXPENSE_CATS.forEach(c => {
-    const bRaw = parseFloat(appData.budget[c.key])||0;
-    const b = bRaw * mult;
-    const a = actuals[c.key]||0;
-    const diff = b - a;
+  // Income targets table
+  renderBudgetTable('budget-income-wrap', INCOME_CATS, bd.income, incActuals, mult, isYear, 'income', 'val-positive', 'more is better');
+
+  // Expense targets table
+  renderBudgetTable('budget-table-wrap', EXPENSE_CATS, bd.expenses, expActuals, mult, isYear, 'expenses', 'val-negative', 'less is better');
+
+  // Category cards (expenses only)
+  document.getElementById('budget-category-cards').innerHTML = EXPENSE_CATS.map(c => {
+    const bRaw = parseFloat(bd.expenses[c.key])||0;
+    const b = bRaw * mult, a = expActuals[c.key]||0;
+    if(b===0 && a===0) return '';
+    const pct = b>0 ? (a/b)*100 : (a>0?100:0);
+    const over = b>0 && a>b, warn = b>0 && pct>=80 && !over;
+    const color = over?'var(--red)':warn?'var(--yellow)':'var(--green)';
+    const badgeStyle = over?'background:var(--red-dim);color:var(--red)':warn?'background:var(--yellow-dim);color:var(--yellow)':'background:var(--green-dim);color:var(--green)';
+    return `<div class="budget-cat-card">
+      <div class="budget-cat-top">
+        <div class="budget-cat-name">${c.label}</div>
+        <span class="budget-status-badge" style="${badgeStyle}">${over?'Over':warn?'Near Limit':b>0?'On Track':'No Budget'}</span>
+      </div>
+      <div class="budget-bar-wrap"><div class="budget-bar-fill" style="width:${Math.min(100,pct).toFixed(1)}%;background:${color}"></div></div>
+      <div class="budget-cat-nums"><span>Spent: <strong>${fmt$(a)}</strong></span><span>${b>0?`Budget: <strong>${fmt$(b)}</strong>`:'<em>No target set</em>'}</span></div>
+    </div>`;
+  }).join('');
+
+  renderBudgetChart(expActuals, incActuals, mult, bd);
+}
+
+function renderBudgetTable(containerId, cats, budgetSection, actuals, mult, isYear, section, diffCls, hint) {
+  const period = isYear ? '(Year)' : '(Month)';
+  let html = `<table><thead><tr><th>Category</th><th>Monthly Target</th><th>Actual ${period}</th><th>Difference</th></tr></thead><tbody>`;
+  let totB=0, totA=0;
+  cats.forEach(c => {
+    const bRaw = parseFloat(budgetSection[c.key])||0;
+    const b = bRaw*mult, a = actuals[c.key]||0;
+    totB+=b; totA+=a;
+    const diff = section==='income' ? a-b : b-a;
     const diffHtml = b>0||a>0 ? `<span class="${diff>=0?'val-positive':'val-negative'}">${diff>=0?'+':''}${fmt$(diff)}</span>` : '<span class="val-neutral">—</span>';
     html += `<tr>
       <td>${c.label}</td>
-      <td><input type="number" step="1" min="0" value="${bRaw>0?bRaw:''}" placeholder="$0" onchange="updateBudget('${c.key}',this.value)"/></td>
+      <td><input type="number" step="1" min="0" value="${bRaw>0?bRaw:''}" placeholder="$0" onchange="updateBudget('${section}','${c.key}',this.value)"/></td>
       <td>${a>0?fmt$(a):'<span class="val-neutral">—</span>'}</td>
       <td>${diffHtml}</td>
     </tr>`;
   });
-  // Totals row
-  const totalDiff = totalBudget - totalActual;
-  html += `<tr class="total-row"><td>Total</td><td><strong>${fmt$(totalBudget)}</strong></td><td><strong>${fmt$(totalActual)}</strong></td><td><span class="${totalDiff>=0?'val-positive':'val-negative'}">${totalDiff>=0?'+':''}${fmt$(totalDiff)}</span></td></tr>`;
+  const totDiff = section==='income' ? totA-totB : totB-totA;
+  html += `<tr class="total-row"><td>Total</td><td><strong>${fmt$(totB)}</strong></td><td><strong>${fmt$(totA)}</strong></td><td><span class="${totDiff>=0?'val-positive':'val-negative'}">${totDiff>=0?'+':''}${fmt$(totDiff)}</span></td></tr>`;
   html += '</tbody></table>';
-  document.getElementById('budget-table-wrap').innerHTML = html;
-
-  // Category cards
-  document.getElementById('budget-category-cards').innerHTML = EXPENSE_CATS.map(c => {
-    const bRaw = parseFloat(appData.budget[c.key])||0;
-    const b = bRaw * mult;
-    const a = actuals[c.key]||0;
-    if(b===0 && a===0) return '';
-    const pct = b>0 ? Math.min(130, (a/b)*100) : (a>0?100:0);
-    const over = b>0 && a>b;
-    const warn = b>0 && (a/b) >= 0.8 && !over;
-    const color = over ? 'var(--red)' : warn ? 'var(--yellow)' : 'var(--green)';
-    const badgeCls = over ? 'background:var(--red-dim);color:var(--red)' : warn ? 'background:var(--yellow-dim);color:var(--yellow)' : 'background:var(--green-dim);color:var(--green)';
-    const badgeTxt = over ? 'Over' : warn ? 'Near Limit' : b>0 ? 'On Track' : 'No Budget';
-    return `<div class="budget-cat-card">
-      <div class="budget-cat-top">
-        <div class="budget-cat-name">${c.label}</div>
-        <span class="budget-status-badge" style="${badgeCls}">${badgeTxt}</span>
-      </div>
-      <div class="budget-bar-wrap"><div class="budget-bar-fill" style="width:${Math.min(100,pct).toFixed(1)}%;background:${color}"></div></div>
-      <div class="budget-cat-nums">
-        <span>Spent: <strong>${fmt$(a)}</strong></span>
-        <span>${b>0?`Budget: <strong>${fmt$(b)}</strong>`:'<em>No target set</em>'}</span>
-      </div>
-    </div>`;
-  }).join('');
-
-  // Chart
-  renderBudgetChart(actuals, mult);
+  document.getElementById(containerId).innerHTML = html;
 }
 
-function renderBudgetChart(actuals, mult) {
-  const cats = EXPENSE_CATS.filter(c => {
-    const b = (parseFloat(appData.budget[c.key])||0)*mult;
-    const a = actuals[c.key]||0;
-    return b>0 || a>0;
+function renderBudgetChart(expActuals, incActuals, mult, bd) {
+  const expCats = EXPENSE_CATS.filter(c => (parseFloat(bd.expenses[c.key])||0)*mult>0 || expActuals[c.key]>0);
+  const incCats = INCOME_CATS.filter(c =>  (parseFloat(bd.income[c.key])||0)*mult>0  || incActuals[c.key]>0);
+  const allCats = [
+    ...incCats.map(c=>({label:'↑ '+c.label, budget:(parseFloat(bd.income[c.key])||0)*mult, actual:incActuals[c.key]||0, type:'income'})),
+    ...expCats.map(c=>({label:'↓ '+c.label, budget:(parseFloat(bd.expenses[c.key])||0)*mult, actual:expActuals[c.key]||0, type:'expense'})),
+  ];
+  if(!allCats.length) { if(charts.budget){charts.budget.destroy();delete charts.budget;} return; }
+
+  const labels  = allCats.map(c=>c.label);
+  const budgets = allCats.map(c=>c.budget);
+  const actuals = allCats.map(c=>c.actual);
+  const aColors = allCats.map(c => {
+    if(c.type==='income') return c.actual>=c.budget ? CC.green : CC.yellow;
+    return c.actual>c.budget ? CC.red : c.budget>0&&c.actual/c.budget>=0.8 ? CC.yellow : CC.green;
   });
-  if(!cats.length) { if(charts.budget){charts.budget.destroy();delete charts.budget;} return; }
+  const aFades = aColors.map(col => col===CC.red?CC.redFade:col===CC.yellow?'rgba(245,166,35,0.15)':CC.greenFade);
 
-  const labels  = cats.map(c => c.label);
-  const budgets = cats.map(c => (parseFloat(appData.budget[c.key])||0)*mult);
-  const actual  = cats.map(c => actuals[c.key]||0);
-  const barColors = actual.map((a,i) => a > budgets[i] ? CC.red : a/budgets[i] >= 0.8 ? CC.yellow : CC.green);
-  const barFades  = actual.map((a,i) => a > budgets[i] ? CC.redFade : a/budgets[i] >= 0.8 ? 'rgba(245,166,35,0.15)' : CC.greenFade);
-
-  if(charts.budget) { charts.budget.destroy(); }
+  if(charts.budget) charts.budget.destroy();
   charts.budget = new Chart(document.getElementById('chart-budget'), {
-    type: 'bar',
-    data: {
-      labels,
-      datasets: [
-        { label:'Budget', data:budgets, backgroundColor:'rgba(0,82,255,0.15)', borderColor:CC.blue, borderWidth:2, borderRadius:4 },
-        { label:'Actual', data:actual,  backgroundColor:barFades, borderColor:barColors, borderWidth:2, borderRadius:4 },
-      ]
-    },
-    options: {
-      indexAxis: 'y',
-      responsive: true, maintainAspectRatio: false,
-      interaction: {mode:'index', intersect:false},
-      plugins: { legend:{labels:{color:'#8A919E',font:{size:11,family:'Inter'}}} },
-      scales: {
-        x: { ticks:{color:'#5B616E',font:{size:10},callback:v=>'$'+Math.round(v/1000)+'k'}, grid:{color:'rgba(44,48,56,0.5)'} },
-        y: { ticks:{color:'#5B616E',font:{size:10}}, grid:{color:'rgba(44,48,56,0.5)'} }
+    type:'bar',
+    data:{ labels, datasets:[
+      {label:'Target', data:budgets, backgroundColor:'rgba(0,82,255,0.15)', borderColor:CC.blue, borderWidth:2, borderRadius:4},
+      {label:'Actual', data:actuals, backgroundColor:aFades, borderColor:aColors, borderWidth:2, borderRadius:4},
+    ]},
+    options:{
+      indexAxis:'y', responsive:true, maintainAspectRatio:false,
+      interaction:{mode:'index',intersect:false},
+      plugins:{legend:{labels:{color:'#8A919E',font:{size:11,family:'Inter'}}}},
+      scales:{
+        x:{ticks:{color:'#5B616E',font:{size:10},callback:v=>'$'+Math.round(v/1000)+'k'},grid:{color:'rgba(44,48,56,0.5)'}},
+        y:{ticks:{color:'#5B616E',font:{size:10}},grid:{color:'rgba(44,48,56,0.5)'}},
       }
     }
   });
-  // Fix canvas height for horizontal bar
-  const canvas = document.getElementById('chart-budget');
-  canvas.style.height = Math.max(220, cats.length * 32) + 'px';
+  document.getElementById('chart-budget').style.height = Math.max(220, allCats.length*32)+'px';
 }
 
-function updateBudget(key, val) {
-  if(!appData.budget) appData.budget = {};
-  appData.budget[key] = parseFloat(val)||0;
+function updateBudget(section, key, val) {
+  const bd = budgetData();
+  bd[section][key] = parseFloat(val)||0;
   saveData(); renderBudget();
 }
 
@@ -2215,7 +2255,7 @@ document.addEventListener('DOMContentLoaded',()=>{
   if(!appData.notes) appData.notes=Object.fromEntries(MK.map(m=>[m,{wins:'',challenges:'',actions:'',notes:''}]));
   if(!appData.balances) appData.balances={savings:{},investments:{}};
   if(!appData.debts)    appData.debts=[];
-  if(!appData.budget)   appData.budget={};
+  if(!appData.budget||!appData.budget.expenses) appData.budget={income:{},expenses:{}};
   if(!appData.netWorth) appData.netWorth={assets:{},liabilities:{},history:[]};
   refreshAll();
   initCharts();
