@@ -8,6 +8,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     :root {
@@ -288,6 +289,18 @@
     .debt-strategy-detail { font-size: 11px; color: var(--text-3); margin-top: 2px; }
     .debt-strategy-months { font-size: 12px; font-weight: 700; color: var(--text-2); white-space: nowrap; }
 
+    /* ── CATEGORY MANAGEMENT ── */
+    .cat-label { cursor: text; border-bottom: 1px dotted transparent; transition: border-color .15s; }
+    .cat-label:hover { border-bottom-color: var(--text-3); }
+    th.cat-action-col, td.cat-action-col { min-width: 36px; width: 36px; text-align: center; padding: 4px 6px; }
+    .cat-delete-btn { background: none; border: none; color: var(--text-3); cursor: pointer; font-size: 15px; font-weight: 700; padding: 2px 6px; border-radius: 4px; opacity: 0; transition: all .15s; font-family: 'Inter', sans-serif; line-height: 1; }
+    tr:hover .cat-delete-btn { opacity: 1; }
+    .cat-delete-btn:hover { color: var(--red); background: var(--red-dim); }
+    .cat-add-row td { background: var(--card) !important; border-top: 1px dashed var(--border) !important; padding: 6px 14px !important; }
+    .cat-add-row:hover td { background: var(--card-hover) !important; }
+    .cat-add-btn { background: none; border: none; color: var(--blue); font-size: 12.5px; font-weight: 600; cursor: pointer; font-family: 'Inter', sans-serif; padding: 4px 8px; border-radius: 8px; transition: background .15s; }
+    .cat-add-btn:hover { background: var(--blue-dim); }
+
     /* ── BUDGET PLANNER ── */
     .budget-layout { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 8px; }
     @media (max-width: 960px) { .budget-layout { grid-template-columns: 1fr; } }
@@ -386,7 +399,11 @@
   <div class="login-card">
     <div class="login-logo">S</div>
     <h1 id="login-title">Stanton Finance</h1>
-    <p id="login-subtitle">Enter your password to continue.</p>
+    <p id="login-subtitle">Sign in to access your tracker.</p>
+    <div class="login-field">
+      <label>Email</label>
+      <input type="email" id="login-email" placeholder="you@example.com" onkeydown="if(event.key==='Enter')submitLogin()" />
+    </div>
     <div class="login-field">
       <label id="login-pw-label">Password</label>
       <input type="password" id="login-input" placeholder="Enter password" onkeydown="if(event.key==='Enter')submitLogin()" />
@@ -400,7 +417,10 @@
     </div>
     <div class="login-error" id="login-error"></div>
     <button class="login-btn" id="login-btn" onclick="submitLogin()">Sign In</button>
-    <div class="login-hint" id="login-hint" style="display:none">Change your password anytime from Settings.</div>
+    <div id="login-toggle" style="margin-top:12px;text-align:center;font-size:12px;color:var(--text-2)">
+      Don't have an account? <a href="#" onclick="toggleAuthMode();return false;" id="login-toggle-link" style="color:var(--blue);text-decoration:none">Create one</a>
+    </div>
+    <div class="login-hint" id="login-hint" style="display:none">You can update your password from Settings.</div>
   </div>
 </div>
 
@@ -813,13 +833,9 @@
             </div>
             <div class="settings-card-body">
               <div class="settings-field">
-                <label>Current Password</label>
-                <input type="password" id="sec-current" placeholder="Enter current password" />
-              </div>
-              <div class="settings-field">
                 <label>New Password</label>
                 <input type="password" id="sec-new" placeholder="Choose a new password" />
-                <div class="field-hint">Minimum 4 characters.</div>
+                <div class="field-hint">Minimum 6 characters.</div>
               </div>
               <div class="settings-field">
                 <label>Confirm New Password</label>
@@ -985,6 +1001,17 @@ const INVEST_CATS = [
   {key:'education',       label:'Education / Courses'},
   {key:'other',           label:'Other Investment'},
 ];
+// ── DYNAMIC CATEGORIES ──
+function getCats(section) {
+  if(appData && appData.customCats && appData.customCats[section] && appData.customCats[section].length)
+    return appData.customCats[section];
+  if(section==='income')      return INCOME_CATS;
+  if(section==='expenses')    return EXPENSE_CATS;
+  if(section==='savings')     return SAVINGS_CATS;
+  if(section==='investments') return INVEST_CATS;
+  return [];
+}
+
 const SCORECARD_GOALS = [
   {key:'income',       label:'Income ($)',         goal:'N/A'},
   {key:'expenses',     label:'Total Expenses ($)', goal:'N/A'},
@@ -1058,73 +1085,93 @@ function getDefaultData() {
   };
 }
 
+// ── SUPABASE ──
+// Replace these with your project values from supabase.com → Project Settings → API
+const SUPABASE_URL      = 'YOUR_SUPABASE_URL';
+const SUPABASE_ANON_KEY = 'YOUR_SUPABASE_ANON_KEY';
+const _supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
 // ── STORAGE ──
 const STORAGE_KEY = 'stantonFinancial2026';
-const PW_KEY      = 'sft_stanton_pw_v1';
 let appData = {};
 let charts  = {};
 
-function loadData() { try { const r=localStorage.getItem(STORAGE_KEY); if(r) return JSON.parse(r); } catch(e){} return null; }
-function saveData() { localStorage.setItem(STORAGE_KEY, JSON.stringify(appData)); showToast('Saved'); }
+function loadDataLocal() { try { const r=localStorage.getItem(STORAGE_KEY); if(r) return JSON.parse(r); } catch(e){} return null; }
+function saveData() {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(appData));
+  showToast('Saved');
+  _supabase.auth.getSession().then(({ data: { session } }) => {
+    if (!session) return;
+    _supabase.from('user_data').upsert({ user_id: session.user.id, data: appData, updated_at: new Date().toISOString() })
+      .then(({ error }) => { if (error) console.error('Supabase sync error:', error); });
+  });
+}
 
-// ── PASSWORD ──
-function getStoredHash() { return localStorage.getItem(PW_KEY); }
-function hashPw(pw)       { return btoa(unescape(encodeURIComponent(pw))); }
-function isFirstTime()    { return !getStoredHash(); }
+// ── AUTH ──
+let _authMode = 'signin';
 
 function initLoginScreen() {
-  if (isFirstTime()) {
-    document.getElementById('login-title').textContent    = 'Create your password';
-    document.getElementById('login-subtitle').textContent = 'Set a password to protect your tracker.';
-    document.getElementById('login-pw-label').textContent = 'New Password';
-    document.getElementById('login-input').placeholder    = 'Choose a password';
-    document.getElementById('login-confirm-field').style.display = '';
-    document.getElementById('login-btn').textContent      = 'Create Password';
-    document.getElementById('login-hint').style.display   = '';
-  } else {
-    document.getElementById('login-title').textContent    = 'Stanton Finance';
-    document.getElementById('login-subtitle').textContent = 'Enter your password to continue.';
-    document.getElementById('login-pw-label').textContent = 'Password';
-    document.getElementById('login-input').placeholder    = 'Enter password';
-    document.getElementById('login-confirm-field').style.display = 'none';
-    document.getElementById('login-btn').textContent      = 'Sign In';
-    document.getElementById('login-hint').style.display   = 'none';
-  }
-  document.getElementById('login-input').value   = '';
+  _authMode = 'signin';
+  document.getElementById('login-title').textContent    = 'Stanton Finance';
+  document.getElementById('login-subtitle').textContent = 'Sign in to access your tracker.';
+  document.getElementById('login-pw-label').textContent = 'Password';
+  document.getElementById('login-input').placeholder    = 'Enter password';
+  document.getElementById('login-confirm-field').style.display = 'none';
+  document.getElementById('login-btn').textContent      = 'Sign In';
+  document.getElementById('login-hint').style.display   = 'none';
+  document.getElementById('login-toggle-link').textContent = 'Create one';
+  document.getElementById('login-email').value  = '';
+  document.getElementById('login-input').value  = '';
   document.getElementById('login-confirm').value = '';
   document.getElementById('login-error').classList.remove('show');
   document.getElementById('login-input').classList.remove('error');
 }
 
-function submitLogin() {
-  const input=document.getElementById('login-input'), confirm=document.getElementById('login-confirm'), error=document.getElementById('login-error');
-  if (isFirstTime()) {
-    if (input.value.length<4) { error.textContent='Password must be at least 4 characters.'; error.classList.add('show'); input.classList.add('error'); input.focus(); return; }
-    if (input.value!==confirm.value) { error.textContent='Passwords do not match.'; error.classList.add('show'); confirm.classList.add('error'); confirm.focus(); return; }
-    localStorage.setItem(PW_KEY, hashPw(input.value));
-    document.getElementById('login-overlay').style.display='none';
-    input.value=''; confirm.value='';
-    showThemePicker(true);
+function toggleAuthMode() {
+  if (_authMode === 'signin') {
+    _authMode = 'signup';
+    document.getElementById('login-title').textContent    = 'Create Account';
+    document.getElementById('login-subtitle').textContent = 'Set up your Stanton Finance account.';
+    document.getElementById('login-btn').textContent      = 'Create Account';
+    document.getElementById('login-confirm-field').style.display = '';
+    document.getElementById('login-hint').style.display   = '';
+    document.getElementById('login-toggle-link').textContent = 'Sign in instead';
   } else {
-    if (hashPw(input.value)===getStoredHash()) {
-      document.getElementById('login-overlay').style.display='none';
-      input.classList.remove('error'); error.classList.remove('show'); input.value='';
-    } else {
-      error.textContent='Incorrect password. Please try again.';
-      input.classList.add('error'); error.classList.add('show'); input.focus();
-    }
+    initLoginScreen();
   }
 }
 
-function logOut() {
-  const overlay = document.getElementById('login-overlay');
-  // Reset login form to sign-in mode
-  document.getElementById('login-input').value = '';
-  document.getElementById('login-error').classList.remove('show');
+async function submitLogin() {
+  const email    = document.getElementById('login-email').value.trim();
+  const password = document.getElementById('login-input').value;
+  const confirm  = document.getElementById('login-confirm').value;
+  const error    = document.getElementById('login-error');
+  const btn      = document.getElementById('login-btn');
+  error.classList.remove('show');
+  error.style.color = '';
   document.getElementById('login-input').classList.remove('error');
-  initLoginScreen();
-  overlay.style.display = 'flex';
+  if (!email)    { error.textContent='Please enter your email.';    error.classList.add('show'); return; }
+  if (!password) { error.textContent='Please enter your password.'; error.classList.add('show'); return; }
+  btn.disabled = true;
+  if (_authMode === 'signup') {
+    btn.textContent = 'Creating...';
+    if (password.length < 6) { error.textContent='Password must be at least 6 characters.'; error.classList.add('show'); btn.textContent='Create Account'; btn.disabled=false; return; }
+    if (password !== confirm)  { error.textContent='Passwords do not match.'; error.classList.add('show'); btn.textContent='Create Account'; btn.disabled=false; return; }
+    const { error: err } = await _supabase.auth.signUp({ email, password });
+    if (err) { error.textContent=err.message; error.classList.add('show'); btn.textContent='Create Account'; btn.disabled=false; return; }
+    error.textContent = 'Check your email to confirm your account, then sign in.';
+    error.style.color = 'var(--green)';
+    error.classList.add('show');
+    btn.textContent='Create Account'; btn.disabled=false;
+  } else {
+    btn.textContent = 'Signing in...';
+    const { error: err } = await _supabase.auth.signInWithPassword({ email, password });
+    if (err) { error.textContent=err.message; error.classList.add('show'); document.getElementById('login-input').classList.add('error'); btn.textContent='Sign In'; btn.disabled=false; return; }
+    btn.textContent='Sign In'; btn.disabled=false;
+  }
 }
+
+function logOut() { _supabase.auth.signOut(); }
 
 function toggleLoginEye() {
   const input=document.getElementById('login-input'), icon=document.getElementById('login-eye-icon');
@@ -1173,7 +1220,7 @@ function monthInvestPct(m) { const i=monthIncome(m); return i>0?monthInvest(m)/i
 function annualTotal(fn)   { return MK.reduce((a,m)=>a+fn(m),0); }
 function ytdSavings()      { let c=0; return MK.map(m=>{c+=monthSavings(m);return c;}); }
 function countProfitable() { return MK.filter(m=>monthPL(m)>0).length; }
-function expenseBreakdown(){ const t={}; EXPENSE_CATS.forEach(c=>{t[c.label]=MK.reduce((a,m)=>a+(parseFloat(appData.expenses[m][c.key])||0),0);}); return t; }
+function expenseBreakdown(){ const t={}; getCats('expenses').forEach(c=>{t[c.label]=MK.reduce((a,m)=>a+(parseFloat(appData.expenses[m][c.key])||0),0);}); return t; }
 
 // ── FORMATTING ──
 function fmt$(v)     { if(v==null) return '—'; return '$'+Math.abs(v).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}); }
@@ -1215,26 +1262,65 @@ function renderDashboard() {
 
 // ── DATA TABLE ──
 function renderDataTable(containerId,cats,sectionKey){
-  let html=`<table><thead><tr><th>Category</th>${MONTH_SHORT.map(m=>`<th>${m}</th>`).join('')}<th>Total</th><th>Avg</th></tr></thead><tbody>`;
+  let html=`<table><thead><tr><th>Category</th>${MONTH_SHORT.map(m=>`<th>${m}</th>`).join('')}<th>Total</th><th>Avg</th><th class="cat-action-col"></th></tr></thead><tbody>`;
   cats.forEach(cat=>{
     const ct=MK.reduce((a,m)=>a+(parseFloat(appData[sectionKey][m][cat.key])||0),0);
     const nz=MK.filter(m=>(parseFloat(appData[sectionKey][m][cat.key])||0)>0).length||1;
-    html+=`<tr><td>${cat.label}</td>`;
+    html+=`<tr><td><span class="cat-label" ondblclick="startRenameCat(this,'${sectionKey}','${esc(cat.key)}')" title="Double-click to rename">${esc(cat.label)}</span></td>`;
     MK.forEach(mk=>{const v=appData[sectionKey][mk][cat.key]||0;html+=`<td><input type="number" step="0.01" value="${v>0?v:''}" placeholder="0" onchange="updateValue('${sectionKey}','${mk}','${cat.key}',this.value)"/></td>`;});
-    html+=`<td><strong>${fmt$(ct)}</strong></td><td class="val-neutral">${ct>0?fmt$(ct/nz):'—'}</td></tr>`;
+    html+=`<td><strong>${fmt$(ct)}</strong></td><td class="val-neutral">${ct>0?fmt$(ct/nz):'—'}</td><td class="cat-action-col"><button class="cat-delete-btn" onclick="deleteCat('${sectionKey}','${esc(cat.key)}')" title="Delete row">×</button></td></tr>`;
   });
   html+=`<tr class="total-row"><td>Total</td>`;
   MK.forEach(mk=>{html+=`<td>${fmt$(sumCats(sectionKey,mk))}</td>`;});
   const g=annualTotal(m=>sumCats(sectionKey,m));
-  html+=`<td>${fmt$(g)}</td><td>${fmt$(g/12)}</td></tr></tbody></table>`;
+  html+=`<td>${fmt$(g)}</td><td>${fmt$(g/12)}</td><td class="cat-action-col"></td></tr>`;
+  html+=`<tr class="cat-add-row"><td colspan="16"><button class="cat-add-btn" onclick="addCat('${sectionKey}','${containerId}')">+ Add Category</button></td></tr>`;
+  html+='</tbody></table>';
   document.getElementById(containerId).innerHTML=html;
 }
 
 function updateValue(sk,mk,ck,val){ appData[sk][mk][ck]=parseFloat(val)||0; saveData(); refreshAll(); }
 
+// ── CATEGORY MANAGEMENT ──
+function startRenameCat(el, sectionKey, key) {
+  const cur = el.textContent;
+  const inp = document.createElement('input');
+  inp.type = 'text'; inp.value = cur;
+  inp.style.cssText = 'background:var(--bg);border:1.5px solid var(--blue);border-radius:6px;padding:2px 6px;font-size:13px;color:var(--text);font-family:Inter,sans-serif;width:180px;outline:none;';
+  el.replaceWith(inp); inp.focus(); inp.select();
+  const save = () => { const v=inp.value.trim(); if(v&&v!==cur) renameCat(sectionKey,key,v); else refreshAll(); };
+  inp.addEventListener('blur', save);
+  inp.addEventListener('keydown', e => { if(e.key==='Enter') inp.blur(); if(e.key==='Escape'){inp.value=cur;inp.blur();} });
+}
+function renameCat(sectionKey, key, newLabel) {
+  if(!appData.customCats||!appData.customCats[sectionKey]) return;
+  const cat = appData.customCats[sectionKey].find(c=>c.key===key);
+  if(cat){ cat.label=newLabel; saveData(); refreshAll(); }
+}
+function addCat(sectionKey, containerId) {
+  if(!appData.customCats) appData.customCats={};
+  if(!appData.customCats[sectionKey]) appData.customCats[sectionKey]=JSON.parse(JSON.stringify(
+    sectionKey==='income'?INCOME_CATS:sectionKey==='expenses'?EXPENSE_CATS:sectionKey==='savings'?SAVINGS_CATS:INVEST_CATS));
+  const newKey='c'+Date.now();
+  appData.customCats[sectionKey].push({key:newKey,label:'New Category'});
+  MK.forEach(m=>{ if(appData[sectionKey]&&appData[sectionKey][m]) appData[sectionKey][m][newKey]=0; });
+  saveData(); refreshAll();
+  setTimeout(()=>{
+    const labels=document.querySelectorAll('#'+containerId+' .cat-label');
+    if(labels.length) startRenameCat(labels[labels.length-1],sectionKey,newKey);
+  },80);
+}
+function deleteCat(sectionKey, key) {
+  if(!confirm('Delete this category? All its data will be removed.')) return;
+  if(!appData.customCats||!appData.customCats[sectionKey]) return;
+  appData.customCats[sectionKey]=appData.customCats[sectionKey].filter(c=>c.key!==key);
+  MK.forEach(m=>{ if(appData[sectionKey]&&appData[sectionKey][m]) delete appData[sectionKey][m][key]; });
+  saveData(); refreshAll();
+}
+
 // ── P&L ──
 function renderPL(){
-  renderDataTable('pl-wrap',INCOME_CATS,'income');
+  renderDataTable('pl-wrap',getCats('income'),'income');
   let html=`<table><thead><tr><th>Metric</th>${MONTH_SHORT.map(m=>`<th>${m}</th>`).join('')}<th>Total</th></tr></thead><tbody>`;
   const rows=[
     {label:'Net P&L ($)',   fn:m=>fmtSign$(monthPL(m)),total:()=>fmtSign$(annualTotal(monthPL))},
@@ -1248,14 +1334,14 @@ function renderPL(){
 
 // ── SAVINGS ──
 function renderSavings(){
-  renderDataTable('savings-wrap',SAVINGS_CATS,'savings');
+  renderDataTable('savings-wrap',getCats('savings'),'savings');
   const cumul=ytdSavings();
   let html=`<table><thead><tr><th>Metric</th>${MONTH_SHORT.map(m=>`<th>${m}</th>`).join('')}</tr></thead><tbody>`;
   html+=`<tr><td>Savings Rate %</td>${MK.map(m=>{const r=monthSavRate(m);return`<td>${r!=null?`<span class="val-blue">${fmtPct(r)}</span>`:'—'}</td>`;}).join('')}</tr>`;
   html+=`<tr><td>YTD Cumulative</td>${cumul.map(v=>`<td>${fmt$(v)}</td>`).join('')}</tr>`;
   html+='</tbody></table>';
   document.getElementById('savings-ytd-wrap').innerHTML=html;
-  renderBalances('savings-balances-wrap', SAVINGS_CATS, 'savings');
+  renderBalances('savings-balances-wrap', getCats('savings'), 'savings');
 }
 
 // ── BALANCES TABLE ──
@@ -1304,7 +1390,7 @@ function updateBalance(section,key,val){
   if(!appData.balances[section]) appData.balances[section]={};
   appData.balances[section][key]=parseFloat(val)||0;
   saveData();
-  renderBalances(section==='savings'?'savings-balances-wrap':'investments-balances-wrap', section==='savings'?SAVINGS_CATS:INVEST_CATS, section);
+  renderBalances(section==='savings'?'savings-balances-wrap':'investments-balances-wrap', getCats(section), section);
 }
 
 // ── DEBT PAYOFF ──
@@ -1519,7 +1605,7 @@ function budgetData() {
 }
 
 function getActuals(monthKey, section) {
-  const cats = section === 'income' ? INCOME_CATS : EXPENSE_CATS;
+  const cats = section === 'income' ? getCats('income') : getCats('expenses');
   const dataKey = section === 'income' ? 'income' : 'expenses';
   const t = {};
   if(monthKey === 'all') {
@@ -1542,13 +1628,13 @@ function renderBudget() {
   const expActuals = getActuals(monthKey, 'expenses');
 
   let totalIncBudget=0, totalIncActual=0;
-  INCOME_CATS.forEach(c => {
+  getCats('income').forEach(c => {
     totalIncBudget  += (parseFloat(bd.income[c.key])||0) * mult;
     totalIncActual  += incActuals[c.key]||0;
   });
 
   let totalExpBudget=0, totalExpActual=0;
-  EXPENSE_CATS.forEach(c => {
+  getCats('expenses').forEach(c => {
     totalExpBudget  += (parseFloat(bd.expenses[c.key])||0) * mult;
     totalExpActual  += expActuals[c.key]||0;
   });
@@ -1570,13 +1656,13 @@ function renderBudget() {
   document.getElementById('budget-kpi').innerHTML = kpis.map(k=>`<div class="kpi-card ${k.cls}"><div class="kpi-label">${k.label}</div><div class="kpi-value">${k.value}</div><div class="kpi-sub">${k.sub}</div></div>`).join('');
 
   // Income targets table
-  renderBudgetTable('budget-income-wrap', INCOME_CATS, bd.income, incActuals, mult, isYear, 'income', 'val-positive', 'more is better');
+  renderBudgetTable('budget-income-wrap', getCats('income'), bd.income, incActuals, mult, isYear, 'income', 'val-positive', 'more is better');
 
   // Expense targets table
-  renderBudgetTable('budget-table-wrap', EXPENSE_CATS, bd.expenses, expActuals, mult, isYear, 'expenses', 'val-negative', 'less is better');
+  renderBudgetTable('budget-table-wrap', getCats('expenses'), bd.expenses, expActuals, mult, isYear, 'expenses', 'val-negative', 'less is better');
 
   // Category cards (expenses only)
-  document.getElementById('budget-category-cards').innerHTML = EXPENSE_CATS.map(c => {
+  document.getElementById('budget-category-cards').innerHTML = getCats('expenses').map(c => {
     const bRaw = parseFloat(bd.expenses[c.key])||0;
     const b = bRaw * mult, a = expActuals[c.key]||0;
     if(b===0 && a===0) return '';
@@ -1621,8 +1707,8 @@ function renderBudgetTable(containerId, cats, budgetSection, actuals, mult, isYe
 }
 
 function renderBudgetChart(expActuals, incActuals, mult, bd) {
-  const expCats = EXPENSE_CATS.filter(c => (parseFloat(bd.expenses[c.key])||0)*mult>0 || expActuals[c.key]>0);
-  const incCats = INCOME_CATS.filter(c =>  (parseFloat(bd.income[c.key])||0)*mult>0  || incActuals[c.key]>0);
+  const expCats = getCats('expenses').filter(c => (parseFloat(bd.expenses[c.key])||0)*mult>0 || expActuals[c.key]>0);
+  const incCats = getCats('income').filter(c =>  (parseFloat(bd.income[c.key])||0)*mult>0  || incActuals[c.key]>0);
   const allCats = [
     ...incCats.map(c=>({label:'↑ '+c.label, budget:(parseFloat(bd.income[c.key])||0)*mult, actual:incActuals[c.key]||0, type:'income'})),
     ...expCats.map(c=>({label:'↓ '+c.label, budget:(parseFloat(bd.expenses[c.key])||0)*mult, actual:expActuals[c.key]||0, type:'expense'})),
@@ -1925,7 +2011,7 @@ function renderSettings(){
   const a=document.getElementById('profile-avatar');if(a)a.textContent=(m.name||'S').charAt(0).toUpperCase();
   const sz=document.getElementById('storage-size');
   if(sz){try{const b=new Blob([JSON.stringify(localStorage)]).size;sz.textContent=b<1024?b+' B':(b/1024).toFixed(1)+' KB';}catch{sz.textContent='Unknown';}}
-  ['sec-current','sec-new','sec-confirm'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+  ['sec-new','sec-confirm'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
   const se=document.getElementById('sec-error'),so=document.getElementById('sec-success');
   if(se)se.classList.remove('show');if(so)so.classList.remove('show');
 }
@@ -1940,15 +2026,15 @@ function saveProfile(){
   const ok=document.getElementById('profile-success');ok.classList.add('show');
   setTimeout(()=>ok.classList.remove('show'),2500);
 }
-function savePassword(){
-  const cur=document.getElementById('sec-current').value,np=document.getElementById('sec-new').value,cf=document.getElementById('sec-confirm').value;
+async function savePassword(){
+  const np=document.getElementById('sec-new').value,cf=document.getElementById('sec-confirm').value;
   const err=document.getElementById('sec-error'),ok=document.getElementById('sec-success');
   err.classList.remove('show');ok.classList.remove('show');
-  if(!getStoredHash()||hashPw(cur)!==getStoredHash()){err.textContent='Current password is incorrect.';err.classList.add('show');return;}
-  if(np.length<4){err.textContent='New password must be at least 4 characters.';err.classList.add('show');return;}
+  if(np.length<6){err.textContent='New password must be at least 6 characters.';err.classList.add('show');return;}
   if(np!==cf){err.textContent='Passwords do not match.';err.classList.add('show');return;}
-  localStorage.setItem(PW_KEY,hashPw(np));
-  ['sec-current','sec-new','sec-confirm'].forEach(id=>document.getElementById(id).value='');
+  const { error } = await _supabase.auth.updateUser({ password: np });
+  if(error){err.textContent=error.message;err.classList.add('show');return;}
+  ['sec-new','sec-confirm'].forEach(id=>document.getElementById(id).value='');
   ok.classList.add('show');setTimeout(()=>ok.classList.remove('show'),2500);
 }
 
@@ -1975,12 +2061,15 @@ function updateCharts(){
 // ── REFRESH ──
 function refreshAll(){
   renderDashboard();renderPL();
-  renderDataTable('expenses-wrap',EXPENSE_CATS,'expenses');
+  renderDataTable('expenses-wrap',getCats('expenses'),'expenses');
   renderSavings();
-  renderDataTable('investments-wrap',INVEST_CATS,'investments');
-  renderBalances('investments-balances-wrap',INVEST_CATS,'investments');
+  renderDataTable('investments-wrap',getCats('investments'),'investments');
+  renderBalances('investments-balances-wrap',getCats('investments'),'investments');
   renderBudget();renderDebt();renderNetWorth();renderGoals();renderScorecard();renderNotes();renderSettings();
   updateCharts();
+  const high=generateInsights().filter(i=>i.priority==='high').length;
+  document.getElementById('insights-dot').classList.toggle('show',high>0);
+  if(document.getElementById('insights-panel').classList.contains('open')) renderInsightsPanel();
 }
 
 // ── IMPORT / EXPORT / RESET ──
@@ -2247,22 +2336,76 @@ function shareVideoLink() {
 }
 
 // ── INIT ──
-document.addEventListener('DOMContentLoaded',()=>{
-  applyTheme(localStorage.getItem(THEME_KEY)||'dark');
-  initLoginScreen();
-  appData=loadData()||getDefaultData();
+async function _initApp(userId) {
+  const { data } = await _supabase.from('user_data').select('data').eq('user_id', userId).single();
+  if (data?.data) {
+    appData = data.data;
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(appData));
+  } else {
+    appData = loadDataLocal() || getDefaultData();
+    await _supabase.from('user_data').upsert({ user_id: userId, data: appData, updated_at: new Date().toISOString() });
+  }
   if(!appData.meta) appData.meta={name:'',year:new Date().getFullYear().toString(),currency:'$'};
   if(!appData.notes) appData.notes=Object.fromEntries(MK.map(m=>[m,{wins:'',challenges:'',actions:'',notes:''}]));
   if(!appData.balances) appData.balances={savings:{},investments:{}};
   if(!appData.debts)    appData.debts=[];
   if(!appData.budget||!appData.budget.expenses) appData.budget={income:{},expenses:{}};
   if(!appData.netWorth) appData.netWorth={assets:{},liabilities:{},history:[]};
+  if(!appData.customCats) appData.customCats={
+    income:      JSON.parse(JSON.stringify(INCOME_CATS)),
+    expenses:    JSON.parse(JSON.stringify(EXPENSE_CATS)),
+    savings:     JSON.parse(JSON.stringify(SAVINGS_CATS)),
+    investments: JSON.parse(JSON.stringify(INVEST_CATS))
+  };
   refreshAll();
   initCharts();
   setTimeout(()=>{ if(generateInsights().filter(i=>i.priority==='high').length>0) document.getElementById('insights-dot').classList.add('show'); },600);
-  // Auto-launch tutorial for first-time users
-  if(!localStorage.getItem(TUTORIAL_KEY) && !localStorage.getItem(PW_KEY)) {
-    setTimeout(startTutorial, 800);
+  if(!localStorage.getItem(TUTORIAL_KEY)) { setTimeout(startTutorial, 800); }
+}
+
+const SUPABASE_CONFIGURED = SUPABASE_URL !== 'YOUR_SUPABASE_URL' && SUPABASE_ANON_KEY !== 'YOUR_SUPABASE_ANON_KEY';
+
+document.addEventListener('DOMContentLoaded', async () => {
+  applyTheme(localStorage.getItem(THEME_KEY)||'dark');
+
+  if (!SUPABASE_CONFIGURED) {
+    // Supabase not set up yet — run fully local like before
+    appData = loadDataLocal() || getDefaultData();
+    if(!appData.meta) appData.meta={name:'',year:new Date().getFullYear().toString(),currency:'$'};
+    if(!appData.notes) appData.notes=Object.fromEntries(MK.map(m=>[m,{wins:'',challenges:'',actions:'',notes:''}]));
+    if(!appData.balances) appData.balances={savings:{},investments:{}};
+    if(!appData.debts)    appData.debts=[];
+    if(!appData.budget||!appData.budget.expenses) appData.budget={income:{},expenses:{}};
+    if(!appData.netWorth) appData.netWorth={assets:{},liabilities:{},history:[]};
+    if(!appData.customCats) appData.customCats={
+      income:      JSON.parse(JSON.stringify(INCOME_CATS)),
+      expenses:    JSON.parse(JSON.stringify(EXPENSE_CATS)),
+      savings:     JSON.parse(JSON.stringify(SAVINGS_CATS)),
+      investments: JSON.parse(JSON.stringify(INVEST_CATS))
+    };
+    refreshAll();
+    initCharts();
+    setTimeout(()=>{ if(generateInsights().filter(i=>i.priority==='high').length>0) document.getElementById('insights-dot').classList.add('show'); },600);
+    if(!localStorage.getItem(TUTORIAL_KEY)) { setTimeout(startTutorial, 800); }
+    return;
+  }
+
+  initLoginScreen();
+
+  _supabase.auth.onAuthStateChange(async (event, session) => {
+    if (event === 'SIGNED_IN' && session) {
+      document.getElementById('login-overlay').style.display = 'none';
+      await _initApp(session.user.id);
+    } else if (event === 'SIGNED_OUT') {
+      document.getElementById('login-overlay').style.display = 'flex';
+      initLoginScreen();
+    }
+  });
+
+  const { data: { session } } = await _supabase.auth.getSession();
+  if (session) {
+    document.getElementById('login-overlay').style.display = 'none';
+    await _initApp(session.user.id);
   }
 });
 
@@ -2297,7 +2440,7 @@ function generateInsights(){
   const monthlyInc=ai/12;
   const monthlyExp=ae/12;
   const ccAnnual=MK.reduce((s,m)=>s+(parseFloat(appData.expenses[m].creditCard)||0),0);
-  const emergAnnual=MK.reduce((s,m)=>s+(parseFloat(appData.savings[m].emergency)||0),0);
+  const emergBalance=parseFloat(appData.netWorth?.assets?.emergencyFund)||parseFloat(appData.balances?.savings?.emergency)||0;
   const rothAnnual=MK.reduce((s,m)=>s+(parseFloat(appData.savings[m].roth)||0),0);
   const k401Annual=MK.reduce((s,m)=>s+(parseFloat(appData.savings[m].k401)||0),0);
   const bitcoinAnnual=MK.reduce((s,m)=>s+(parseFloat(appData.savings[m].bitcoin)||0),0);
@@ -2317,16 +2460,19 @@ function generateInsights(){
   }
 
   if(hasIncome && monthlyExp>0){
-    const monthsOfExpenses=emergAnnual/monthlyExp;
-    if(monthsOfExpenses<3){
+    const monthsOfExpenses=emergBalance/monthlyExp;
+    if(emergBalance===0){
       insights.push({priority:'high',section:'Safety Net',analystIdx:0,title:'Emergency Fund Below 3 Months',
-        body:`You have ~${monthsOfExpenses.toFixed(1)} months of expenses saved. Dave Ramsey's Baby Step 3 calls for 3–6 months fully funded before aggressive investing. Aim for $${Math.round(monthlyExp*3).toLocaleString()} minimum.`});
+        body:`No emergency fund balance recorded. Dave Ramsey's Baby Step 3 calls for 3–6 months fully funded. Enter your current balance in the Savings tab → Current Balances section. Aim for $${Math.round(monthlyExp*3).toLocaleString()} minimum.`});
+    } else if(monthsOfExpenses<3){
+      insights.push({priority:'high',section:'Safety Net',analystIdx:0,title:'Emergency Fund Below 3 Months',
+        body:`Your $${emergBalance.toLocaleString()} balance covers ~${monthsOfExpenses.toFixed(1)} months of expenses. Dave Ramsey's Baby Step 3 calls for 3–6 months fully funded. Aim for $${Math.round(monthlyExp*3).toLocaleString()} minimum.`});
     } else if(monthsOfExpenses<6){
       insights.push({priority:'medium',section:'Safety Net',analystIdx:4,title:'Build to 6-Month Emergency Fund',
-        body:`You have ~${monthsOfExpenses.toFixed(1)} months covered. Tony Robbins calls this your "Freedom Fund" — the first layer of financial security. Push to 6 months to sleep easy no matter what happens.`});
+        body:`Your $${emergBalance.toLocaleString()} covers ~${monthsOfExpenses.toFixed(1)} months. Tony Robbins calls this your "Freedom Fund" — the first layer of financial security. Push to $${Math.round(monthlyExp*6).toLocaleString()} to fully fund 6 months.`});
     } else {
       insights.push({priority:'low',section:'Safety Net',analystIdx:4,title:'Emergency Fund is Solid',
-        body:`With ${monthsOfExpenses.toFixed(1)} months of coverage, your safety net is strong. You can now redirect energy toward accelerating wealth-building contributions.`});
+        body:`$${emergBalance.toLocaleString()} covers ${monthsOfExpenses.toFixed(1)} months of expenses. Your safety net is strong. You can now redirect energy toward accelerating wealth-building contributions.`});
     }
   }
 
