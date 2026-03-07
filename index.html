@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Stanton Financial Tracker 2026</title>
+  <title>5Stack.ai — Financial Tracker 2026</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
@@ -398,7 +398,7 @@
 <div class="login-overlay" id="login-overlay">
   <div class="login-card">
     <div class="login-logo">S</div>
-    <h1 id="login-title">Stanton Finance</h1>
+    <h1 id="login-title">5Stack.ai</h1>
     <p id="login-subtitle">Sign in to access your tracker.</p>
     <div class="login-field">
       <label>Username</label>
@@ -420,6 +420,10 @@
     <div id="login-toggle" style="margin-top:12px;text-align:center;font-size:12px;color:var(--text-2)">
       Don't have an account? <a href="#" onclick="toggleAuthMode();return false;" id="login-toggle-link" style="color:var(--blue);text-decoration:none">Create one</a>
     </div>
+    <div style="margin-top:20px;padding-top:16px;border-top:1px solid var(--border-dim);text-align:center">
+      <button onclick="loadDemoData()" style="background:none;border:1px solid var(--border);color:var(--text-2);font-size:12px;font-family:inherit;padding:8px 20px;border-radius:999px;cursor:pointer;transition:all .15s" onmouseover="this.style.borderColor='var(--text-3)';this.style.color='var(--text)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--text-2)'">View Demo</button>
+      <div style="font-size:11px;color:var(--text-3);margin-top:6px">Explore with sample data — no account needed</div>
+    </div>
     <div class="login-hint" id="login-hint" style="display:none">You can update your password from Settings.</div>
   </div>
 </div>
@@ -431,7 +435,7 @@
     <div class="sidebar-logo">
       <div class="logo-mark">S</div>
       <div>
-        <div class="logo-title">Stanton Finance</div>
+        <div class="logo-title">5Stack.ai</div>
         <div class="logo-sub" id="sidebar-year">2026</div>
       </div>
     </div>
@@ -935,7 +939,7 @@
             </div>
             <div class="settings-card-body">
               <div style="display:flex;flex-direction:column;gap:14px">
-                <div><div style="font-size:11px;color:var(--text-3);text-transform:uppercase;letter-spacing:.6px;font-weight:600;margin-bottom:4px">App</div><div style="font-size:13.5px">Stanton Financial Tracker</div></div>
+                <div><div style="font-size:11px;color:var(--text-3);text-transform:uppercase;letter-spacing:.6px;font-weight:600;margin-bottom:4px">App</div><div style="font-size:13.5px">5Stack.ai Financial Tracker</div></div>
                 <div><div style="font-size:11px;color:var(--text-3);text-transform:uppercase;letter-spacing:.6px;font-weight:600;margin-bottom:4px">Version</div><div style="font-size:13.5px">1.0 — Personal Edition</div></div>
                 <div><div style="font-size:11px;color:var(--text-3);text-transform:uppercase;letter-spacing:.6px;font-weight:600;margin-bottom:4px">Storage</div><div style="font-size:13.5px">Local — this browser only</div></div>
                 <div><div style="font-size:11px;color:var(--text-3);text-transform:uppercase;letter-spacing:.6px;font-weight:600;margin-bottom:4px">Storage Used</div><div style="font-size:13.5px" id="storage-size">—</div></div>
@@ -1112,7 +1116,7 @@ let _authMode = 'signin';
 
 function initLoginScreen() {
   _authMode = 'signin';
-  document.getElementById('login-title').textContent    = 'Stanton Finance';
+  document.getElementById('login-title').textContent    = '5Stack.ai';
   document.getElementById('login-subtitle').textContent = 'Enter your username and password to continue.';
   document.getElementById('login-pw-label').textContent = 'Password';
   document.getElementById('login-input').placeholder    = 'Enter password';
@@ -1143,7 +1147,7 @@ function toggleAuthMode() {
 
 async function submitLogin() {
   const username = document.getElementById('login-email').value.trim().toLowerCase().replace(/\s+/g,'');
-  const email    = username + '@stantonfinancial.app';
+  const email    = username + '@5stackfinancial.app';
   const password = document.getElementById('login-input').value;
   const confirm  = document.getElementById('login-confirm').value;
   const error    = document.getElementById('login-error');
@@ -2076,7 +2080,7 @@ function refreshAll(){
 // ── IMPORT / EXPORT / RESET ──
 function exportData(){
   const blob=new Blob([JSON.stringify(appData,null,2)],{type:'application/json'});
-  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='stanton-financial-2026.json';a.click();
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='5stack-financial-2026.json';a.click();
 }
 function importData(e){
   const file=e.target.files[0];if(!file)return;
@@ -2333,7 +2337,137 @@ function copyVideoLink() {
 function shareVideoLink() {
   const url = localStorage.getItem(DEMO_VIDEO_KEY);
   if(!url || !navigator.share) return;
-  navigator.share({ title: 'Stanton Financial Tracker — Demo', url }).catch(()=>{});
+  navigator.share({ title: '5Stack.ai Financial Tracker — Demo', url }).catch(()=>{});
+}
+
+// ── DEMO MODE ──
+function getDemoData() {
+  return {
+    meta: {name:'Alex Rivera', year:'2026', currency:'$'},
+    income: {
+      jan:{salary:9500,bonus:0,freelance:1800,rental:2200,other:0},
+      feb:{salary:9500,bonus:8000,freelance:0,rental:2200,other:0},
+      mar:{salary:9500,bonus:0,freelance:950,rental:2200,other:0},
+      apr:{salary:0,bonus:0,freelance:0,rental:0,other:0},
+      may:{salary:0,bonus:0,freelance:0,rental:0,other:0},
+      jun:{salary:0,bonus:0,freelance:0,rental:0,other:0},
+      jul:{salary:0,bonus:0,freelance:0,rental:0,other:0},
+      aug:{salary:0,bonus:0,freelance:0,rental:0,other:0},
+      sep:{salary:0,bonus:0,freelance:0,rental:0,other:0},
+      oct:{salary:0,bonus:0,freelance:0,rental:0,other:0},
+      nov:{salary:0,bonus:0,freelance:0,rental:0,other:0},
+      dec:{salary:0,bonus:0,freelance:0,rental:0,other:0},
+    },
+    expenses: {
+      jan:{mortgage:2640,vehicle:485,insurance:210,phone:95,electric:185,propane:220,water:78,tv:185,groceries:740,dining:520,gas:240,creditCard:450,subscriptions:94,health:180,other:320},
+      feb:{mortgage:2640,vehicle:485,insurance:210,phone:95,electric:162,propane:195,water:78,tv:185,groceries:820,dining:680,gas:215,creditCard:450,subscriptions:94,health:180,other:175},
+      mar:{mortgage:2640,vehicle:485,insurance:210,phone:95,electric:148,propane:180,water:78,tv:185,groceries:390,dining:210,gas:110,creditCard:450,subscriptions:94,health:180,other:0},
+      apr:{mortgage:0,vehicle:0,insurance:0,phone:0,electric:0,propane:0,water:0,tv:0,groceries:0,dining:0,gas:0,creditCard:0,subscriptions:0,health:0,other:0},
+      may:{mortgage:0,vehicle:0,insurance:0,phone:0,electric:0,propane:0,water:0,tv:0,groceries:0,dining:0,gas:0,creditCard:0,subscriptions:0,health:0,other:0},
+      jun:{mortgage:0,vehicle:0,insurance:0,phone:0,electric:0,propane:0,water:0,tv:0,groceries:0,dining:0,gas:0,creditCard:0,subscriptions:0,health:0,other:0},
+      jul:{mortgage:0,vehicle:0,insurance:0,phone:0,electric:0,propane:0,water:0,tv:0,groceries:0,dining:0,gas:0,creditCard:0,subscriptions:0,health:0,other:0},
+      aug:{mortgage:0,vehicle:0,insurance:0,phone:0,electric:0,propane:0,water:0,tv:0,groceries:0,dining:0,gas:0,creditCard:0,subscriptions:0,health:0,other:0},
+      sep:{mortgage:0,vehicle:0,insurance:0,phone:0,electric:0,propane:0,water:0,tv:0,groceries:0,dining:0,gas:0,creditCard:0,subscriptions:0,health:0,other:0},
+      oct:{mortgage:0,vehicle:0,insurance:0,phone:0,electric:0,propane:0,water:0,tv:0,groceries:0,dining:0,gas:0,creditCard:0,subscriptions:0,health:0,other:0},
+      nov:{mortgage:0,vehicle:0,insurance:0,phone:0,electric:0,propane:0,water:0,tv:0,groceries:0,dining:0,gas:0,creditCard:0,subscriptions:0,health:0,other:0},
+      dec:{mortgage:0,vehicle:0,insurance:0,phone:0,electric:0,propane:0,water:0,tv:0,groceries:0,dining:0,gas:0,creditCard:0,subscriptions:0,health:0,other:0},
+    },
+    savings: {
+      jan:{emergency:500,general:1200,k401:1000,roth:583,bitcoin:300,bitcoinIRA:0,cryptoOther:0,lifeInsurance:100,other:0},
+      feb:{emergency:500,general:1200,k401:1000,roth:583,bitcoin:300,bitcoinIRA:0,cryptoOther:0,lifeInsurance:100,other:0},
+      mar:{emergency:500,general:600,k401:1000,roth:583,bitcoin:300,bitcoinIRA:0,cryptoOther:0,lifeInsurance:100,other:0},
+      apr:{emergency:0,general:0,k401:0,roth:0,bitcoin:0,bitcoinIRA:0,cryptoOther:0,lifeInsurance:0,other:0},
+      may:{emergency:0,general:0,k401:0,roth:0,bitcoin:0,bitcoinIRA:0,cryptoOther:0,lifeInsurance:0,other:0},
+      jun:{emergency:0,general:0,k401:0,roth:0,bitcoin:0,bitcoinIRA:0,cryptoOther:0,lifeInsurance:0,other:0},
+      jul:{emergency:0,general:0,k401:0,roth:0,bitcoin:0,bitcoinIRA:0,cryptoOther:0,lifeInsurance:0,other:0},
+      aug:{emergency:0,general:0,k401:0,roth:0,bitcoin:0,bitcoinIRA:0,cryptoOther:0,lifeInsurance:0,other:0},
+      sep:{emergency:0,general:0,k401:0,roth:0,bitcoin:0,bitcoinIRA:0,cryptoOther:0,lifeInsurance:0,other:0},
+      oct:{emergency:0,general:0,k401:0,roth:0,bitcoin:0,bitcoinIRA:0,cryptoOther:0,lifeInsurance:0,other:0},
+      nov:{emergency:0,general:0,k401:0,roth:0,bitcoin:0,bitcoinIRA:0,cryptoOther:0,lifeInsurance:0,other:0},
+      dec:{emergency:0,general:0,k401:0,roth:0,bitcoin:0,bitcoinIRA:0,cryptoOther:0,lifeInsurance:0,other:0},
+    },
+    investments: {
+      jan:{property:0,homeImprovement:500,health:0,vehicle:0,education:200,other:0},
+      feb:{property:0,homeImprovement:0,health:0,vehicle:0,education:200,other:0},
+      mar:{property:0,homeImprovement:0,health:0,vehicle:0,education:200,other:0},
+      apr:{property:0,homeImprovement:0,health:0,vehicle:0,education:0,other:0},
+      may:{property:0,homeImprovement:0,health:0,vehicle:0,education:0,other:0},
+      jun:{property:0,homeImprovement:0,health:0,vehicle:0,education:0,other:0},
+      jul:{property:0,homeImprovement:0,health:0,vehicle:0,education:0,other:0},
+      aug:{property:0,homeImprovement:0,health:0,vehicle:0,education:0,other:0},
+      sep:{property:0,homeImprovement:0,health:0,vehicle:0,education:0,other:0},
+      oct:{property:0,homeImprovement:0,health:0,vehicle:0,education:0,other:0},
+      nov:{property:0,homeImprovement:0,health:0,vehicle:0,education:0,other:0},
+      dec:{property:0,homeImprovement:0,health:0,vehicle:0,education:0,other:0},
+    },
+    balances: {
+      savings:     {emergency:29000,general:18500,k401:148500,roth:31200,bitcoin:8400,bitcoinIRA:0,cryptoOther:0,lifeInsurance:8400,other:0},
+      investments: {property:0,homeImprovement:12500,health:0,vehicle:0,education:600,other:0},
+    },
+    debts: [
+      {name:'Visa Credit Card',  balance:5800,  apr:22.99, minPayment:175,  notes:'Transfer to 0% promo card'},
+      {name:'Honda Vehicle Loan',balance:14200, apr:6.49,  minPayment:485,  notes:'Payoff target: Dec 2027'},
+      {name:'Student Loan',      balance:12000, apr:4.5,   minPayment:135,  notes:'Federal — income-based option available'},
+    ],
+    budget: {
+      income:   {salary:9500,bonus:0,freelance:500,rental:2200,other:0},
+      expenses: {mortgage:2640,vehicle:485,insurance:210,phone:95,electric:160,propane:150,water:78,tv:185,groceries:800,dining:400,gas:220,creditCard:450,subscriptions:94,health:180,other:200},
+    },
+    netWorth: {
+      assets: {cashChecking:12400,cashSavings:18500,emergencyFund:29000,retirement401k:148500,rothIRA:31200,brokerageAccount:22000,bitcoin:24500,cryptoOther:0,primaryHome:510000,rentalProperty:0,vehicle:28000,lifeInsuranceCash:8400,otherAssets:0},
+      liabilities: {mortgageBalance:341000,homeLoanOther:0,vehicleLoan:14200,studentLoan:12000,creditCardDebt:5800,medicalDebt:0,otherDebt:0},
+      history: [
+        {date:'2025-10-01',assets:782000,liabilities:392000,net:390000},
+        {date:'2025-11-01',assets:796000,liabilities:388000,net:408000},
+        {date:'2025-12-01',assets:811000,liabilities:385000,net:426000},
+        {date:'2026-01-01',assets:820000,liabilities:381000,net:439000},
+        {date:'2026-02-01',assets:834000,liabilities:376000,net:458000},
+      ],
+    },
+    goals: [
+      {label:'Max ROTH IRA',          target:7000,  current:1749, dueDate:'2026-12-31', notes:'$583/mo automatic transfer'},
+      {label:'Fully Fund Emergency',   target:35000, current:29000,dueDate:'2026-09-30', notes:'Need $6,000 more'},
+      {label:'Pay Off Credit Card',    target:5800,  current:1800, dueDate:'2026-12-31', notes:'Avalanche method — highest APR first'},
+      {label:'Family Vacation Fund',   target:8000,  current:2500, dueDate:'2026-07-01', notes:'Hawaii trip — July 2026'},
+      {label:'New Roof Reserve',       target:15000, current:4200, dueDate:'2027-06-01', notes:'Getting 3 quotes in spring'},
+    ],
+    scorecard: {
+      jan:{wins:'Maxed 401(k) contribution. Sold old camera gear for $800. No impulse purchases.',challenges:'Dining out $120 over budget. Unexpected car repair $320.',actions:'Set up automatic ROTH transfer. Cancel unused gym membership.',notes:'Solid start. Cut dining budget to $400 for Feb.'},
+      feb:{wins:'$8,000 bonus — sent straight to savings. Lowest electric bill in 6 months. Stayed on grocery budget.',challenges:'Valentine\'s week pushed dining over budget again. Subscriptions need audit.',actions:'Apply bonus to credit card. Review and cancel redundant subscriptions.',notes:'Bonus month changed the picture. Net worth crossed $450k milestone. Feeling momentum.'},
+      mar:{wins:'',challenges:'',actions:'',notes:''},
+      apr:{wins:'',challenges:'',actions:'',notes:''},may:{wins:'',challenges:'',actions:'',notes:''},
+      jun:{wins:'',challenges:'',actions:'',notes:''},jul:{wins:'',challenges:'',actions:'',notes:''},
+      aug:{wins:'',challenges:'',actions:'',notes:''},sep:{wins:'',challenges:'',actions:'',notes:''},
+      oct:{wins:'',challenges:'',actions:'',notes:''},nov:{wins:'',challenges:'',actions:'',notes:''},
+      dec:{wins:'',challenges:'',actions:'',notes:''},
+    },
+    notes: {
+      jan:{wins:'January was a strong opener. Side income from freelance project exceeded expectations.',challenges:'Dining out remains the biggest variable expense and hardest to control.',actions:'Automate ROTH contribution. Set calendar reminder to review subscriptions Feb 1.',notes:'Overall grade: A-. Income up, debt down, savings on track.'},
+      feb:{wins:'Best savings month of the year so far thanks to the bonus. Credit card balance dropped $1,400.',challenges:'Grocery bill crept up — meal planning needed.',actions:'Start meal planning Sunday nights. Increase emergency fund contribution to $750/mo.',notes:'The bonus was a game changer. Momentum is real. Keep the discipline going into March.'},
+      mar:{wins:'',challenges:'',actions:'',notes:''},
+      apr:{wins:'',challenges:'',actions:'',notes:''},may:{wins:'',challenges:'',actions:'',notes:''},
+      jun:{wins:'',challenges:'',actions:'',notes:''},jul:{wins:'',challenges:'',actions:'',notes:''},
+      aug:{wins:'',challenges:'',actions:'',notes:''},sep:{wins:'',challenges:'',actions:'',notes:''},
+      oct:{wins:'',challenges:'',actions:'',notes:''},nov:{wins:'',challenges:'',actions:'',notes:''},
+      dec:{wins:'',challenges:'',actions:'',notes:''},
+    },
+    customCats: null,
+  };
+}
+
+function loadDemoData() {
+  appData = getDemoData();
+  appData.customCats = {
+    income:      JSON.parse(JSON.stringify(INCOME_CATS)),
+    expenses:    JSON.parse(JSON.stringify(EXPENSE_CATS)),
+    savings:     JSON.parse(JSON.stringify(SAVINGS_CATS)),
+    investments: JSON.parse(JSON.stringify(INVEST_CATS)),
+  };
+  document.getElementById('login-overlay').style.display = 'none';
+  refreshAll();
+  initCharts();
+  setTimeout(()=>{ if(generateInsights().filter(i=>i.priority==='high').length>0) document.getElementById('insights-dot').classList.add('show'); },400);
+  showToast('Demo loaded — data is not saved');
 }
 
 // ── INIT ──
