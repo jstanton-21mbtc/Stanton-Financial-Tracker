@@ -400,7 +400,7 @@
     <div class="login-logo">S</div>
     <h1 id="login-title">5Stack.ai</h1>
     <p id="login-subtitle">Sign in to access your tracker.</p>
-    <div class="login-field">
+    <div class="login-field" id="login-email-field">
       <label>Username</label>
       <input type="text" id="login-email" placeholder="Choose a username" onkeydown="if(event.key==='Enter')submitLogin()" autocomplete="username" />
     </div>
@@ -1111,24 +1111,76 @@ function saveData() {
   });
 }
 
+// ── LOCAL AUTH ──
+const PW_KEY = 'sft_stanton_pw_v1';
+function getStoredHash() { return localStorage.getItem(PW_KEY); }
+function hashPw(pw)       { return btoa(unescape(encodeURIComponent(pw))); }
+function isFirstTime()    { return !getStoredHash(); }
+
+function _openApp() {
+  appData = loadDataLocal() || getDefaultData();
+  if(!appData.meta) appData.meta={name:'',year:new Date().getFullYear().toString(),currency:'$'};
+  if(!appData.notes) appData.notes=Object.fromEntries(MK.map(m=>[m,{wins:'',challenges:'',actions:'',notes:''}]));
+  if(!appData.balances) appData.balances={savings:{},investments:{}};
+  if(!appData.debts)    appData.debts=[];
+  if(!appData.budget||!appData.budget.expenses) appData.budget={income:{},expenses:{}};
+  if(!appData.netWorth) appData.netWorth={assets:{},liabilities:{},history:[]};
+  if(!appData.customCats) appData.customCats={
+    income:      JSON.parse(JSON.stringify(INCOME_CATS)),
+    expenses:    JSON.parse(JSON.stringify(EXPENSE_CATS)),
+    savings:     JSON.parse(JSON.stringify(SAVINGS_CATS)),
+    investments: JSON.parse(JSON.stringify(INVEST_CATS))
+  };
+  document.getElementById('login-overlay').style.display = 'none';
+  refreshAll();
+  if (charts.ie) { updateCharts(); } else { initCharts(); }
+  setTimeout(()=>{ if(generateInsights().filter(i=>i.priority==='high').length>0) document.getElementById('insights-dot').classList.add('show'); },600);
+}
+
 // ── AUTH ──
 let _authMode = 'signin';
 
 function initLoginScreen() {
-  _authMode = 'signin';
-  document.getElementById('login-title').textContent    = '5Stack.ai';
-  document.getElementById('login-subtitle').textContent = 'Enter your username and password to continue.';
-  document.getElementById('login-pw-label').textContent = 'Password';
-  document.getElementById('login-input').placeholder    = 'Enter password';
-  document.getElementById('login-confirm-field').style.display = 'none';
-  document.getElementById('login-btn').textContent      = 'Sign In';
-  document.getElementById('login-hint').style.display   = 'none';
-  document.getElementById('login-toggle-link').textContent = 'Create one';
   document.getElementById('login-email').value  = '';
   document.getElementById('login-input').value  = '';
   document.getElementById('login-confirm').value = '';
   document.getElementById('login-error').classList.remove('show');
   document.getElementById('login-input').classList.remove('error');
+
+  if (!SUPABASE_CONFIGURED) {
+    // Local mode — password only, no username field
+    document.getElementById('login-email-field').style.display = 'none';
+    document.getElementById('login-toggle').style.display = 'none';
+    document.getElementById('login-title').textContent = '5Stack.ai';
+    if (isFirstTime()) {
+      document.getElementById('login-subtitle').textContent = 'Create a password to protect your tracker.';
+      document.getElementById('login-pw-label').textContent = 'New Password';
+      document.getElementById('login-input').placeholder    = 'Choose a password';
+      document.getElementById('login-confirm-field').style.display = '';
+      document.getElementById('login-btn').textContent      = 'Create Password';
+      document.getElementById('login-hint').style.display   = '';
+    } else {
+      document.getElementById('login-subtitle').textContent = 'Enter your password to continue.';
+      document.getElementById('login-pw-label').textContent = 'Password';
+      document.getElementById('login-input').placeholder    = 'Enter password';
+      document.getElementById('login-confirm-field').style.display = 'none';
+      document.getElementById('login-btn').textContent      = 'Sign In';
+      document.getElementById('login-hint').style.display   = 'none';
+    }
+  } else {
+    // Supabase mode — username + password
+    _authMode = 'signin';
+    document.getElementById('login-email-field').style.display = '';
+    document.getElementById('login-toggle').style.display = '';
+    document.getElementById('login-title').textContent    = '5Stack.ai';
+    document.getElementById('login-subtitle').textContent = 'Enter your username and password to continue.';
+    document.getElementById('login-pw-label').textContent = 'Password';
+    document.getElementById('login-input').placeholder    = 'Enter password';
+    document.getElementById('login-confirm-field').style.display = 'none';
+    document.getElementById('login-btn').textContent      = 'Sign In';
+    document.getElementById('login-hint').style.display   = 'none';
+    document.getElementById('login-toggle-link').textContent = 'Create one';
+  }
 }
 
 function toggleAuthMode() {
@@ -1146,17 +1198,38 @@ function toggleAuthMode() {
 }
 
 async function submitLogin() {
-  const username = document.getElementById('login-email').value.trim().toLowerCase().replace(/\s+/g,'');
-  const email    = username + '@5stackfinancial.app';
+  const error = document.getElementById('login-error');
+  const btn   = document.getElementById('login-btn');
   const password = document.getElementById('login-input').value;
   const confirm  = document.getElementById('login-confirm').value;
-  const error    = document.getElementById('login-error');
-  const btn      = document.getElementById('login-btn');
   error.classList.remove('show');
   error.style.color = '';
   document.getElementById('login-input').classList.remove('error');
-  if (!username) { error.textContent='Please enter a username.';    error.classList.add('show'); return; }
   if (!password) { error.textContent='Please enter your password.'; error.classList.add('show'); return; }
+
+  if (!SUPABASE_CONFIGURED) {
+    // Local password auth
+    if (isFirstTime()) {
+      if (password.length < 4) { error.textContent='Password must be at least 4 characters.'; error.classList.add('show'); return; }
+      if (password !== confirm) { error.textContent='Passwords do not match.'; error.classList.add('show'); return; }
+      localStorage.setItem(PW_KEY, hashPw(password));
+      _openApp();
+    } else {
+      if (hashPw(password) === getStoredHash()) {
+        _openApp();
+      } else {
+        error.textContent='Incorrect password. Please try again.';
+        document.getElementById('login-input').classList.add('error');
+        error.classList.add('show');
+      }
+    }
+    return;
+  }
+
+  // Supabase auth
+  const username = document.getElementById('login-email').value.trim().toLowerCase().replace(/\s+/g,'');
+  const email    = username + '@5stackfinancial.app';
+  if (!username) { error.textContent='Please enter a username.'; error.classList.add('show'); return; }
   btn.disabled = true;
   if (_authMode === 'signup') {
     btn.textContent = 'Creating...';
@@ -1164,7 +1237,7 @@ async function submitLogin() {
     if (password !== confirm)  { error.textContent='Passwords do not match.'; error.classList.add('show'); btn.textContent='Create Account'; btn.disabled=false; return; }
     const { error: err } = await _supabase.auth.signUp({ email, password });
     if (err) { error.textContent=err.message; error.classList.add('show'); btn.textContent='Create Account'; btn.disabled=false; return; }
-    error.textContent = 'Check your email to confirm your account, then sign in.';
+    error.textContent = 'Account created! Check your email to confirm, then sign in.';
     error.style.color = 'var(--green)';
     error.classList.add('show');
     btn.textContent='Create Account'; btn.disabled=false;
@@ -1176,7 +1249,14 @@ async function submitLogin() {
   }
 }
 
-function logOut() { _supabase.auth.signOut(); }
+function logOut() {
+  if (!SUPABASE_CONFIGURED) {
+    document.getElementById('login-overlay').style.display = 'flex';
+    initLoginScreen();
+    return;
+  }
+  _supabase.auth.signOut();
+}
 
 function toggleLoginEye() {
   const input=document.getElementById('login-input'), icon=document.getElementById('login-eye-icon');
@@ -2035,8 +2115,14 @@ async function savePassword(){
   const np=document.getElementById('sec-new').value,cf=document.getElementById('sec-confirm').value;
   const err=document.getElementById('sec-error'),ok=document.getElementById('sec-success');
   err.classList.remove('show');ok.classList.remove('show');
-  if(np.length<6){err.textContent='New password must be at least 6 characters.';err.classList.add('show');return;}
+  if(np.length<4){err.textContent='New password must be at least 4 characters.';err.classList.add('show');return;}
   if(np!==cf){err.textContent='Passwords do not match.';err.classList.add('show');return;}
+  if(!SUPABASE_CONFIGURED){
+    localStorage.setItem(PW_KEY,hashPw(np));
+    ['sec-new','sec-confirm'].forEach(id=>document.getElementById(id).value='');
+    ok.classList.add('show');setTimeout(()=>ok.classList.remove('show'),2500);
+    return;
+  }
   const { error } = await _supabase.auth.updateUser({ password: np });
   if(error){err.textContent=error.message;err.classList.add('show');return;}
   ['sec-new','sec-confirm'].forEach(id=>document.getElementById(id).value='');
@@ -2504,28 +2590,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   applyTheme(localStorage.getItem(THEME_KEY)||'dark');
 
   if (!SUPABASE_CONFIGURED) {
-    const existing = loadDataLocal();
-    if (existing) {
-      // Has local data — skip login, show app directly
-      appData = existing;
-      if(!appData.meta) appData.meta={name:'',year:new Date().getFullYear().toString(),currency:'$'};
-      if(!appData.notes) appData.notes=Object.fromEntries(MK.map(m=>[m,{wins:'',challenges:'',actions:'',notes:''}]));
-      if(!appData.balances) appData.balances={savings:{},investments:{}};
-      if(!appData.debts)    appData.debts=[];
-      if(!appData.budget||!appData.budget.expenses) appData.budget={income:{},expenses:{}};
-      if(!appData.netWorth) appData.netWorth={assets:{},liabilities:{},history:[]};
-      if(!appData.customCats) appData.customCats={
-        income:      JSON.parse(JSON.stringify(INCOME_CATS)),
-        expenses:    JSON.parse(JSON.stringify(EXPENSE_CATS)),
-        savings:     JSON.parse(JSON.stringify(SAVINGS_CATS)),
-        investments: JSON.parse(JSON.stringify(INVEST_CATS))
-      };
-      document.getElementById('login-overlay').style.display = 'none';
-      refreshAll();
-      initCharts();
-      setTimeout(()=>{ if(generateInsights().filter(i=>i.priority==='high').length>0) document.getElementById('insights-dot').classList.add('show'); },600);
-    }
-    // No local data — leave login overlay visible so user can click View Demo
+    initLoginScreen();
     return;
   }
 
