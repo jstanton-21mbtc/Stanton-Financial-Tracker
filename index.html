@@ -2465,7 +2465,7 @@ function loadDemoData() {
   };
   document.getElementById('login-overlay').style.display = 'none';
   refreshAll();
-  initCharts();
+  if (charts.ie) { updateCharts(); } else { initCharts(); }
   setTimeout(()=>{ if(generateInsights().filter(i=>i.priority==='high').length>0) document.getElementById('insights-dot').classList.add('show'); },400);
   showToast('Demo loaded — data is not saved');
 }
@@ -2504,24 +2504,28 @@ document.addEventListener('DOMContentLoaded', async () => {
   applyTheme(localStorage.getItem(THEME_KEY)||'dark');
 
   if (!SUPABASE_CONFIGURED) {
-    // Supabase not set up yet — run fully local like before
-    appData = loadDataLocal() || getDefaultData();
-    if(!appData.meta) appData.meta={name:'',year:new Date().getFullYear().toString(),currency:'$'};
-    if(!appData.notes) appData.notes=Object.fromEntries(MK.map(m=>[m,{wins:'',challenges:'',actions:'',notes:''}]));
-    if(!appData.balances) appData.balances={savings:{},investments:{}};
-    if(!appData.debts)    appData.debts=[];
-    if(!appData.budget||!appData.budget.expenses) appData.budget={income:{},expenses:{}};
-    if(!appData.netWorth) appData.netWorth={assets:{},liabilities:{},history:[]};
-    if(!appData.customCats) appData.customCats={
-      income:      JSON.parse(JSON.stringify(INCOME_CATS)),
-      expenses:    JSON.parse(JSON.stringify(EXPENSE_CATS)),
-      savings:     JSON.parse(JSON.stringify(SAVINGS_CATS)),
-      investments: JSON.parse(JSON.stringify(INVEST_CATS))
-    };
-    refreshAll();
-    initCharts();
-    setTimeout(()=>{ if(generateInsights().filter(i=>i.priority==='high').length>0) document.getElementById('insights-dot').classList.add('show'); },600);
-    if(!localStorage.getItem(TUTORIAL_KEY)) { setTimeout(startTutorial, 800); }
+    const existing = loadDataLocal();
+    if (existing) {
+      // Has local data — skip login, show app directly
+      appData = existing;
+      if(!appData.meta) appData.meta={name:'',year:new Date().getFullYear().toString(),currency:'$'};
+      if(!appData.notes) appData.notes=Object.fromEntries(MK.map(m=>[m,{wins:'',challenges:'',actions:'',notes:''}]));
+      if(!appData.balances) appData.balances={savings:{},investments:{}};
+      if(!appData.debts)    appData.debts=[];
+      if(!appData.budget||!appData.budget.expenses) appData.budget={income:{},expenses:{}};
+      if(!appData.netWorth) appData.netWorth={assets:{},liabilities:{},history:[]};
+      if(!appData.customCats) appData.customCats={
+        income:      JSON.parse(JSON.stringify(INCOME_CATS)),
+        expenses:    JSON.parse(JSON.stringify(EXPENSE_CATS)),
+        savings:     JSON.parse(JSON.stringify(SAVINGS_CATS)),
+        investments: JSON.parse(JSON.stringify(INVEST_CATS))
+      };
+      document.getElementById('login-overlay').style.display = 'none';
+      refreshAll();
+      initCharts();
+      setTimeout(()=>{ if(generateInsights().filter(i=>i.priority==='high').length>0) document.getElementById('insights-dot').classList.add('show'); },600);
+    }
+    // No local data — leave login overlay visible so user can click View Demo
     return;
   }
 
