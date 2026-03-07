@@ -401,8 +401,8 @@
     <h1 id="login-title">Stanton Finance</h1>
     <p id="login-subtitle">Sign in to access your tracker.</p>
     <div class="login-field">
-      <label>Email</label>
-      <input type="email" id="login-email" placeholder="you@example.com" onkeydown="if(event.key==='Enter')submitLogin()" />
+      <label>Username</label>
+      <input type="text" id="login-email" placeholder="Choose a username" onkeydown="if(event.key==='Enter')submitLogin()" autocomplete="username" />
     </div>
     <div class="login-field">
       <label id="login-pw-label">Password</label>
@@ -1113,7 +1113,7 @@ let _authMode = 'signin';
 function initLoginScreen() {
   _authMode = 'signin';
   document.getElementById('login-title').textContent    = 'Stanton Finance';
-  document.getElementById('login-subtitle').textContent = 'Sign in to access your tracker.';
+  document.getElementById('login-subtitle').textContent = 'Enter your username and password to continue.';
   document.getElementById('login-pw-label').textContent = 'Password';
   document.getElementById('login-input').placeholder    = 'Enter password';
   document.getElementById('login-confirm-field').style.display = 'none';
@@ -1131,7 +1131,7 @@ function toggleAuthMode() {
   if (_authMode === 'signin') {
     _authMode = 'signup';
     document.getElementById('login-title').textContent    = 'Create Account';
-    document.getElementById('login-subtitle').textContent = 'Set up your Stanton Finance account.';
+    document.getElementById('login-subtitle').textContent = 'Choose a username and password to get started.';
     document.getElementById('login-btn').textContent      = 'Create Account';
     document.getElementById('login-confirm-field').style.display = '';
     document.getElementById('login-hint').style.display   = '';
@@ -1142,7 +1142,8 @@ function toggleAuthMode() {
 }
 
 async function submitLogin() {
-  const email    = document.getElementById('login-email').value.trim();
+  const username = document.getElementById('login-email').value.trim().toLowerCase().replace(/\s+/g,'');
+  const email    = username + '@stantonfinancial.app';
   const password = document.getElementById('login-input').value;
   const confirm  = document.getElementById('login-confirm').value;
   const error    = document.getElementById('login-error');
@@ -1150,7 +1151,7 @@ async function submitLogin() {
   error.classList.remove('show');
   error.style.color = '';
   document.getElementById('login-input').classList.remove('error');
-  if (!email)    { error.textContent='Please enter your email.';    error.classList.add('show'); return; }
+  if (!username) { error.textContent='Please enter a username.';    error.classList.add('show'); return; }
   if (!password) { error.textContent='Please enter your password.'; error.classList.add('show'); return; }
   btn.disabled = true;
   if (_authMode === 'signup') {
