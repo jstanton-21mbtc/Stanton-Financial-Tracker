@@ -1169,8 +1169,21 @@ function _getJamesStantonData() {
   };
 }
 
+function _dataIsBlank(d) {
+  if (!d) return true;
+  // Consider data blank if every income month is all zeros
+  const months = Object.values(d.income || {});
+  if (!months.length) return true;
+  return months.every(m => Object.values(m || {}).every(v => !v || v === 0));
+}
+
 function _openApp() {
-  appData = loadDataLocal() || _getJamesStantonData();
+  const stored = loadDataLocal();
+  appData = _dataIsBlank(stored) ? _getJamesStantonData() : stored;
+  // Seed localStorage with James Stanton data if it was blank
+  if (_dataIsBlank(stored)) {
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(appData)); } catch(e) {}
+  }
   if(!appData.meta) appData.meta={name:'',year:new Date().getFullYear().toString(),currency:'$'};
   if(!appData.notes) appData.notes=Object.fromEntries(MK.map(m=>[m,{wins:'',challenges:'',actions:'',notes:''}]));
   if(!appData.balances) appData.balances={savings:{},investments:{}};
