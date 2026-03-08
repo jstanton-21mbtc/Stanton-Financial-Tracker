@@ -64,14 +64,11 @@
     body { background: var(--bg); color: var(--text); font-family: 'Inter', system-ui, sans-serif; font-size: 14px; display: flex; min-height: 100vh; }
 
     /* ── SIDEBAR ── */
-    .brand-banner { position: fixed; top: 0; left: 0; right: 0; height: 36px; background: var(--blue); z-index: 250; display: flex; align-items: center; justify-content: center; gap: 8px; font-size: 13px; font-weight: 800; color: #fff; letter-spacing: .5px; }
-    .brand-banner-dot { width: 6px; height: 6px; background: rgba(255,255,255,.5); border-radius: 999px; }
-    body { padding-top: 36px; }
-    .sidebar { width: var(--sidebar-w); min-height: 100vh; background: var(--surface); border-right: 1px solid var(--border); display: flex; flex-direction: column; position: fixed; top: 36px; left: 0; bottom: 0; z-index: 200; overflow-y: auto; }
+    .sidebar { width: var(--sidebar-w); min-height: 100vh; background: var(--surface); border-right: 1px solid var(--border); display: flex; flex-direction: column; position: fixed; top: 0; left: 0; bottom: 0; z-index: 200; overflow-y: auto; }
     .sidebar::-webkit-scrollbar { display: none; }
     .sidebar-logo { padding: 24px 20px 20px; border-bottom: 1px solid var(--border-dim); display: flex; align-items: center; gap: 12px; }
     .logo-mark { width: 36px; height: 36px; background: var(--blue); border-radius: 10px; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 18px; color: #fff; flex-shrink: 0; }
-    .logo-title { font-size: 14px; font-weight: 700; line-height: 1.3; }
+    .logo-title { font-size: 14px; font-weight: 700; line-height: 1.3; color: var(--blue); }
     .logo-sub { font-size: 11px; color: var(--text-3); margin-top: 2px; }
     .sidebar-section { padding: 20px 12px 8px; }
     .sidebar-label { font-size: 10px; font-weight: 600; color: var(--text-3); text-transform: uppercase; letter-spacing: 1px; padding: 0 8px; margin-bottom: 6px; }
@@ -386,12 +383,6 @@
   </style>
 </head>
 <body>
-
-<!-- ── BRAND BANNER ── -->
-<div class="brand-banner">
-  <svg width="18" height="16" viewBox="0 0 26 22" fill="none" style="flex-shrink:0"><rect x="0" y="0"   width="26" height="3.2" rx="1.6" fill="white"/><rect x="0" y="4.7"  width="26" height="3.2" rx="1.6" fill="white"/><rect x="0" y="9.4"  width="26" height="3.2" rx="1.6" fill="white"/><rect x="0" y="14.1" width="26" height="3.2" rx="1.6" fill="white"/><rect x="0" y="18.8" width="26" height="3.2" rx="1.6" fill="white"/></svg>
-  5Stack.ai
-</div>
 
 <!-- ── LOGIN ── -->
 <div class="login-overlay" id="login-overlay">
