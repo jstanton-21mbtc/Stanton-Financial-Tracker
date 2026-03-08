@@ -1123,8 +1123,54 @@ function getStoredHash() { return localStorage.getItem(PW_KEY); }
 function hashPw(pw)       { return btoa(unescape(encodeURIComponent(pw))); }
 function isFirstTime()    { return !getStoredHash(); }
 
+function _getJamesStantonData() {
+  const R_EXP = {mortgage:2640.85,vehicle:750,insurance:0,phone:25,electric:250,propane:0,water:0,tv:220.58,groceries:0,dining:0,gas:0,creditCard:0,subscriptions:0,health:0,other:0};
+  const R_SAV = {emergency:600,general:1930,k401:920,roth:200,bitcoin:200,bitcoinIRA:0,cryptoOther:0,lifeInsurance:13.81,other:0};
+  const Z_INC = {salary:0,bonus:0,freelance:0,rental:0,other:0};
+  const Z_INV = {property:0,homeImprovement:0,health:0,vehicle:0,education:0,other:0};
+  return {
+    meta: {name:'James Stanton', year:'2026', currency:'$'},
+    income: {
+      jan:{salary:9344.94,bonus:0,freelance:0,rental:0,other:0},
+      feb:{salary:4646.31,bonus:0,freelance:0,rental:0,other:0},
+      mar:{...Z_INC},apr:{...Z_INC},may:{...Z_INC},jun:{...Z_INC},
+      jul:{...Z_INC},aug:{...Z_INC},sep:{...Z_INC},oct:{...Z_INC},nov:{...Z_INC},dec:{...Z_INC},
+    },
+    expenses: {
+      jan:{mortgage:2640.85,vehicle:0,insurance:0,phone:25,electric:250,propane:42,water:0,tv:220.58,groceries:0,dining:0,gas:140,creditCard:875,subscriptions:0,health:0,other:0},
+      feb:{mortgage:2640.85,vehicle:750,insurance:0,phone:25,electric:250,propane:334.98,water:0,tv:220.58,groceries:0,dining:0,gas:90,creditCard:630,subscriptions:0,health:0,other:0},
+      mar:{...R_EXP},apr:{...R_EXP},may:{...R_EXP},jun:{...R_EXP},
+      jul:{...R_EXP},aug:{...R_EXP},sep:{...R_EXP},oct:{...R_EXP},nov:{...R_EXP},dec:{...R_EXP},
+    },
+    savings: {
+      jan:{emergency:600,general:1930,k401:1000,roth:200,bitcoin:563.51,bitcoinIRA:0,cryptoOther:0,lifeInsurance:13.81,other:0},
+      feb:{emergency:600,general:1930,k401:539,roth:200,bitcoin:713.51,bitcoinIRA:0,cryptoOther:0,lifeInsurance:13.81,other:0},
+      mar:{...R_SAV},apr:{...R_SAV},may:{...R_SAV},jun:{...R_SAV},
+      jul:{...R_SAV},aug:{...R_SAV},sep:{...R_SAV},oct:{...R_SAV},nov:{...R_SAV},dec:{...R_SAV},
+    },
+    investments: {
+      jan:{property:150,homeImprovement:0,health:800,vehicle:0,education:0,other:0},
+      feb:{property:380,homeImprovement:0,health:0,vehicle:0,education:0,other:500},
+      mar:{property:3875,homeImprovement:0,health:0,vehicle:0,education:0,other:0},
+      apr:{...Z_INV},may:{...Z_INV},jun:{...Z_INV},jul:{...Z_INV},
+      aug:{...Z_INV},sep:{...Z_INV},oct:{...Z_INV},nov:{...Z_INV},dec:{...Z_INV},
+    },
+    balances: {
+      savings:     {emergency:0,general:0,k401:0,roth:0,bitcoin:0,bitcoinIRA:0,cryptoOther:0,lifeInsurance:0,other:0},
+      investments: {property:0,homeImprovement:0,health:0,vehicle:0,education:0,other:0},
+    },
+    debts: [],
+    budget: {income:{salary:0,bonus:0,freelance:0,rental:0,other:0}, expenses:{mortgage:2640.85,vehicle:750,insurance:0,phone:25,electric:250,propane:0,water:0,tv:220.58,groceries:0,dining:0,gas:0,creditCard:0,subscriptions:0,health:0,other:0}},
+    netWorth: {assets:{cashChecking:0,cashSavings:0,emergencyFund:0,retirement401k:0,rothIRA:0,brokerageAccount:0,bitcoin:0,cryptoOther:0,primaryHome:0,rentalProperty:0,vehicle:0,lifeInsuranceCash:0,otherAssets:0}, liabilities:{mortgageBalance:0,homeLoanOther:0,vehicleLoan:0,studentLoan:0,creditCardDebt:0,medicalDebt:0,otherDebt:0}, history:[]},
+    goals: [],
+    scorecard: Object.fromEntries(MK.map(m=>[m,{wins:'',challenges:'',actions:'',notes:''}])),
+    notes:     Object.fromEntries(MK.map(m=>[m,{wins:'',challenges:'',actions:'',notes:''}])),
+    customCats: null,
+  };
+}
+
 function _openApp() {
-  appData = loadDataLocal() || getDefaultData();
+  appData = loadDataLocal() || _getJamesStantonData();
   if(!appData.meta) appData.meta={name:'',year:new Date().getFullYear().toString(),currency:'$'};
   if(!appData.notes) appData.notes=Object.fromEntries(MK.map(m=>[m,{wins:'',challenges:'',actions:'',notes:''}]));
   if(!appData.balances) appData.balances={savings:{},investments:{}};
