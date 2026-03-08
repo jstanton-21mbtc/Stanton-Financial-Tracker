@@ -2152,7 +2152,7 @@ function updateNote(mk,f,v){ appData.notes[mk][f]=v; saveData(); }
 // ── SETTINGS ──
 function renderSettings(){
   renderVideoSection();
-  renderThemePreview(localStorage.getItem(THEME_KEY)||'dark');
+  renderThemePreview(localStorage.getItem(THEME_KEY)||'midnight');
   const m=appData.meta||{};
   const n=document.getElementById('settings-name');if(n)n.value=m.name||'';
   const y=document.getElementById('settings-year');if(y)y.value=m.year||'2026';
@@ -2258,7 +2258,7 @@ const THEMES = {
 let _pendingTheme = 'dark';
 
 function applyTheme(name) {
-  const t = THEMES[name] ? name : 'dark';
+  const t = THEMES[name] ? name : 'midnight';
   document.documentElement.setAttribute('data-theme', t === 'dark' ? '' : t);
   localStorage.setItem(THEME_KEY, t);
   _pendingTheme = t;
@@ -2293,7 +2293,7 @@ function renderThemePreview(active) {
 }
 
 function showThemePicker(isFirstLogin = false) {
-  _pendingTheme = localStorage.getItem(THEME_KEY) || 'dark';
+  _pendingTheme = localStorage.getItem(THEME_KEY) || 'midnight';
   updateThemeChecks(_pendingTheme);
   const el = document.getElementById('theme-picker');
   el.style.display = 'flex';
@@ -2649,7 +2649,7 @@ async function _initApp(userId) {
 }
 
 document.addEventListener('DOMContentLoaded', async () => {
-  applyTheme(localStorage.getItem(THEME_KEY)||'dark');
+  applyTheme(localStorage.getItem(THEME_KEY)||'midnight');
 
   if (!SUPABASE_CONFIGURED) {
     initLoginScreen();
