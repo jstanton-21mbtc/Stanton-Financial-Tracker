@@ -14,7 +14,7 @@
     :root {
       --bg: #0A0B0D; --surface: #131519; --card: #1A1D23; --card-hover: #1E2229;
       --elevated: #23272F; --border: #2C3038; --border-dim: #1E2128;
-      --blue: #0052FF; --blue-dim: rgba(0,82,255,0.12); --blue-hover: #0045D8;
+      --blue: #6CB33F; --blue-dim: rgba(108,179,63,0.12); --blue-hover: #5A9A34;
       --green: #05B169; --green-dim: rgba(5,177,105,0.12);
       --red: #CF5252; --red-dim: rgba(207,82,82,0.12);
       --yellow: #F5A623; --yellow-dim: rgba(245,166,35,0.12);
@@ -25,7 +25,7 @@
     [data-theme="light"] {
       --bg: #F0F4F8; --surface: #FFFFFF; --card: #FFFFFF; --card-hover: #F5F8FF;
       --elevated: #F0F4F8; --border: #DDE3EE; --border-dim: #EBF0F7;
-      --blue: #0052FF; --blue-dim: rgba(0,82,255,0.08); --blue-hover: #0045D8;
+      --blue: #6CB33F; --blue-dim: rgba(108,179,63,0.08); --blue-hover: #5A9A34;
       --green: #00A86B; --green-dim: rgba(0,168,107,0.1);
       --red: #E02D3C; --red-dim: rgba(224,45,60,0.1);
       --yellow: #D97706; --yellow-dim: rgba(217,119,6,0.1);
@@ -35,7 +35,7 @@
     [data-theme="midnight"] {
       --bg: #05091A; --surface: #0C1228; --card: #101830; --card-hover: #141E3C;
       --elevated: #18203A; --border: #1E2D52; --border-dim: #131C3A;
-      --blue: #00C2FF; --blue-dim: rgba(0,194,255,0.12); --blue-hover: #00A8E0;
+      --blue: #89CE14; --blue-dim: rgba(137,206,20,0.12); --blue-hover: #74AE0F;
       --green: #00E5A0; --green-dim: rgba(0,229,160,0.12);
       --red: #FF4D6A; --red-dim: rgba(255,77,106,0.12);
       --yellow: #FFB547; --yellow-dim: rgba(255,181,71,0.12);
@@ -278,7 +278,7 @@
     .debt-strategy-card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
     .debt-strategy-header { display: flex; align-items: center; gap: 8px; padding: 14px 16px; font-size: 13px; font-weight: 700; border-bottom: 1px solid var(--border); }
     .debt-strategy-header.snowball { background: rgba(5,177,105,.08); color: var(--green); }
-    .debt-strategy-header.avalanche { background: rgba(0,82,255,.08); color: var(--blue); }
+    .debt-strategy-header.avalanche { background: rgba(108,179,63,0.08); color: var(--blue); }
     .debt-strategy-tag { margin-left: auto; font-size: 10px; font-weight: 600; padding: 2px 8px; border-radius: 999px; background: var(--elevated); color: var(--text-3); }
     .debt-strategy-item { display: flex; align-items: center; gap: 10px; padding: 10px 0; border-bottom: 1px solid var(--border-dim); }
     .debt-strategy-item:last-child { border-bottom: none; }
@@ -376,7 +376,7 @@
     @media (max-width: 600px) { .insights-panel { width: 100vw; } }
 
     /* ── TOAST ── */
-    #toast { position: fixed; bottom: 28px; right: 28px; background: var(--blue); color: #fff; padding: 10px 20px; border-radius: 999px; font-size: 13px; font-weight: 600; opacity: 0; transform: translateY(8px); transition: all .25s; pointer-events: none; z-index: 999; box-shadow: 0 4px 20px rgba(0,82,255,.4); }
+    #toast { position: fixed; bottom: 28px; right: 28px; background: var(--blue); color: #fff; padding: 10px 20px; border-radius: 999px; font-size: 13px; font-weight: 600; opacity: 0; transform: translateY(8px); transition: all .25s; pointer-events: none; z-index: 999; box-shadow: 0 4px 20px rgba(108,179,63,0.4); }
     #toast.show { opacity: 1; transform: translateY(0); }
     .mt-4 { margin-top: 16px; }
     ::-webkit-scrollbar { width: 6px; height: 6px; }
@@ -390,7 +390,7 @@
 <!-- ── BRAND BANNER ── -->
 <div class="brand-banner">
   <div class="brand-banner-dot"></div>
-  Stanton.ai
+  5Stack.ai
   <div class="brand-banner-dot"></div>
 </div>
 
@@ -1878,7 +1878,7 @@ function renderBudgetChart(expActuals, incActuals, mult, bd) {
   charts.budget = new Chart(document.getElementById('chart-budget'), {
     type:'bar',
     data:{ labels, datasets:[
-      {label:'Target', data:budgets, backgroundColor:'rgba(0,82,255,0.15)', borderColor:CC.blue, borderWidth:2, borderRadius:4},
+      {label:'Target', data:budgets, backgroundColor:'rgba(108,179,63,0.15)', borderColor:CC.blue, borderWidth:2, borderRadius:4},
       {label:'Actual', data:actuals, backgroundColor:aFades, borderColor:aColors, borderWidth:2, borderRadius:4},
     ]},
     options:{
@@ -2014,7 +2014,7 @@ function renderNwHistory(){
     data:{
       labels,
       datasets:[
-        {label:'Net Worth',   data:netData,   borderColor:CC.blue,  backgroundColor:'rgba(0,82,255,0.12)',  fill:true, tension:.4, pointRadius:5, pointBackgroundColor:CC.blue,  borderWidth:2.5},
+        {label:'Net Worth',   data:netData,   borderColor:CC.blue,  backgroundColor:'rgba(108,179,63,0.12)',  fill:true, tension:.4, pointRadius:5, pointBackgroundColor:CC.blue,  borderWidth:2.5},
         {label:'Assets',      data:assetsData,borderColor:CC.green, backgroundColor:'transparent', fill:false,tension:.4, pointRadius:4, pointBackgroundColor:CC.green, borderWidth:2, borderDash:[5,4]},
         {label:'Liabilities', data:liabData,  borderColor:CC.red,   backgroundColor:'transparent', fill:false,tension:.4, pointRadius:4, pointBackgroundColor:CC.red,   borderWidth:2, borderDash:[5,4]},
       ]
@@ -2195,7 +2195,7 @@ async function savePassword(){
 }
 
 // ── CHARTS ──
-const CC={blue:'#0052FF',blueFade:'rgba(0,82,255,0.15)',green:'#05B169',greenFade:'rgba(5,177,105,0.15)',red:'#CF5252',redFade:'rgba(207,82,82,0.15)',palette:['#0052FF','#05B169','#F5A623','#7B61FF','#CF5252','#00C2FF','#FF6F2C','#E879F9','#22D3EE','#84CC16','#FB923C','#A78BFA','#34D399','#FBBF24','#F472B6']};
+const CC={blue:'#6CB33F',blueFade:'rgba(108,179,63,0.15)',green:'#05B169',greenFade:'rgba(5,177,105,0.15)',red:'#CF5252',redFade:'rgba(207,82,82,0.15)',palette:['#6CB33F','#05B169','#F5A623','#7B61FF','#CF5252','#89CE14','#FF6F2C','#E879F9','#22D3EE','#84CC16','#FB923C','#A78BFA','#34D399','#FBBF24','#F472B6']};
 const CB={responsive:true,maintainAspectRatio:true,plugins:{legend:{labels:{color:'#5B616E',font:{size:11,family:'Inter'}}}},scales:{x:{ticks:{color:'#5B616E',font:{size:11}},grid:{color:'rgba(44,48,56,0.5)'}},y:{ticks:{color:'#5B616E',font:{size:11}},grid:{color:'rgba(44,48,56,0.5)'}}}};
 
 function initCharts(){
@@ -2278,9 +2278,9 @@ function renderThemePreview(active) {
   const el = document.getElementById('settings-theme-preview');
   if(!el) return;
   const colors = {
-    dark:     { bg:'#0A0B0D', accent:'#0052FF', label:'Dark',     lc:'#fff',   lb:'#131519', bb:'#2C3038' },
-    light:    { bg:'#F0F4F8', accent:'#0052FF', label:'Light',    lc:'#0A0B0D',lb:'#FFFFFF', bb:'#DDE3EE' },
-    midnight: { bg:'#05091A', accent:'#00C2FF', label:'Midnight', lc:'#E4EEFF',lb:'#0C1228', bb:'#1E2D52' },
+    dark:     { bg:'#0A0B0D', accent:'#6CB33F', label:'Dark',     lc:'#fff',   lb:'#131519', bb:'#2C3038' },
+    light:    { bg:'#F0F4F8', accent:'#6CB33F', label:'Light',    lc:'#0A0B0D',lb:'#FFFFFF', bb:'#DDE3EE' },
+    midnight: { bg:'#05091A', accent:'#89CE14', label:'Midnight', lc:'#E4EEFF',lb:'#0C1228', bb:'#1E2D52' },
   };
   el.innerHTML = Object.entries(colors).map(([key, c]) => `
     <div onclick="selectTheme('${key}');confirmTheme()" style="flex:1;border:2px solid ${key===active?'var(--blue)':'var(--border)'};border-radius:10px;overflow:hidden;cursor:pointer;transition:border-color .2s;">
@@ -2327,7 +2327,7 @@ const TUTORIAL_KEY = 'sft_tutorial_done_v1';
 const TUTORIAL_STEPS = [
   {
     icon: `<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>`,
-    color: '#0052FF', bg: 'rgba(0,82,255,.15)',
+    color: '#6CB33F', bg: 'rgba(108,179,63,0.15)',
     title: 'Welcome to Your Financial Tracker',
     body: 'This app helps you track every dollar — income, expenses, savings, investments, debt, and net worth — all in one place, privately stored in your browser.\n\nUse the <strong>left sidebar</strong> to navigate between tabs. Let\'s take a quick tour of each section.'
   },
@@ -2681,7 +2681,7 @@ const ANALYSTS = [
   {name:'Dave Ramsey',       color:'#E8A317', bg:'rgba(232,163,23,.18)',  initials:'DR'},
   {name:'Warren Buffett',    color:'#05B169', bg:'rgba(5,177,105,.18)',   initials:'WB'},
   {name:'Suze Orman',        color:'#C084FC', bg:'rgba(192,132,252,.18)', initials:'SO'},
-  {name:'Ray Dalio',         color:'#0052FF', bg:'rgba(0,82,255,.18)',    initials:'RD'},
+  {name:'Ray Dalio',         color:'#6CB33F', bg:'rgba(108,179,63,0.18)',    initials:'RD'},
   {name:'Tony Robbins',      color:'#FF6B35', bg:'rgba(255,107,53,.18)',  initials:'TR'},
   {name:'Ramit Sethi',       color:'#22D3EE', bg:'rgba(34,211,238,.18)',  initials:'RS'},
   {name:'Robert Kiyosaki',   color:'#F43F5E', bg:'rgba(244,63,94,.18)',   initials:'RK'},
@@ -2934,9 +2934,9 @@ function renderInsightsPanel(){
 
       <div class="theme-option" id="theme-opt-dark" onclick="selectTheme('dark')">
         <div class="theme-preview" style="background:#0A0B0D">
-          <div class="tp-bar" style="background:#0052FF;width:60%"></div>
+          <div class="tp-bar" style="background:#6CB33F;width:60%"></div>
           <div class="tp-card" style="background:#1A1D23">
-            <div class="tp-col" style="background:#0052FF;height:45px"></div>
+            <div class="tp-col" style="background:#6CB33F;height:45px"></div>
             <div class="tp-col" style="background:#05B169;height:32px"></div>
             <div class="tp-col" style="background:#CF5252;height:55px"></div>
             <div class="tp-col" style="background:#F5A623;height:38px"></div>
@@ -2950,9 +2950,9 @@ function renderInsightsPanel(){
 
       <div class="theme-option" id="theme-opt-light" onclick="selectTheme('light')">
         <div class="theme-preview" style="background:#F0F4F8">
-          <div class="tp-bar" style="background:#0052FF;width:60%"></div>
+          <div class="tp-bar" style="background:#6CB33F;width:60%"></div>
           <div class="tp-card" style="background:#FFFFFF;border:1px solid #DDE3EE">
-            <div class="tp-col" style="background:#0052FF;height:45px"></div>
+            <div class="tp-col" style="background:#6CB33F;height:45px"></div>
             <div class="tp-col" style="background:#00A86B;height:32px"></div>
             <div class="tp-col" style="background:#E02D3C;height:55px"></div>
             <div class="tp-col" style="background:#D97706;height:38px"></div>
@@ -2966,9 +2966,9 @@ function renderInsightsPanel(){
 
       <div class="theme-option" id="theme-opt-midnight" onclick="selectTheme('midnight')">
         <div class="theme-preview" style="background:#05091A">
-          <div class="tp-bar" style="background:#00C2FF;width:60%"></div>
+          <div class="tp-bar" style="background:#89CE14;width:60%"></div>
           <div class="tp-card" style="background:#101830">
-            <div class="tp-col" style="background:#00C2FF;height:45px"></div>
+            <div class="tp-col" style="background:#89CE14;height:45px"></div>
             <div class="tp-col" style="background:#00E5A0;height:32px"></div>
             <div class="tp-col" style="background:#FF4D6A;height:55px"></div>
             <div class="tp-col" style="background:#FFB547;height:38px"></div>
