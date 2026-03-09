@@ -2939,7 +2939,7 @@ function renderInsightsPanel(){
 (function(){
   const CFG=[
     {sym:'BTC',  yf:'BTC-USD',      fp:82000, big:true, cg:'bitcoin'},
-    {sym:'GOLD', yf:'GC=F',         fp:2900,  big:true},
+    {sym:'GOLD', fp:2900,           big:true, gold:true},
     {sym:'TAO',  yf:'TAO22990-USD', fp:350,   big:true, cg:'bittensor'},
     {sym:'NVDA', yf:'NVDA',         fp:115.00},
     {sym:'MSTR', yf:'MSTR',         fp:320.00},
@@ -2957,20 +2957,29 @@ function renderInsightsPanel(){
     el.innerHTML=html+html;
   }
 
+  // Yahoo Finance — no custom headers to avoid CORS preflight, try query1 then query2
   async function fetchYF(){
-    const syms=CFG.map(c=>c.yf).join(',');
-    const r=await fetch(`https://query1.finance.yahoo.com/v7/finance/quote?symbols=${syms}&fields=regularMarketPrice,regularMarketChangePercent`,{headers:{Accept:'application/json'}});
-    if(!r.ok)throw new Error('yf');
-    const j=await r.json();
-    (j?.quoteResponse?.result||[]).forEach(q=>{
-      const i=_d.findIndex(d=>d.yf===q.symbol);
-      if(i<0)return;
-      _d[i].price=q.regularMarketPrice;
-      _d[i].chg=+(q.regularMarketChangePercent||0).toFixed(2);
-      _d[i]._live=true;
-    });
+    const syms=CFG.filter(c=>c.yf).map(c=>c.yf).join(',');
+    for(const host of ['query1','query2']){
+      try{
+        const r=await fetch(`https://${host}.finance.yahoo.com/v7/finance/quote?symbols=${syms}`);
+        if(!r.ok)continue;
+        const j=await r.json();
+        const quotes=j?.quoteResponse?.result||[];
+        if(!quotes.length)continue;
+        quotes.forEach(q=>{
+          const i=_d.findIndex(d=>d.yf===q.symbol);
+          if(i<0)return;
+          _d[i].price=q.regularMarketPrice;
+          _d[i].chg=+(q.regularMarketChangePercent||0).toFixed(2);
+          _d[i]._live=true;
+        });
+        break;
+      }catch(e){}
+    }
   }
 
+  // CoinGecko — crypto fallback
   async function fetchCG(){
     const need=_d.filter(d=>d.cg&&!d._live).map(d=>d.cg).join(',');
     if(!need)return;
@@ -2986,9 +2995,23 @@ function renderInsightsPanel(){
     });
   }
 
+  // goldprice.org — dedicated gold API, no key needed
+  async function fetchGold(){
+    const i=_d.findIndex(d=>d.gold);
+    if(i<0)return;
+    const r=await fetch('https://data-asg.goldprice.org/dbXRates/USD');
+    if(!r.ok)return;
+    const j=await r.json();
+    const item=j?.items?.[0];
+    if(!item)return;
+    _d[i].price=item.xauPrice;
+    _d[i].chg=+(item.pcXau||0).toFixed(2);
+    _d[i]._live=true;
+  }
+
   async function load(){
-    try{await fetchYF();}catch(e){}
-    try{await fetchCG();}catch(e){}
+    _d.forEach(d=>d._live=false);
+    await Promise.allSettled([fetchYF(),fetchCG(),fetchGold()]);
     render();
   }
 
