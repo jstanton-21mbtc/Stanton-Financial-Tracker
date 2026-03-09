@@ -183,6 +183,33 @@
     .val-neutral  { color: var(--text-3); }
     .val-blue     { color: var(--blue); }
 
+    /* ── LEARN ── */
+    .learn-hero { background: linear-gradient(135deg,var(--card) 0%,var(--elevated) 100%); border:1px solid var(--border); border-radius:var(--radius); padding:32px; margin-bottom:28px; }
+    .learn-hero-title { font-size:24px; font-weight:800; margin-bottom:8px; }
+    .learn-hero-sub { font-size:13.5px; color:var(--text-2); line-height:1.65; max-width:620px; }
+    .learn-grid { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+    @media (max-width:900px){ .learn-grid { grid-template-columns:1fr; } }
+    .learn-card { background:var(--card); border:1px solid var(--border); border-radius:var(--radius); overflow:hidden; transition:border-color .2s; }
+    .learn-card:hover { border-color:var(--blue); }
+    .learn-card-header { display:flex; align-items:center; gap:13px; padding:16px 18px; cursor:pointer; user-select:none; }
+    .learn-icon { width:38px; height:38px; border-radius:10px; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+    .learn-icon svg { width:18px; height:18px; }
+    .learn-card-title { font-size:13.5px; font-weight:700; }
+    .learn-card-sub { font-size:11.5px; color:var(--text-3); margin-top:2px; }
+    .learn-chevron { margin-left:auto; color:var(--text-3); transition:transform .2s; flex-shrink:0; }
+    .learn-card.open .learn-chevron { transform:rotate(180deg); }
+    .learn-card-body { display:none; padding:0 18px 18px; border-top:1px solid var(--border-dim); }
+    .learn-card.open .learn-card-body { display:block; }
+    .learn-label { font-size:10.5px; font-weight:700; color:var(--text-3); text-transform:uppercase; letter-spacing:.8px; margin:16px 0 8px; }
+    .learn-steps { list-style:none; padding:0; margin:0; display:flex; flex-direction:column; gap:7px; }
+    .learn-steps li { display:flex; gap:10px; font-size:12.5px; color:var(--text-2); line-height:1.55; }
+    .learn-num { width:19px; height:19px; border-radius:50%; background:var(--blue-dim); color:var(--blue); font-size:10px; font-weight:800; display:flex; align-items:center; justify-content:center; flex-shrink:0; margin-top:1px; }
+    .tip-box { background:var(--blue-dim); border-left:3px solid var(--blue); border-radius:0 8px 8px 0; padding:11px 13px; margin-top:14px; }
+    .tip-box-label { font-size:10px; font-weight:800; color:var(--blue); text-transform:uppercase; letter-spacing:.8px; margin-bottom:7px; display:flex; align-items:center; gap:5px; }
+    .tip-box ul { list-style:none; padding:0; margin:0; display:flex; flex-direction:column; gap:5px; }
+    .tip-box ul li { font-size:12.5px; color:var(--text-2); line-height:1.5; padding-left:14px; position:relative; }
+    .tip-box ul li::before { content:'→'; position:absolute; left:0; color:var(--blue); font-size:11px; }
+    .learn-sep { border:none; border-top:1px solid var(--border-dim); margin:14px 0 0; }
     /* ── GOALS ── */
     .progress-bar-wrap { background: var(--border); border-radius: 999px; height: 5px; min-width: 90px; overflow: hidden; }
     .progress-bar-fill { height: 100%; background: var(--blue); border-radius: 999px; transition: width .4s; }
@@ -524,6 +551,14 @@
       <button class="nav-item" onclick="showTab('notes')">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
         Notes
+      </button>
+    </div>
+
+    <div class="sidebar-section">
+      <div class="sidebar-label">Resources</div>
+      <button class="nav-item" onclick="showTab('learn')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 3h6a4 4 0 014 4v14a3 3 0 00-3-3H2z"/><path d="M22 3h-6a4 4 0 00-4 4v14a3 3 0 013-3h7z"/></svg>
+        Learn
       </button>
     </div>
 
@@ -1000,6 +1035,329 @@
         </div>
       </div>
 
+      <!-- ── LEARN TAB ── -->
+      <div id="tab-learn" class="tab-panel">
+        <div class="learn-hero">
+          <div class="learn-hero-title">📚 5Stack.ai Learning Center</div>
+          <div class="learn-hero-sub">Everything you need to get the most out of your financial tracker. Each module below walks you through how to use that section — plus pro tips to help you build better money habits and stay on track all year long.</div>
+        </div>
+
+        <div class="learn-grid">
+
+          <!-- GETTING STARTED -->
+          <div class="learn-card" id="lc-start">
+            <div class="learn-card-header" onclick="toggleLearnCard('lc-start')">
+              <div class="learn-icon" style="background:rgba(57,255,20,0.12)"><svg viewBox="0 0 24 24" fill="none" stroke="var(--blue)" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg></div>
+              <div><div class="learn-card-title">Getting Started</div><div class="learn-card-sub">Your first steps with 5Stack.ai</div></div>
+              <svg class="learn-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+            </div>
+            <div class="learn-card-body">
+              <div class="learn-label">Recommended Setup Order</div>
+              <ul class="learn-steps">
+                <li><span class="learn-num">1</span><span>Set your <strong>fiscal year</strong> in Settings → Profile so all months align correctly.</span></li>
+                <li><span class="learn-num">2</span><span>Enter your <strong>monthly income</strong> in the P&amp;L tab — salary, bonus, freelance, or any recurring income.</span></li>
+                <li><span class="learn-num">3</span><span>Log your <strong>fixed expenses</strong> (rent, car, insurance) in the Expenses tab — these rarely change.</span></li>
+                <li><span class="learn-num">4</span><span>Add your <strong>savings contributions</strong> and <strong>investments</strong> so your net P&amp;L reflects real take-home.</span></li>
+                <li><span class="learn-num">5</span><span>Set up your <strong>Net Worth</strong> snapshot — list all assets and debts for a complete financial picture.</span></li>
+                <li><span class="learn-num">6</span><span>Visit <strong>Goals</strong> and add 1–3 financial targets for the year to keep yourself accountable.</span></li>
+              </ul>
+              <div class="tip-box">
+                <div class="tip-box-label"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>Pro Tips</div>
+                <ul>
+                  <li>Spend 10 minutes every Monday updating the previous week's transactions — consistency beats perfection.</li>
+                  <li>Don't wait until your data is "perfect" — even rough numbers reveal powerful patterns over time.</li>
+                  <li>Your data never leaves your browser. Update freely and honestly — no one else sees this.</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+
+          <!-- DASHBOARD -->
+          <div class="learn-card" id="lc-dashboard">
+            <div class="learn-card-header" onclick="toggleLearnCard('lc-dashboard')">
+              <div class="learn-icon" style="background:rgba(57,255,20,0.12)"><svg viewBox="0 0 24 24" fill="none" stroke="var(--blue)" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg></div>
+              <div><div class="learn-card-title">Dashboard</div><div class="learn-card-sub">Your financial command center</div></div>
+              <svg class="learn-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+            </div>
+            <div class="learn-card-body">
+              <div class="learn-label">What It Shows</div>
+              <ul class="learn-steps">
+                <li><span class="learn-num">1</span><span>The top KPI cards show your <strong>Annual Income, Expenses, Savings</strong> and <strong>Investments</strong> — all year-to-date totals pulled automatically from your entries.</span></li>
+                <li><span class="learn-num">2</span><span>The <strong>Income vs Expenses</strong> bar chart compares what you earned vs spent each month — a positive gap means you're building wealth.</span></li>
+                <li><span class="learn-num">3</span><span>The <strong>Net P&amp;L chart</strong> shows monthly profit or loss — green bars are wins, red bars mean you overspent.</span></li>
+                <li><span class="learn-num">4</span><span>The <strong>Cumulative Savings</strong> line shows total saved across the year — it should trend upward consistently.</span></li>
+                <li><span class="learn-num">5</span><span>The <strong>Expense Breakdown</strong> donut reveals which categories consume most of your budget.</span></li>
+              </ul>
+              <div class="tip-box">
+                <div class="tip-box-label"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>Pro Tips</div>
+                <ul>
+                  <li>Check the dashboard weekly — a 60-second glance is enough to catch problems early.</li>
+                  <li>If the expense donut shows any single category above 40%, that's a red flag worth investigating.</li>
+                  <li>Click <strong>Analyst Tips</strong> in the top bar for personalized insights based on your actual numbers.</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+
+          <!-- P&L -->
+          <div class="learn-card" id="lc-pl">
+            <div class="learn-card-header" onclick="toggleLearnCard('lc-pl')">
+              <div class="learn-icon" style="background:rgba(5,177,105,0.12)"><svg viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="2"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg></div>
+              <div><div class="learn-card-title">P&amp;L (Profit &amp; Loss)</div><div class="learn-card-sub">Income tracking month by month</div></div>
+              <svg class="learn-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+            </div>
+            <div class="learn-card-body">
+              <div class="learn-label">How To Use It</div>
+              <ul class="learn-steps">
+                <li><span class="learn-num">1</span><span>Select the <strong>month tab</strong> at the top (Jan–Dec) to navigate between months.</span></li>
+                <li><span class="learn-num">2</span><span>Enter each income source: <strong>Salary, Bonus, Freelance, Rental</strong>, or Other — use the actual after-tax amounts you received.</span></li>
+                <li><span class="learn-num">3</span><span>The table auto-calculates <strong>monthly totals</strong> and running <strong>YTD totals</strong> in the bottom row.</span></li>
+                <li><span class="learn-num">4</span><span>The <strong>Net P&amp;L row</strong> at the bottom shows income minus all expenses — your monthly profit or loss.</span></li>
+              </ul>
+              <div class="tip-box">
+                <div class="tip-box-label"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>Pro Tips</div>
+                <ul>
+                  <li>Enter income when it's <em>received</em>, not when it's promised — this keeps your numbers honest.</li>
+                  <li>Track bonuses and irregular income separately so you can see your true base income trend.</li>
+                  <li>Aim to grow your total income row by at least 5–10% year-over-year.</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+
+          <!-- EXPENSES -->
+          <div class="learn-card" id="lc-expenses">
+            <div class="learn-card-header" onclick="toggleLearnCard('lc-expenses')">
+              <div class="learn-icon" style="background:rgba(207,82,82,0.12)"><svg viewBox="0 0 24 24" fill="none" stroke="var(--red)" stroke-width="2"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg></div>
+              <div><div class="learn-card-title">Expenses</div><div class="learn-card-sub">Track and categorize every dollar out</div></div>
+              <svg class="learn-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+            </div>
+            <div class="learn-card-body">
+              <div class="learn-label">How To Use It</div>
+              <ul class="learn-steps">
+                <li><span class="learn-num">1</span><span>Enter each expense in its category row for the correct month. Categories include housing, transport, utilities, groceries, dining, subscriptions, and more.</span></li>
+                <li><span class="learn-num">2</span><span>Use <strong>actual amounts paid</strong>, not budgeted amounts — the Budget tab handles planned vs actual comparisons.</span></li>
+                <li><span class="learn-num">3</span><span>Check the <strong>YTD column</strong> at year-end to see your full annual spend per category.</span></li>
+                <li><span class="learn-num">4</span><span>The dashboard Expense Breakdown chart updates automatically as you enter data here.</span></li>
+              </ul>
+              <div class="tip-box">
+                <div class="tip-box-label"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>Pro Tips</div>
+                <ul>
+                  <li>Review your expense categories monthly — most people underestimate dining, subscriptions, and "other."</li>
+                  <li>Fixed expenses (rent, car, insurance) should stay the same month to month. If they spike, investigate why.</li>
+                  <li>Try to keep total expenses below 70% of your gross income — leaving 30% for savings + investing.</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+
+          <!-- SAVINGS -->
+          <div class="learn-card" id="lc-savings">
+            <div class="learn-card-header" onclick="toggleLearnCard('lc-savings')">
+              <div class="learn-icon" style="background:rgba(5,177,105,0.12)"><svg viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div>
+              <div><div class="learn-card-title">Savings</div><div class="learn-card-sub">Build your safety net and wealth</div></div>
+              <svg class="learn-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+            </div>
+            <div class="learn-card-body">
+              <div class="learn-label">How To Use It</div>
+              <ul class="learn-steps">
+                <li><span class="learn-num">1</span><span>Log each month's contributions to <strong>Emergency Fund, General Savings, 401k, Roth IRA</strong>, and other savings vehicles.</span></li>
+                <li><span class="learn-num">2</span><span>The <strong>balance fields</strong> at the top let you track running account balances separately from monthly contributions.</span></li>
+                <li><span class="learn-num">3</span><span>Your savings contributions feed into the <strong>Cumulative Savings YTD chart</strong> on the dashboard.</span></li>
+              </ul>
+              <div class="tip-box">
+                <div class="tip-box-label"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>Pro Tips</div>
+                <ul>
+                  <li><strong>Emergency fund first:</strong> Target 3–6 months of expenses before investing aggressively.</li>
+                  <li>Automate savings transfers on payday — save before you spend, not after.</li>
+                  <li>Max your 401k match before anything else — it's an instant 50–100% return on that money.</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+
+          <!-- INVESTMENTS -->
+          <div class="learn-card" id="lc-investments">
+            <div class="learn-card-header" onclick="toggleLearnCard('lc-investments')">
+              <div class="learn-icon" style="background:rgba(123,97,255,0.12)"><svg viewBox="0 0 24 24" fill="none" stroke="#7B61FF" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg></div>
+              <div><div class="learn-card-title">Investments</div><div class="learn-card-sub">Track your portfolio growth</div></div>
+              <svg class="learn-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+            </div>
+            <div class="learn-card-body">
+              <div class="learn-label">How To Use It</div>
+              <ul class="learn-steps">
+                <li><span class="learn-num">1</span><span>Record monthly contributions to each investment type: <strong>Real Estate, Brokerage, Crypto, Business</strong>, and others.</span></li>
+                <li><span class="learn-num">2</span><span>Enter the <strong>actual dollar amount contributed</strong> each month — not current value or returns.</span></li>
+                <li><span class="learn-num">3</span><span>Use the <strong>balance fields</strong> to record current portfolio value (update quarterly or whenever you check).</span></li>
+              </ul>
+              <div class="tip-box">
+                <div class="tip-box-label"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>Pro Tips</div>
+                <ul>
+                  <li>Consistency beats timing — even small monthly contributions compound dramatically over 10+ years.</li>
+                  <li>Diversify across asset classes: index funds, real estate, and alternatives reduce overall risk.</li>
+                  <li>Track contributions separately from returns — this shows your discipline, not just market luck.</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+
+          <!-- NET WORTH -->
+          <div class="learn-card" id="lc-networth">
+            <div class="learn-card-header" onclick="toggleLearnCard('lc-networth')">
+              <div class="learn-icon" style="background:rgba(245,166,35,0.12)"><svg viewBox="0 0 24 24" fill="none" stroke="var(--yellow)" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v2"/><line x1="12" y1="12" x2="12" y2="16"/><line x1="10" y1="14" x2="14" y2="14"/></svg></div>
+              <div><div class="learn-card-title">Net Worth</div><div class="learn-card-sub">Total assets minus all liabilities</div></div>
+              <svg class="learn-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+            </div>
+            <div class="learn-card-body">
+              <div class="learn-label">How To Use It</div>
+              <ul class="learn-steps">
+                <li><span class="learn-num">1</span><span>Fill in all <strong>Assets</strong>: checking, savings, retirement accounts, real estate value, vehicles, crypto, and other holdings.</span></li>
+                <li><span class="learn-num">2</span><span>Fill in all <strong>Liabilities</strong>: mortgage balance, car loans, student loans, credit card debt, and any other owed amounts.</span></li>
+                <li><span class="learn-num">3</span><span>Your <strong>Net Worth</strong> calculates instantly. Click <strong>Save Snapshot</strong> to record it and build a historical chart.</span></li>
+                <li><span class="learn-num">4</span><span>Revisit and update monthly — especially debt balances which change with each payment.</span></li>
+              </ul>
+              <div class="tip-box">
+                <div class="tip-box-label"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>Pro Tips</div>
+                <ul>
+                  <li>Don't be discouraged if net worth is negative — many people start there. The trend matters more than the number.</li>
+                  <li>Save a snapshot on the 1st of each month for a clean monthly growth chart.</li>
+                  <li>Include all assets honestly — even your car, even small accounts. Incomplete data misleads you.</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+
+          <!-- BUDGET -->
+          <div class="learn-card" id="lc-budget">
+            <div class="learn-card-header" onclick="toggleLearnCard('lc-budget')">
+              <div class="learn-icon" style="background:rgba(57,255,20,0.12)"><svg viewBox="0 0 24 24" fill="none" stroke="var(--blue)" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg></div>
+              <div><div class="learn-card-title">Budget Planner</div><div class="learn-card-sub">Set targets and track spending vs plan</div></div>
+              <svg class="learn-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+            </div>
+            <div class="learn-card-body">
+              <div class="learn-label">How To Use It</div>
+              <ul class="learn-steps">
+                <li><span class="learn-num">1</span><span>Enter your <strong>monthly budget targets</strong> for each income and expense category in the left column.</span></li>
+                <li><span class="learn-num">2</span><span>Select a <strong>month or full year</strong> view — the chart shows your budgeted vs actual side by side for every category.</span></li>
+                <li><span class="learn-num">3</span><span>Green bars mean you came in <strong>under budget</strong> (good for expenses). Red bars mean you <strong>overspent</strong>.</span></li>
+                <li><span class="learn-num">4</span><span>Adjust targets as your life changes — a budget should reflect reality, not an ideal that's impossible to hit.</span></li>
+              </ul>
+              <div class="tip-box">
+                <div class="tip-box-label"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>Pro Tips</div>
+                <ul>
+                  <li>Build your budget from <em>last year's actuals</em>, not wishful thinking — use your Expenses YTD column as a baseline.</li>
+                  <li>The 50/30/20 rule: 50% needs, 30% wants, 20% savings/investing is a solid starting framework.</li>
+                  <li>Review budget vs actual every month end — identify 1 category to improve next month.</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+
+          <!-- DEBT PAYOFF -->
+          <div class="learn-card" id="lc-debt">
+            <div class="learn-card-header" onclick="toggleLearnCard('lc-debt')">
+              <div class="learn-icon" style="background:rgba(207,82,82,0.12)"><svg viewBox="0 0 24 24" fill="none" stroke="var(--red)" stroke-width="2"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg></div>
+              <div><div class="learn-card-title">Debt Payoff</div><div class="learn-card-sub">Eliminate debt with a clear strategy</div></div>
+              <svg class="learn-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+            </div>
+            <div class="learn-card-body">
+              <div class="learn-label">How To Use It</div>
+              <ul class="learn-steps">
+                <li><span class="learn-num">1</span><span>Click <strong>Add Debt</strong> and enter the name, current balance, APR (interest rate), and minimum monthly payment.</span></li>
+                <li><span class="learn-num">2</span><span>Enter any <strong>extra monthly payment</strong> you can apply — even $50/month makes a dramatic difference.</span></li>
+                <li><span class="learn-num">3</span><span>The app compares <strong>Avalanche</strong> (highest APR first — saves most interest) vs <strong>Snowball</strong> (smallest balance first — builds momentum) strategies side by side.</span></li>
+                <li><span class="learn-num">4</span><span>The payoff chart shows your total debt declining to zero over time.</span></li>
+              </ul>
+              <div class="tip-box">
+                <div class="tip-box-label"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>Pro Tips</div>
+                <ul>
+                  <li><strong>Avalanche saves more money</strong> long-term. Snowball builds momentum if motivation is the challenge.</li>
+                  <li>Any extra payment — even $25/month — can cut months or years off your payoff timeline.</li>
+                  <li>Once a debt is paid off, roll that payment into the next debt immediately — don't let lifestyle inflation absorb it.</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+
+          <!-- GOALS -->
+          <div class="learn-card" id="lc-goals">
+            <div class="learn-card-header" onclick="toggleLearnCard('lc-goals')">
+              <div class="learn-icon" style="background:rgba(57,255,20,0.12)"><svg viewBox="0 0 24 24" fill="none" stroke="var(--blue)" stroke-width="2"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg></div>
+              <div><div class="learn-card-title">Goals</div><div class="learn-card-sub">Set targets and track your progress</div></div>
+              <svg class="learn-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+            </div>
+            <div class="learn-card-body">
+              <div class="learn-label">How To Use It</div>
+              <ul class="learn-steps">
+                <li><span class="learn-num">1</span><span>Click <strong>Add Goal</strong> and give it a name, target amount, deadline, and category (savings, debt, income, net worth, etc.).</span></li>
+                <li><span class="learn-num">2</span><span>Update your <strong>current progress</strong> regularly — the progress bar fills as you close in on the target.</span></li>
+                <li><span class="learn-num">3</span><span>Set a <strong>realistic deadline</strong> — goals with dates are far more likely to be achieved than open-ended ones.</span></li>
+              </ul>
+              <div class="tip-box">
+                <div class="tip-box-label"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>Pro Tips</div>
+                <ul>
+                  <li>Use <strong>SMART goals</strong>: Specific, Measurable, Achievable, Relevant, Time-bound. "Save $10,000 by Dec 31" beats "save more."</li>
+                  <li>Keep your active goal list to 3–5 maximum — too many goals dilute focus.</li>
+                  <li>Celebrate milestones at 25%, 50%, and 75% — progress reinforces the behavior.</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+
+          <!-- SCORECARD -->
+          <div class="learn-card" id="lc-scorecard">
+            <div class="learn-card-header" onclick="toggleLearnCard('lc-scorecard')">
+              <div class="learn-icon" style="background:rgba(245,166,35,0.12)"><svg viewBox="0 0 24 24" fill="none" stroke="var(--yellow)" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg></div>
+              <div><div class="learn-card-title">Monthly Scorecard</div><div class="learn-card-sub">Rate your financial performance</div></div>
+              <svg class="learn-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+            </div>
+            <div class="learn-card-body">
+              <div class="learn-label">How To Use It</div>
+              <ul class="learn-steps">
+                <li><span class="learn-num">1</span><span>At the end of each month, select the month and rate yourself on key habits: staying within budget, saving consistently, avoiding impulse purchases, and more.</span></li>
+                <li><span class="learn-num">2</span><span>Add a brief <strong>wins note</strong> — what did you do well financially this month?</span></li>
+                <li><span class="learn-num">3</span><span>Add a <strong>challenges note</strong> — what cost you money or set you back?</span></li>
+                <li><span class="learn-num">4</span><span>Set <strong>action items</strong> for next month based on what you learned.</span></li>
+              </ul>
+              <div class="tip-box">
+                <div class="tip-box-label"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>Pro Tips</div>
+                <ul>
+                  <li>Schedule a 15-minute "money date" on the last day of each month to complete your scorecard.</li>
+                  <li>Be honest with yourself — low scores early lead to high scores later if you act on them.</li>
+                  <li>Read last month's action items before grading yourself — did you actually follow through?</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+
+          <!-- NOTES -->
+          <div class="learn-card" id="lc-notes">
+            <div class="learn-card-header" onclick="toggleLearnCard('lc-notes')">
+              <div class="learn-icon" style="background:rgba(123,97,255,0.12)"><svg viewBox="0 0 24 24" fill="none" stroke="#7B61FF" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>
+              <div><div class="learn-card-title">Monthly Notes</div><div class="learn-card-sub">Your personal financial journal</div></div>
+              <svg class="learn-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+            </div>
+            <div class="learn-card-body">
+              <div class="learn-label">How To Use It</div>
+              <ul class="learn-steps">
+                <li><span class="learn-num">1</span><span>Select the month and write freely in the <strong>Wins, Challenges, Actions</strong>, and <strong>Notes</strong> fields.</span></li>
+                <li><span class="learn-num">2</span><span>Use <strong>Wins</strong> to document financial victories — paid off a card, got a raise, stuck to the budget.</span></li>
+                <li><span class="learn-num">3</span><span>Use <strong>Actions</strong> to commit to specific changes next month — "Cancel unused gym membership," "Call to negotiate internet bill."</span></li>
+              </ul>
+              <div class="tip-box">
+                <div class="tip-box-label"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>Pro Tips</div>
+                <ul>
+                  <li>Even 2–3 sentences per month creates a powerful record of your financial journey over the year.</li>
+                  <li>Read your notes from 6 months ago — the perspective shift is motivating and humbling.</li>
+                  <li>Action items should be specific and completable within 30 days — vague plans don't get done.</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+
+        </div><!-- end learn-grid -->
+      </div><!-- end tab-learn -->
+
     </main>
   </div>
 </div>
@@ -1394,6 +1752,7 @@ const TAB_META = {
   scorecard:   ['Monthly Scorecard', 'Goal tracking & performance review'],
   notes:       ['Monthly Notes',     'Wins, challenges, and action items'],
   settings:    ['Settings',          'Profile, password & data management'],
+  learn:       ['Resources & Learning','Guides, tips & financial education'],
 };
 
 function showTab(id) {
@@ -2974,6 +3333,13 @@ function renderInsightsPanel(){
   });
 
   document.getElementById('insights-body').innerHTML=html;
+}
+
+// ── LEARN ──
+function toggleLearnCard(id){
+  const card=document.getElementById(id);
+  if(!card)return;
+  card.classList.toggle('open');
 }
 
 // ── TICKER PICKER ──
