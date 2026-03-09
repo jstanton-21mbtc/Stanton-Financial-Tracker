@@ -2939,7 +2939,7 @@ function renderInsightsPanel(){
 (function(){
   const CFG=[
     {sym:'BTC',  yf:'BTC-USD',      fp:82000, big:true, cg:'bitcoin'},
-    {sym:'GOLD', fp:2900,           big:true, gold:true},
+    {sym:'USD',  yf:'DX-Y.NYB',     fp:104.00},
     {sym:'TAO',  yf:'TAO22990-USD', fp:350,   big:true, cg:'bittensor'},
     {sym:'NVDA', yf:'NVDA',         fp:115.00},
     {sym:'MSTR', yf:'MSTR',         fp:320.00},
@@ -2995,23 +2995,9 @@ function renderInsightsPanel(){
     });
   }
 
-  // goldprice.org — dedicated gold API, no key needed
-  async function fetchGold(){
-    const i=_d.findIndex(d=>d.gold);
-    if(i<0)return;
-    const r=await fetch('https://data-asg.goldprice.org/dbXRates/USD');
-    if(!r.ok)return;
-    const j=await r.json();
-    const item=j?.items?.[0];
-    if(!item)return;
-    _d[i].price=item.xauPrice;
-    _d[i].chg=+(item.pcXau||0).toFixed(2);
-    _d[i]._live=true;
-  }
-
   async function load(){
     _d.forEach(d=>d._live=false);
-    await Promise.allSettled([fetchYF(),fetchCG(),fetchGold()]);
+    await Promise.allSettled([fetchYF(),fetchCG()]);
     render();
   }
 
