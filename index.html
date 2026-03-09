@@ -1749,15 +1749,12 @@ function dismissStalenessAlert() {
   if (el) el.classList.remove('show');
 }
 
-// One-time migration: clear old pre-seeded James Stanton demo data from localStorage
-const _SEED_CLEAR_KEY = 'sft_seed_cleared_v1';
-if (!localStorage.getItem(_SEED_CLEAR_KEY)) {
-  const _s = loadDataLocal();
-  if (_s && _s.meta && _s.meta.name === 'James Stanton' &&
-      _s.income && _s.income.jan && _s.income.jan.salary === 9344.94) {
-    localStorage.removeItem(STORAGE_KEY);
-  }
-  localStorage.setItem(_SEED_CLEAR_KEY, '1');
+// One-time wipe: reset to brand new user account
+const _WIPE_KEY = 'sft_wipe_v2';
+if (!localStorage.getItem(_WIPE_KEY)) {
+  localStorage.removeItem(STORAGE_KEY);
+  localStorage.removeItem(PW_KEY);
+  localStorage.setItem(_WIPE_KEY, '1');
 }
 
 function _openApp() {
