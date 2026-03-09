@@ -677,6 +677,7 @@
       <!-- DASHBOARD -->
       <div id="tab-dashboard" class="tab-panel active">
         <div class="kpi-grid" id="kpi-grid"></div>
+        <div id="kpi-asof" style="font-size:11px;color:var(--text-3);text-align:right;margin:-20px 0 24px;"></div>
         <div class="charts-grid">
           <div class="chart-card"><h3>Income vs Expenses</h3><div class="chart-wrap"><canvas id="chart-ie"></canvas></div></div>
           <div class="chart-card"><h3>Net P&amp;L by Month</h3><div class="chart-wrap"><canvas id="chart-pl"></canvas></div></div>
@@ -1966,16 +1967,21 @@ function renderDashboard() {
   ];
   document.getElementById('kpi-grid').innerHTML=kpis.map(k=>`<div class="kpi-card ${k.cls}"><div class="kpi-label">${k.label}</div><div class="kpi-value">${k.value}</div><div class="kpi-sub">${k.sub}</div></div>`).join('');
 
+  // As-of timestamp
+  const now=new Date();
+  const asofEl=document.getElementById('kpi-asof');
+  if(asofEl) asofEl.textContent=`As of ${now.toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'})} ${now.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'})}`;
+
   const rows=[
-    {label:'Income ($)',    fn:m=>fmt$(monthIncome(m)),   total:()=>fmt$(annualTotal(monthIncome))},
-    {label:'Expenses ($)',  fn:m=>fmt$(monthExpense(m)),  total:()=>fmt$(annualTotal(monthExpense))},
-    {label:'Net P&L ($)',   fn:m=>fmtSign$(monthPL(m)),  total:()=>fmtSign$(annualTotal(monthPL))},
-    {label:'Savings ($)',   fn:m=>fmt$(monthSavings(m)), total:()=>fmt$(annualTotal(monthSavings))},
-    {label:'Investments($)',fn:m=>fmt$(monthInvest(m)),  total:()=>fmt$(annualTotal(monthInvest))},
-    {label:'Savings Rate',  fn:m=>fmtSignPct(monthSavRate(m)),total:()=>{const i=annualTotal(monthIncome);return i>0?fmtSignPct(annualTotal(monthSavings)/i):'—';}},
-    {label:'Expense Ratio', fn:m=>{const r=monthExpRatio(m);return r!=null?`<span class="val-blue">${fmtPct(r)}</span>`:'—';},total:()=>{const i=annualTotal(monthIncome);return i>0?`<span class="val-blue">${fmtPct(annualTotal(monthExpense)/i)}</span>`:'—';}},
+    {label:'Income ($)',    fn:m=>fmt$(monthIncome(m)),   total:()=>fmt$(ytdTotal(monthIncome))},
+    {label:'Expenses ($)',  fn:m=>fmt$(monthExpense(m)),  total:()=>fmt$(ytdTotal(monthExpense))},
+    {label:'Net P&L ($)',   fn:m=>fmtSign$(monthPL(m)),  total:()=>fmtSign$(ytdTotal(monthPL))},
+    {label:'Savings ($)',   fn:m=>fmt$(monthSavings(m)), total:()=>fmt$(ytdTotal(monthSavings))},
+    {label:'Investments($)',fn:m=>fmt$(monthInvest(m)),  total:()=>fmt$(ytdTotal(monthInvest))},
+    {label:'Savings Rate',  fn:m=>fmtSignPct(monthSavRate(m)),total:()=>{const i=ytdTotal(monthIncome);return i>0?fmtSignPct(ytdTotal(monthSavings)/i):'—';}},
+    {label:'Expense Ratio', fn:m=>{const r=monthExpRatio(m);return r!=null?`<span class="val-blue">${fmtPct(r)}</span>`:'—';},total:()=>{const i=ytdTotal(monthIncome);return i>0?`<span class="val-blue">${fmtPct(ytdTotal(monthExpense)/i)}</span>`:'—';}},
   ];
-  let html=`<table><thead><tr><th>Metric</th>${MONTH_SHORT.map(m=>`<th>${m}</th>`).join('')}<th>Total</th></tr></thead><tbody>`;
+  let html=`<table><thead><tr><th>Metric</th>${MONTH_SHORT.map(m=>`<th>${m}</th>`).join('')}<th>YTD Total</th></tr></thead><tbody>`;
   rows.forEach(r=>{html+=`<tr><td>${r.label}</td>${MK.map(m=>`<td style="font-size:12px">${r.fn(m)}</td>`).join('')}<td>${r.total()}</td></tr>`;});
   html+='</tbody></table>';
   document.getElementById('summary-wrap').innerHTML=html;
@@ -3286,6 +3292,19 @@ document.addEventListener('DOMContentLoaded', async () => {
     await _initApp(session.user.id);
   }
 });
+
+// ── DATE-CHANGE WATCHER ──
+// Re-renders dashboard whenever the calendar date changes (midnight crossover, tab resume, etc.)
+let _lastKnownDate = new Date().toDateString();
+function _checkDateChange() {
+  const today = new Date().toDateString();
+  if (today !== _lastKnownDate) {
+    _lastKnownDate = today;
+    if (typeof refreshAll === 'function') refreshAll();
+  }
+}
+setInterval(_checkDateChange, 60 * 1000); // check every minute
+document.addEventListener('visibilitychange', () => { if (!document.hidden) _checkDateChange(); });
 
 // ── ANALYST INSIGHTS ──
 const ANALYSTS = [
