@@ -9,6 +9,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js"></script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     :root {
@@ -405,6 +406,31 @@
     .modal-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
     .modal-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 24px; padding-top: 18px; border-top: 1px solid var(--border-dim); }
 
+    /* ── PAYSTUB MODAL ── */
+    .paystub-modal-card { background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 32px; width: 100%; max-width: 680px; animation: fadeUp .25s ease; max-height: 90vh; overflow-y: auto; }
+    .paystub-dropzone { border: 2px dashed var(--border); border-radius: 12px; padding: 40px 24px; text-align: center; cursor: pointer; transition: border-color .2s, background .2s; margin-bottom: 16px; }
+    .paystub-dropzone:hover, .paystub-dropzone.drag-over { border-color: var(--blue); background: var(--blue-dim); }
+    .paystub-dropzone-title { font-size: 14px; font-weight: 600; margin: 10px 0 4px; }
+    .paystub-dropzone-sub { font-size: 12px; color: var(--text-2); }
+    .paystub-or { text-align: center; color: var(--text-3); font-size: 12px; margin: 10px 0; }
+    .paystub-manual-btn { width: 100%; background: var(--elevated); border: 1px solid var(--border); color: var(--text-2); border-radius: 10px; padding: 11px; font-size: 13px; cursor: pointer; transition: border-color .15s, color .15s; font-family: 'Inter', sans-serif; }
+    .paystub-manual-btn:hover { border-color: var(--blue); color: var(--text); }
+    .paystub-parse-status { font-size: 12px; color: var(--text-2); text-align: center; padding: 8px 12px; border-radius: 8px; margin-bottom: 12px; }
+    .paystub-parse-status.success { color: var(--green); background: var(--green-dim); }
+    .paystub-parse-status.error { color: var(--red); background: var(--red-dim); }
+    .paystub-fields-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+    .paystub-section-label { font-size: 11px; font-weight: 700; color: var(--text-3); text-transform: uppercase; letter-spacing: .7px; margin-top: 6px; grid-column: 1 / -1; border-top: 1px solid var(--border-dim); padding-top: 14px; }
+    .paystub-section-label:first-child { border-top: none; padding-top: 0; margin-top: 0; }
+    .paystub-img-preview { width: 100%; max-height: 200px; object-fit: contain; border-radius: 10px; border: 1px solid var(--border); margin-bottom: 14px; grid-column: 1 / -1; }
+    .paystub-field-hint { font-size: 11px; color: var(--text-3); margin-top: 3px; }
+    .paystub-confidence { font-size: 10px; padding: 1px 6px; border-radius: 4px; margin-left: 5px; font-weight: 600; vertical-align: middle; }
+    .paystub-confidence.high { background: var(--green-dim); color: var(--green); }
+    .paystub-confidence.low { background: var(--yellow-dim); color: var(--yellow); }
+    .paystub-ytd-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 12px; }
+    .paystub-ytd-card { background: var(--elevated); border: 1px solid var(--border); border-radius: 10px; padding: 14px 18px; }
+    .paystub-ytd-label { font-size: 11px; color: var(--text-3); text-transform: uppercase; letter-spacing: .6px; margin-bottom: 5px; }
+    .paystub-ytd-value { font-size: 20px; font-weight: 700; }
+
     /* ── INSIGHTS PANEL ── */
     .insights-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,.45); z-index: 300; opacity: 0; pointer-events: none; transition: opacity .3s; }
     .insights-backdrop.open { opacity: 1; pointer-events: all; }
@@ -647,8 +673,18 @@
 
       <!-- P&L -->
       <div id="tab-pl" class="tab-panel">
-        <div class="section-title">P&amp;L — Income &amp; Profitability</div>
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;">
+          <div class="section-title" style="margin-bottom:0;">P&amp;L — Income &amp; Profitability</div>
+          <button class="btn btn-primary" onclick="showPaystubModal()" style="font-size:12.5px;padding:8px 16px;gap:7px;flex-shrink:0;">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+            Import Paystub
+          </button>
+        </div>
         <div class="table-wrap" id="pl-wrap"></div>
+        <div class="subsection" id="paystub-ytd-panel" style="display:none;">
+          <div class="subsection-title">Paystub YTD Summary</div>
+          <div id="paystub-ytd-wrap"></div>
+        </div>
         <div class="subsection">
           <div class="subsection-title">Net P&amp;L Summary</div>
           <div class="table-wrap" id="pl-summary-wrap"></div>
@@ -1394,11 +1430,12 @@ const MK          = ['jan','feb','mar','apr','may','jun','jul','aug','sep','oct'
 const MONTH_SHORT = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 
 const INCOME_CATS = [
-  {key:'salary',    label:'Primary Salary'},
-  {key:'bonus',     label:'Bonus'},
-  {key:'freelance', label:'Side Income / Freelance'},
-  {key:'rental',    label:'Rental / Investment Income'},
-  {key:'other',     label:'Other Income'},
+  {key:'salary',     label:'Primary Salary'},
+  {key:'commission', label:'Commission'},
+  {key:'bonus',      label:'Bonus'},
+  {key:'freelance',  label:'Side Income / Freelance'},
+  {key:'rental',     label:'Rental / Investment Income'},
+  {key:'other',      label:'Other Income'},
 ];
 const EXPENSE_CATS = [
   {key:'mortgage',      label:'Mortgage / Rent'},
@@ -1461,7 +1498,7 @@ const SCORECARD_GOALS = [
 // ── DEFAULT DATA ──
 const RECUR_EXP = {mortgage:2640.85,vehicle:750,insurance:0,phone:25,electric:250,propane:0,water:0,tv:220.58,groceries:0,dining:0,gas:0,creditCard:0,subscriptions:0,health:0,other:0};
 const RECUR_SAV = {emergency:600,general:1930,k401:920,roth:200,bitcoin:200,bitcoinIRA:0,cryptoOther:0,lifeInsurance:13.81,other:0};
-const ZERO_INC  = {salary:0,bonus:0,freelance:0,rental:0,other:0};
+const ZERO_INC  = {salary:0,commission:0,bonus:0,freelance:0,rental:0,other:0};
 const ZERO_EXP  = {mortgage:0,vehicle:0,insurance:0,phone:0,electric:0,propane:0,water:0,tv:0,groceries:0,dining:0,gas:0,creditCard:0,subscriptions:0,health:0,other:0};
 const ZERO_SAV  = {emergency:0,general:0,k401:0,roth:0,bitcoin:0,bitcoinIRA:0,cryptoOther:0,lifeInsurance:0,other:0};
 const ZERO_INV  = {property:0,homeImprovement:0,health:0,vehicle:0,education:0,other:0};
@@ -1497,9 +1534,10 @@ function getDefaultData() {
     },
     debts: [],
     budget: {
-      income: {salary:0,bonus:0,freelance:0,rental:0,other:0},
+      income: {salary:0,commission:0,bonus:0,freelance:0,rental:0,other:0},
       expenses: {mortgage:0,vehicle:0,insurance:0,phone:0,electric:0,propane:0,water:0,tv:0,groceries:0,dining:0,gas:0,creditCard:0,subscriptions:0,health:0,other:0},
     },
+    paystubYtd: {k401:0,taxesFed:0,taxesState:0,taxesFica:0,taxesMed:0},
     netWorth: {
       assets: {
         cashChecking:0, cashSavings:0, emergencyFund:0,
@@ -1557,13 +1595,13 @@ function isFirstTime()    { return !getStoredHash(); }
 function _getJamesStantonData() {
   const R_EXP = {mortgage:2640.85,vehicle:750,insurance:0,phone:25,electric:250,propane:0,water:0,tv:220.58,groceries:0,dining:0,gas:0,creditCard:0,subscriptions:0,health:0,other:0};
   const R_SAV = {emergency:600,general:1930,k401:920,roth:200,bitcoin:200,bitcoinIRA:0,cryptoOther:0,lifeInsurance:13.81,other:0};
-  const Z_INC = {salary:0,bonus:0,freelance:0,rental:0,other:0};
+  const Z_INC = {salary:0,commission:0,bonus:0,freelance:0,rental:0,other:0};
   const Z_INV = {property:0,homeImprovement:0,health:0,vehicle:0,education:0,other:0};
   return {
     meta: {name:'James Stanton', year:'2026', currency:'$'},
     income: {
-      jan:{salary:9344.94,bonus:0,freelance:0,rental:0,other:0},
-      feb:{salary:4646.31,bonus:0,freelance:0,rental:0,other:0},
+      jan:{salary:9344.94,commission:0,bonus:0,freelance:0,rental:0,other:0},
+      feb:{salary:4646.31,commission:0,bonus:0,freelance:0,rental:0,other:0},
       mar:{...Z_INC},apr:{...Z_INC},may:{...Z_INC},jun:{...Z_INC},
       jul:{...Z_INC},aug:{...Z_INC},sep:{...Z_INC},oct:{...Z_INC},nov:{...Z_INC},dec:{...Z_INC},
     },
@@ -1591,7 +1629,8 @@ function _getJamesStantonData() {
       investments: {property:0,homeImprovement:0,health:0,vehicle:0,education:0,other:0},
     },
     debts: [],
-    budget: {income:{salary:0,bonus:0,freelance:0,rental:0,other:0}, expenses:{mortgage:2640.85,vehicle:750,insurance:0,phone:25,electric:250,propane:0,water:0,tv:220.58,groceries:0,dining:0,gas:0,creditCard:0,subscriptions:0,health:0,other:0}},
+    budget: {income:{salary:0,commission:0,bonus:0,freelance:0,rental:0,other:0}, expenses:{mortgage:2640.85,vehicle:750,insurance:0,phone:25,electric:250,propane:0,water:0,tv:220.58,groceries:0,dining:0,gas:0,creditCard:0,subscriptions:0,health:0,other:0}},
+    paystubYtd: {k401:0,taxesFed:0,taxesState:0,taxesFica:0,taxesMed:0},
     netWorth: {assets:{cashChecking:0,cashSavings:0,emergencyFund:0,retirement401k:0,rothIRA:0,brokerageAccount:0,bitcoin:0,cryptoOther:0,primaryHome:0,rentalProperty:0,vehicle:0,lifeInsuranceCash:0,otherAssets:0}, liabilities:{mortgageBalance:0,homeLoanOther:0,vehicleLoan:0,studentLoan:0,creditCardDebt:0,medicalDebt:0,otherDebt:0}, history:[]},
     goals: [],
     scorecard: Object.fromEntries(MK.map(m=>[m,{wins:'',challenges:'',actions:'',notes:''}])),
@@ -1662,6 +1701,14 @@ function _openApp() {
     savings:     JSON.parse(JSON.stringify(SAVINGS_CATS)),
     investments: JSON.parse(JSON.stringify(INVEST_CATS))
   };
+  // Migrate: ensure commission category exists in income
+  if(appData.customCats && appData.customCats.income && !appData.customCats.income.find(c=>c.key==='commission')){
+    const salIdx = appData.customCats.income.findIndex(c=>c.key==='salary');
+    appData.customCats.income.splice(salIdx>=0?salIdx+1:0, 0, {key:'commission',label:'Commission'});
+    MK.forEach(m=>{ if(appData.income&&appData.income[m]&&appData.income[m].commission==null) appData.income[m].commission=0; });
+  }
+  // Migrate: ensure paystubYtd exists
+  if(!appData.paystubYtd) appData.paystubYtd={k401:0,taxesFed:0,taxesState:0,taxesFica:0,taxesMed:0};
   document.getElementById('login-overlay').style.display = 'none';
   refreshAll();
   if (charts.ie) { updateCharts(); } else { initCharts(); }
@@ -1940,6 +1987,23 @@ function deleteCat(sectionKey, key) {
 // ── P&L ──
 function renderPL(){
   renderDataTable('pl-wrap',getCats('income'),'income');
+  // YTD panel
+  const ytdPanel=document.getElementById('paystub-ytd-panel');
+  if(ytdPanel){
+    const ytd=appData.paystubYtd||{};
+    const hasData=Object.values(ytd).some(v=>v>0);
+    ytdPanel.style.display=hasData?'':'none';
+    if(hasData){
+      const totalTax=(ytd.taxesFed||0)+(ytd.taxesState||0)+(ytd.taxesFica||0)+(ytd.taxesMed||0);
+      let cards='';
+      if(ytd.k401>0) cards+=`<div class="paystub-ytd-card"><div class="paystub-ytd-label">401(k) YTD</div><div class="paystub-ytd-value" style="color:var(--green)">${fmt$(ytd.k401)}</div></div>`;
+      if(ytd.taxesFed>0) cards+=`<div class="paystub-ytd-card"><div class="paystub-ytd-label">Federal Tax YTD</div><div class="paystub-ytd-value" style="color:var(--red)">${fmt$(ytd.taxesFed)}</div></div>`;
+      if(ytd.taxesState>0) cards+=`<div class="paystub-ytd-card"><div class="paystub-ytd-label">State Tax YTD</div><div class="paystub-ytd-value" style="color:var(--red)">${fmt$(ytd.taxesState)}</div></div>`;
+      if((ytd.taxesFica||0)+(ytd.taxesMed||0)>0) cards+=`<div class="paystub-ytd-card"><div class="paystub-ytd-label">FICA / Medicare YTD</div><div class="paystub-ytd-value" style="color:var(--red)">${fmt$((ytd.taxesFica||0)+(ytd.taxesMed||0))}</div></div>`;
+      if(totalTax>0) cards+=`<div class="paystub-ytd-card"><div class="paystub-ytd-label">Total Taxes YTD</div><div class="paystub-ytd-value" style="color:var(--red)">${fmt$(totalTax)}</div></div>`;
+      document.getElementById('paystub-ytd-wrap').innerHTML=`<div class="paystub-ytd-grid">${cards}</div><div style="text-align:right;margin-top:10px;"><button class="btn btn-ghost" onclick="showPaystubModal()" style="font-size:12px;padding:7px 14px;">Update from Paystub</button></div>`;
+    }
+  }
   let html=`<table><thead><tr><th>Metric</th>${MONTH_SHORT.map(m=>`<th>${m}</th>`).join('')}<th>Total</th></tr></thead><tbody>`;
   const rows=[
     {label:'Net P&L ($)',   fn:m=>fmtSign$(monthPL(m)),total:()=>fmtSign$(annualTotal(monthPL))},
@@ -3572,6 +3636,227 @@ let _reloadTicker;
 })();
 </script>
 
+<script>
+// ── PAYSTUB IMPORT ──
+let _psWorkerSet = false;
+
+function showPaystubModal() {
+  psShowUpload();
+  document.getElementById('paystub-modal').classList.add('open');
+}
+function closePaystubModal(e) {
+  if (e && e.target !== e.currentTarget) return;
+  document.getElementById('paystub-modal').classList.remove('open');
+}
+function psShowUpload() {
+  document.getElementById('ps-upload-step').style.display = '';
+  document.getElementById('ps-fields-step').style.display = 'none';
+  const fi = document.getElementById('ps-file-input');
+  if (fi) fi.value = '';
+}
+function psOnDragOver(e) { e.preventDefault(); document.getElementById('ps-dropzone').classList.add('drag-over'); }
+function psOnDragLeave()  { document.getElementById('ps-dropzone').classList.remove('drag-over'); }
+function psOnDrop(e) {
+  e.preventDefault();
+  document.getElementById('ps-dropzone').classList.remove('drag-over');
+  const file = e.dataTransfer.files[0];
+  if (file) psHandleFile(file);
+}
+function psHandleFileInput(input) { if (input.files[0]) psHandleFile(input.files[0]); }
+
+async function psHandleFile(file) {
+  const isImage = file.type.startsWith('image/');
+  const isPdf   = file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf');
+  if (!isImage && !isPdf) { alert('Please upload a PDF or image file (JPG, PNG).'); return; }
+
+  psShowFields(null);
+  const status = document.getElementById('ps-status');
+
+  if (isImage) {
+    const reader = new FileReader();
+    reader.onload = ev => {
+      document.getElementById('ps-img-preview').src = ev.target.result;
+      document.getElementById('ps-img-preview').style.display = '';
+    };
+    reader.readAsDataURL(file);
+    status.textContent = 'Image loaded — enter the values from your paystub in the fields below.';
+    status.className = 'paystub-parse-status';
+    status.style.display = '';
+  } else {
+    document.getElementById('ps-img-preview').style.display = 'none';
+    status.textContent = 'Reading PDF…';
+    status.className = 'paystub-parse-status';
+    status.style.display = '';
+    try {
+      if (typeof pdfjsLib === 'undefined') throw new Error('PDF.js not loaded');
+      if (!_psWorkerSet) {
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.worker.min.js';
+        _psWorkerSet = true;
+      }
+      const buf = await file.arrayBuffer();
+      const pdf = await pdfjsLib.getDocument({data: buf}).promise;
+      let text = '';
+      for (let i = 1; i <= pdf.numPages; i++) {
+        const page = await pdf.getPage(i);
+        const tc   = await page.getTextContent();
+        text += tc.items.map(it => it.str).join(' ') + '\n';
+      }
+      const parsed = parsePaystubText(text);
+      psPopulateFields(parsed);
+      const filled = [parsed.salary, parsed.commission, parsed.k401Ytd, parsed.taxFedYtd]
+        .filter(x => x && x.value != null).length;
+      status.textContent = filled > 0
+        ? `Auto-detected ${filled} field(s) — review values below and click Apply.`
+        : 'PDF read but values could not be auto-detected. Please enter them manually.';
+      status.className = 'paystub-parse-status' + (filled > 0 ? ' success' : '');
+    } catch(err) {
+      console.error('PDF parse error:', err);
+      status.textContent = 'Could not parse this PDF automatically. Please enter values manually.';
+      status.className = 'paystub-parse-status error';
+    }
+  }
+}
+
+function psShowFields(parsed) {
+  document.getElementById('ps-upload-step').style.display  = 'none';
+  document.getElementById('ps-fields-step').style.display  = '';
+  document.getElementById('ps-img-preview').style.display = 'none';
+  document.getElementById('ps-status').style.display = 'none';
+
+  // Populate month selector
+  const sel = document.getElementById('ps-month');
+  sel.innerHTML = MONTHS.map((name, i) => `<option value="${MK[i]}">${name}</option>`).join('');
+  sel.value = MK[new Date().getMonth()];
+
+  // Clear fields & badges
+  ['ps-salary','ps-commission','ps-k401ytd','ps-taxfed','ps-taxstate','ps-taxfica','ps-taxmed']
+    .forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+  ['ps-salary-conf','ps-commission-conf','ps-k401-conf','ps-taxfed-conf','ps-taxstate-conf','ps-taxfica-conf','ps-taxmed-conf']
+    .forEach(id => { const el = document.getElementById(id); if (el) el.innerHTML = ''; });
+
+  if (parsed) psPopulateFields(parsed);
+}
+
+function psPopulateFields(parsed) {
+  if (!parsed) return;
+  function setField(inputId, confId, result) {
+    if (!result || result.value == null) return;
+    const inp  = document.getElementById(inputId);
+    const conf = document.getElementById(confId);
+    if (inp)  inp.value = result.value.toFixed(2);
+    if (conf) conf.innerHTML = `<span class="paystub-confidence ${result.confidence}">${result.confidence === 'high' ? '✓ detected' : '~ estimated'}</span>`;
+  }
+  if (parsed.month) { const s = document.getElementById('ps-month'); if (s) s.value = parsed.month; }
+  setField('ps-salary',    'ps-salary-conf',    parsed.salary);
+  setField('ps-commission','ps-commission-conf', parsed.commission);
+  setField('ps-k401ytd',   'ps-k401-conf',       parsed.k401Ytd);
+  setField('ps-taxfed',    'ps-taxfed-conf',      parsed.taxFedYtd);
+  setField('ps-taxstate',  'ps-taxstate-conf',    parsed.taxStateYtd);
+  setField('ps-taxfica',   'ps-taxfica-conf',     parsed.taxFicaYtd);
+  setField('ps-taxmed',    'ps-taxmed-conf',      parsed.taxMedYtd);
+}
+
+function parsePaystubText(rawText) {
+  const lines = rawText.split(/[\n\r]+/).map(l => l.trim()).filter(Boolean);
+
+  function getNum(s) {
+    const v = parseFloat((s||'').replace(/[$,\s]/g,''));
+    return isNaN(v) || v < 0 ? null : v;
+  }
+
+  function amountsInLine(line) {
+    return [...line.matchAll(/\$?\s*(\d{1,3}(?:,\d{3})*(?:\.\d{2})?)/g)]
+      .map(m => getNum(m[1])).filter(v => v !== null && v > 0);
+  }
+
+  function findCurrent(keywords) {
+    for (const line of lines) {
+      const lu = line.toUpperCase();
+      if (!keywords.some(kw => lu.includes(kw))) continue;
+      const amounts = amountsInLine(line);
+      if (amounts.length) return {value: amounts[0], confidence: 'high'};
+    }
+    return {value: null, confidence: 'low'};
+  }
+
+  function findYtd(keywords) {
+    // Prefer lines that include "YTD" explicitly
+    for (const line of lines) {
+      const lu = line.toUpperCase();
+      if (!lu.includes('YTD')) continue;
+      if (!keywords.some(kw => lu.includes(kw))) continue;
+      const amounts = amountsInLine(line);
+      if (amounts.length) return {value: amounts[amounts.length - 1], confidence: 'high'};
+    }
+    // Fallback: same-line with 2+ amounts — assume last is YTD
+    for (const line of lines) {
+      const lu = line.toUpperCase();
+      if (!keywords.some(kw => lu.includes(kw))) continue;
+      const amounts = amountsInLine(line);
+      if (amounts.length >= 2) return {value: amounts[amounts.length - 1], confidence: 'high'};
+      if (amounts.length === 1) return {value: amounts[0], confidence: 'low'};
+    }
+    return {value: null, confidence: 'low'};
+  }
+
+  // Detect month from pay period / check date
+  let month = null;
+  for (const line of lines) {
+    const dm = line.match(/\b(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4})\b/);
+    if (dm) {
+      const mo = parseInt(dm[1]);
+      if (mo >= 1 && mo <= 12) { month = MK[mo - 1]; break; }
+    }
+  }
+
+  return {
+    month,
+    salary:      findCurrent(['REGULAR','BASE PAY','BASE SALARY','SALARY','REG PAY','REGULAR PAY']),
+    commission:  findCurrent(['COMMISSION','COMM PAY','VARIABLE PAY','SALES COMM','COMMISSION INCOME']),
+    k401Ytd:     findYtd(['401(K)','401K','401 (K)','RETIREMENT','PRE-TAX RET','PRETAX RET']),
+    taxFedYtd:   findYtd(['FEDERAL INCOME','FED INCOME','FED TAX','FEDERAL TAX','FIT']),
+    taxStateYtd: findYtd(['STATE INCOME','STATE TAX','STATE INC TAX','SIT']),
+    taxFicaYtd:  findYtd(['SOCIAL SECURITY','OASDI','SS TAX','FICA']),
+    taxMedYtd:   findYtd(['MEDICARE']),
+  };
+}
+
+function psApply() {
+  const month      = document.getElementById('ps-month').value;
+  const salary     = parseFloat(document.getElementById('ps-salary').value)     || 0;
+  const commission = parseFloat(document.getElementById('ps-commission').value) || 0;
+  const k401Ytd    = parseFloat(document.getElementById('ps-k401ytd').value)    || 0;
+  const taxFed     = parseFloat(document.getElementById('ps-taxfed').value)     || 0;
+  const taxState   = parseFloat(document.getElementById('ps-taxstate').value)   || 0;
+  const taxFica    = parseFloat(document.getElementById('ps-taxfica').value)    || 0;
+  const taxMed     = parseFloat(document.getElementById('ps-taxmed').value)     || 0;
+
+  if (!appData.income[month]) appData.income[month] = {...ZERO_INC};
+
+  if (salary > 0)     appData.income[month].salary     = salary;
+  if (commission > 0) appData.income[month].commission = commission;
+
+  if (!appData.paystubYtd) appData.paystubYtd = {k401:0,taxesFed:0,taxesState:0,taxesFica:0,taxesMed:0};
+  if (k401Ytd  > 0) appData.paystubYtd.k401       = k401Ytd;
+  if (taxFed   > 0) appData.paystubYtd.taxesFed    = taxFed;
+  if (taxState > 0) appData.paystubYtd.taxesState  = taxState;
+  if (taxFica  > 0) appData.paystubYtd.taxesFica   = taxFica;
+  if (taxMed   > 0) appData.paystubYtd.taxesMed    = taxMed;
+
+  saveData();
+  refreshAll();
+  document.getElementById('paystub-modal').classList.remove('open');
+  const moName = MONTHS[MK.indexOf(month)];
+  setTimeout(() => {
+    const toast = document.createElement('div');
+    toast.style.cssText = 'position:fixed;bottom:28px;left:50%;transform:translateX(-50%);background:var(--green);color:#fff;padding:11px 22px;border-radius:10px;font-size:13px;font-weight:600;z-index:9999;box-shadow:0 4px 20px rgba(0,0,0,.3);';
+    toast.textContent = `✓ Paystub applied for ${moName}`;
+    document.body.appendChild(toast);
+    setTimeout(() => toast.remove(), 3000);
+  }, 150);
+}
+</script>
+
 <!-- ── THEME PICKER ── -->
 <div class="theme-picker-overlay" id="theme-picker" style="display:none">
   <div class="theme-picker-card">
@@ -3798,6 +4083,94 @@ let _reloadTicker;
   </div>
   <div class="insights-body" id="insights-body">
     <div style="text-align:center;padding:40px 20px;color:var(--text-3);font-size:13px;">Loading insights...</div>
+  </div>
+</div>
+
+<!-- PAYSTUB IMPORT MODAL -->
+<div class="modal-overlay" id="paystub-modal" onclick="closePaystubModal(event)">
+  <div class="paystub-modal-card" onclick="event.stopPropagation()">
+
+    <!-- Header -->
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:20px;">
+      <div>
+        <div class="modal-title">Import Paystub</div>
+        <div class="modal-sub">Upload a PDF or image, or enter values manually</div>
+      </div>
+      <button onclick="closePaystubModal()" style="background:none;border:none;cursor:pointer;color:var(--text-2);padding:2px;line-height:0;flex-shrink:0;">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+
+    <!-- Step 1: Upload -->
+    <div id="ps-upload-step">
+      <div class="paystub-dropzone" id="ps-dropzone"
+           onclick="document.getElementById('ps-file-input').click()"
+           ondragover="psOnDragOver(event)"
+           ondragleave="psOnDragLeave()"
+           ondrop="psOnDrop(event)">
+        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="var(--text-3)" stroke-width="1.5"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><polyline points="9 15 12 12 15 15"/></svg>
+        <div class="paystub-dropzone-title">Drop your paystub here</div>
+        <div class="paystub-dropzone-sub">Supports PDF, JPG, PNG &mdash; or click to browse</div>
+      </div>
+      <input type="file" id="ps-file-input" accept=".pdf,.jpg,.jpeg,.png" style="display:none" onchange="psHandleFileInput(this)">
+      <div class="paystub-or">— or —</div>
+      <button class="paystub-manual-btn" onclick="psShowFields(null)">Enter values manually</button>
+    </div>
+
+    <!-- Step 2: Fields -->
+    <div id="ps-fields-step" style="display:none;">
+      <div id="ps-status" class="paystub-parse-status" style="display:none;"></div>
+      <div class="paystub-fields-grid">
+        <img id="ps-img-preview" class="paystub-img-preview" style="display:none;" />
+
+        <div class="paystub-section-label">Pay Period</div>
+        <div class="modal-field" style="grid-column:1/-1;">
+          <label>Month</label>
+          <select id="ps-month"></select>
+        </div>
+
+        <div class="paystub-section-label">Income — Current Period</div>
+        <div class="modal-field">
+          <label>Primary Salary / Base Pay <span id="ps-salary-conf"></span></label>
+          <input type="number" id="ps-salary" placeholder="0.00" step="0.01" min="0">
+          <div class="paystub-field-hint">Gross or net pay for this period</div>
+        </div>
+        <div class="modal-field">
+          <label>Commission Earned <span id="ps-commission-conf"></span></label>
+          <input type="number" id="ps-commission" placeholder="0.00" step="0.01" min="0">
+        </div>
+
+        <div class="paystub-section-label">401(k) — Year To Date</div>
+        <div class="modal-field" style="grid-column:1/-1;">
+          <label>401(k) Contributions YTD <span id="ps-k401-conf"></span></label>
+          <input type="number" id="ps-k401ytd" placeholder="0.00" step="0.01" min="0">
+        </div>
+
+        <div class="paystub-section-label">Taxes Paid — Year To Date</div>
+        <div class="modal-field">
+          <label>Federal Income Tax YTD <span id="ps-taxfed-conf"></span></label>
+          <input type="number" id="ps-taxfed" placeholder="0.00" step="0.01" min="0">
+        </div>
+        <div class="modal-field">
+          <label>State Income Tax YTD <span id="ps-taxstate-conf"></span></label>
+          <input type="number" id="ps-taxstate" placeholder="0.00" step="0.01" min="0">
+        </div>
+        <div class="modal-field">
+          <label>Social Security / OASDI YTD <span id="ps-taxfica-conf"></span></label>
+          <input type="number" id="ps-taxfica" placeholder="0.00" step="0.01" min="0">
+        </div>
+        <div class="modal-field">
+          <label>Medicare YTD <span id="ps-taxmed-conf"></span></label>
+          <input type="number" id="ps-taxmed" placeholder="0.00" step="0.01" min="0">
+        </div>
+      </div>
+
+      <div class="modal-actions">
+        <button class="btn btn-ghost" onclick="psShowUpload()">&#8592; Back</button>
+        <button class="btn btn-primary" onclick="psApply()">Apply to Tracker</button>
+      </div>
+    </div>
+
   </div>
 </div>
 </body>
