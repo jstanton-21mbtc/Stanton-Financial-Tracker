@@ -1753,11 +1753,7 @@ function _openApp() {
   isDemoMode = false;
   document.getElementById('demo-mode-banner').style.display = 'none';
   const stored = loadDataLocal();
-  appData = _dataIsBlank(stored) ? _getJamesStantonData() : stored;
-  // Seed localStorage with James Stanton data if it was blank
-  if (_dataIsBlank(stored)) {
-    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(appData)); } catch(e) {}
-  }
+  appData = stored || getDefaultData();
   if(!appData.meta) appData.meta={name:'',year:new Date().getFullYear().toString(),currency:'$'};
   if(!appData.notes) appData.notes=Object.fromEntries(MK.map(m=>[m,{wins:'',challenges:'',actions:'',notes:''}]));
   if(!appData.balances) appData.balances={savings:{},investments:{}};
