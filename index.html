@@ -1928,8 +1928,17 @@ function monthSavRate(m)   { const i=monthIncome(m); return i>0?monthSavings(m)/
 function monthExpRatio(m)  { const i=monthIncome(m); return i>0?monthExpense(m)/i:null; }
 function monthInvestPct(m) { const i=monthIncome(m); return i>0?monthInvest(m)/i:null; }
 function annualTotal(fn)   { return MK.reduce((a,m)=>a+fn(m),0); }
+function ytdMonths() {
+  const yr   = parseInt(appData.meta?.year) || new Date().getFullYear();
+  const now  = new Date();
+  const curYr = now.getFullYear();
+  if (yr < curYr) return MK;                      // past fiscal year — full year
+  if (yr > curYr) return [];                       // future fiscal year — nothing yet
+  return MK.slice(0, now.getMonth() + 1);          // current year — up to this month
+}
+function ytdTotal(fn)      { return ytdMonths().reduce((a,m)=>a+fn(m),0); }
 function ytdSavings()      { let c=0; return MK.map(m=>{c+=monthSavings(m);return c;}); }
-function countProfitable() { return MK.filter(m=>monthPL(m)>0).length; }
+function countProfitable() { return ytdMonths().filter(m=>monthPL(m)>0).length; }
 function expenseBreakdown(){ const t={}; getCats('expenses').forEach(c=>{t[c.label]=MK.reduce((a,m)=>a+(parseFloat(appData.expenses[m][c.key])||0),0);}); return t; }
 
 // ── FORMATTING ──
@@ -1941,17 +1950,19 @@ function esc(s)      { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'
 
 // ── DASHBOARD ──
 function renderDashboard() {
-  const ai=annualTotal(monthIncome),ae=annualTotal(monthExpense),apl=ai-ae,as=annualTotal(monthSavings),av=annualTotal(monthInvest);
+  const ytdMo=ytdMonths(), nMo=ytdMo.length;
+  const ai=ytdTotal(monthIncome),ae=ytdTotal(monthExpense),apl=ai-ae,as=ytdTotal(monthSavings),av=ytdTotal(monthInvest);
   const sr=ai>0?as/ai:0,ir=ai>0?av/ai:0,er=ai>0?ae/ai:0,p=countProfitable();
+  const ytdLabel = nMo===12 ? 'Full year' : nMo>0 ? 'Jan – '+MONTH_SHORT[nMo-1]+' YTD' : 'YTD';
   const kpis=[
-    {label:'Annual Income',    value:fmt$(ai),             sub:'YTD total',              cls:ai>0?'positive':'white'},
-    {label:'Annual Expenses',  value:fmt$(ae),             sub:'YTD total',              cls:ae>0?'negative':'white'},
+    {label:'Income YTD',       value:fmt$(ai),             sub:ytdLabel,                 cls:ai>0?'positive':'white'},
+    {label:'Expenses YTD',     value:fmt$(ae),             sub:ytdLabel,                 cls:ae>0?'negative':'white'},
     {label:'Net P&L',          value:(apl<0?'-':'')+fmt$(apl),sub:'Income minus expenses',cls:apl>=0?'positive':'negative'},
     {label:'Savings Rate',     value:fmtPct(sr),           sub:'Goal: ≥ 20%',            cls:sr>=0.2?'positive':'negative'},
     {label:'Investment %',     value:fmtPct(ir),           sub:'Goal: ≥ 10%',            cls:ir>=0.1?'positive':'negative'},
     {label:'Expense Ratio',    value:fmtPct(er),           sub:'Goal: ≤ 40%',            cls:er<=0.4&&er>0?'positive':er>0.4?'negative':'white'},
-    {label:'Profitable Months',value:p+' / 12',            sub:'Months income > expenses',cls:p>6?'positive':'white'},
-    {label:'Total Savings',    value:fmt$(as),             sub:'YTD accumulated',        cls:as>0?'positive':'white'},
+    {label:'Profitable Months',value:p+' / '+nMo,          sub:ytdLabel,                 cls:p>Math.floor(nMo/2)?'positive':'white'},
+    {label:'Total Savings YTD',value:fmt$(as),             sub:ytdLabel,                 cls:as>0?'positive':'white'},
   ];
   document.getElementById('kpi-grid').innerHTML=kpis.map(k=>`<div class="kpi-card ${k.cls}"><div class="kpi-label">${k.label}</div><div class="kpi-value">${k.value}</div><div class="kpi-sub">${k.sub}</div></div>`).join('');
 
