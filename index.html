@@ -101,6 +101,21 @@
     .t-chg { font-weight: 600; font-size: 11px; }
     .t-chg.up { color: var(--green); }
     .t-chg.dn { color: var(--red); }
+    /* ── STALE DATA ALERT ── */
+    .stale-alert { display:none; align-items:center; gap:10px; padding:8px 18px; background:#3d2a00; border-bottom:1px solid #7a5200; color:#ffc947; font-size:12.5px; flex-shrink:0; }
+    .stale-alert.show { display:flex; }
+    .stale-alert-icon { flex-shrink:0; }
+    .stale-alert-msg { flex:1; line-height:1.4; }
+    .stale-alert-msg strong { color:#ffd97a; }
+    .stale-alert-btn { background:#7a5200; border:none; color:#ffc947; padding:5px 14px; border-radius:999px; font-size:12px; font-weight:700; cursor:pointer; white-space:nowrap; transition:background .15s; }
+    .stale-alert-btn:hover { background:#a06c00; }
+    .stale-alert-close { background:none; border:none; color:#ffc947; opacity:.7; cursor:pointer; font-size:18px; line-height:1; padding:0 4px; margin-left:4px; }
+    .stale-alert-close:hover { opacity:1; }
+    [data-theme="light"] .stale-alert { background:#fff8e1; border-bottom-color:#ffe082; color:#7a5200; }
+    [data-theme="light"] .stale-alert-msg strong { color:#5a3a00; }
+    [data-theme="light"] .stale-alert-btn { background:#ffe082; color:#5a3a00; }
+    [data-theme="light"] .stale-alert-btn:hover { background:#ffd54f; }
+    [data-theme="light"] .stale-alert-close { color:#7a5200; }
     /* ── TICKER PICKER ── */
     .ticker-picker-overlay { position:fixed; inset:0; background:rgba(0,0,0,.65); z-index:660; display:flex; align-items:center; justify-content:center; padding:20px; }
     .ticker-picker-card { background:var(--card); border:1px solid var(--border); border-radius:20px; width:100%; max-width:620px; max-height:82vh; display:flex; flex-direction:column; animation:fadeUp .3s ease; }
@@ -603,6 +618,14 @@
     <div class="ticker-strip" id="stock-ticker">
       <div class="ticker-label"><div class="ticker-dot"></div>MARKETS</div>
       <div class="ticker-track-wrap"><div class="ticker-track" id="ticker-track"></div></div>
+    </div>
+
+    <!-- ── STALE DATA ALERT ── -->
+    <div class="stale-alert" id="stale-alert">
+      <svg class="stale-alert-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><circle cx="12" cy="16" r=".5" fill="currentColor"/></svg>
+      <span class="stale-alert-msg" id="stale-alert-msg"></span>
+      <button class="stale-alert-btn" onclick="showTab('pnl');dismissStalenessAlert()">Update Now</button>
+      <button class="stale-alert-close" onclick="dismissStalenessAlert()" title="Dismiss">&#215;</button>
     </div>
 
     <main>
@@ -1585,6 +1608,41 @@ function _dataIsBlank(d) {
   return months.every(m => Object.values(m || {}).every(v => !v || v === 0));
 }
 
+// ── STALE DATA ALERT ──
+const STALE_DISMISS_KEY = 'sft_stale_dismissed_v1';
+function checkDataFreshness() {
+  // Find most recent month with any non-zero income or expense entry
+  const MONTH_ORDER = ['jan','feb','mar','apr','may','jun','jul','aug','sep','oct','nov','dec'];
+  let latestMonthIdx = -1;
+  for (let mi = 0; mi < MONTH_ORDER.length; mi++) {
+    const mk = MONTH_ORDER[mi];
+    const incVals = Object.values(appData.income[mk] || {});
+    const expVals = Object.values(appData.expenses[mk] || {});
+    const hasData = [...incVals, ...expVals].some(v => parseFloat(v) > 0);
+    if (hasData) latestMonthIdx = mi;
+  }
+  if (latestMonthIdx === -1) return; // no data at all — new user, skip
+  // Calculate days since end of that month (use current year from appData)
+  const yr = parseInt(appData.meta?.year) || new Date().getFullYear();
+  const endOfMonth = new Date(yr, latestMonthIdx + 1, 0); // last day of that month
+  const today = new Date();
+  const daysSince = Math.floor((today - endOfMonth) / 86400000);
+  if (daysSince <= 30) return; // data is fresh
+  // Check session dismissal
+  const dismissed = sessionStorage.getItem(STALE_DISMISS_KEY);
+  if (dismissed) return;
+  const mName = MONTH_ORDER[latestMonthIdx].charAt(0).toUpperCase() + MONTH_ORDER[latestMonthIdx].slice(1);
+  const el = document.getElementById('stale-alert');
+  const msg = document.getElementById('stale-alert-msg');
+  msg.innerHTML = `<strong>Heads up!</strong> Your income &amp; expense data hasn't been updated since <strong>${mName} ${yr}</strong> — that's ${daysSince} days ago. Keep your finances accurate by adding this month's data.`;
+  el.classList.add('show');
+}
+function dismissStalenessAlert() {
+  sessionStorage.setItem(STALE_DISMISS_KEY, '1');
+  const el = document.getElementById('stale-alert');
+  if (el) el.classList.remove('show');
+}
+
 function _openApp() {
   const stored = loadDataLocal();
   appData = _dataIsBlank(stored) ? _getJamesStantonData() : stored;
@@ -1609,6 +1667,7 @@ function _openApp() {
   if (charts.ie) { updateCharts(); } else { initCharts(); }
   setTimeout(()=>{ if(generateInsights().filter(i=>i.priority==='high').length>0) document.getElementById('insights-dot').classList.add('show'); },600);
   if(!localStorage.getItem(TICKER_SEL_KEY)){ setTimeout(()=>showTickerPicker(true), 900); }
+  setTimeout(checkDataFreshness, 1200);
 }
 
 // ── AUTH ──
