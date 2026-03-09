@@ -14,7 +14,7 @@
     :root {
       --bg: #0A0B0D; --surface: #131519; --card: #1A1D23; --card-hover: #1E2229;
       --elevated: #23272F; --border: #2C3038; --border-dim: #1E2128;
-      --blue: #6CB33F; --blue-dim: rgba(108,179,63,0.12); --blue-hover: #5A9A34;
+      --blue: #39FF14; --blue-dim: rgba(57,255,20,0.12); --blue-hover: #2ED410;
       --green: #05B169; --green-dim: rgba(5,177,105,0.12);
       --red: #CF5252; --red-dim: rgba(207,82,82,0.12);
       --yellow: #F5A623; --yellow-dim: rgba(245,166,35,0.12);
@@ -25,7 +25,7 @@
     [data-theme="light"] {
       --bg: #F0F4F8; --surface: #FFFFFF; --card: #FFFFFF; --card-hover: #F5F8FF;
       --elevated: #F0F4F8; --border: #DDE3EE; --border-dim: #EBF0F7;
-      --blue: #6CB33F; --blue-dim: rgba(108,179,63,0.08); --blue-hover: #5A9A34;
+      --blue: #39FF14; --blue-dim: rgba(57,255,20,0.08); --blue-hover: #2ED410;
       --green: #00A86B; --green-dim: rgba(0,168,107,0.1);
       --red: #E02D3C; --red-dim: rgba(224,45,60,0.1);
       --yellow: #D97706; --yellow-dim: rgba(217,119,6,0.1);
@@ -35,7 +35,7 @@
     [data-theme="midnight"] {
       --bg: #05091A; --surface: #0C1228; --card: #101830; --card-hover: #141E3C;
       --elevated: #18203A; --border: #1E2D52; --border-dim: #131C3A;
-      --blue: #89CE14; --blue-dim: rgba(137,206,20,0.12); --blue-hover: #74AE0F;
+      --blue: #39FF14; --blue-dim: rgba(57,255,20,0.12); --blue-hover: #2ED410;
       --green: #00E5A0; --green-dim: rgba(0,229,160,0.12);
       --red: #FF4D6A; --red-dim: rgba(255,77,106,0.12);
       --yellow: #FFB547; --yellow-dim: rgba(255,181,71,0.12);
@@ -68,7 +68,7 @@
     .sidebar::-webkit-scrollbar { display: none; }
     .sidebar-logo { padding: 24px 20px 20px; border-bottom: 1px solid var(--border-dim); display: flex; align-items: center; gap: 12px; }
     .logo-mark { width: 36px; height: 36px; background: var(--blue); border-radius: 10px; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 18px; color: #fff; flex-shrink: 0; }
-    .logo-title { font-size: 14px; font-weight: 700; line-height: 1.3; color: var(--blue); }
+    .logo-title { font-size: 14px; font-weight: 700; line-height: 1.3; color: var(--text); }
     .logo-sub { font-size: 11px; color: var(--text-3); margin-top: 2px; }
     .sidebar-section { padding: 20px 12px 8px; }
     .sidebar-label { font-size: 10px; font-weight: 600; color: var(--text-3); text-transform: uppercase; letter-spacing: 1px; padding: 0 8px; margin-bottom: 6px; }
@@ -86,6 +86,21 @@
     .topbar { background: var(--surface); border-bottom: 1px solid var(--border); padding: 16px 32px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 100; }
     .topbar-title { font-size: 17px; font-weight: 700; }
     .topbar-sub { font-size: 12px; color: var(--text-3); margin-top: 2px; }
+    /* ── STOCK TICKER ── */
+    .ticker-strip { background: var(--elevated); border-bottom: 1px solid var(--border-dim); height: 34px; display: flex; align-items: center; overflow: hidden; flex-shrink: 0; }
+    .ticker-label { font-size: 10px; font-weight: 700; color: var(--blue); letter-spacing: 1.2px; padding: 0 14px; flex-shrink: 0; border-right: 1px solid var(--border); height: 100%; display: flex; align-items: center; gap: 5px; }
+    .ticker-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--blue); animation: ticker-blink 1.5s ease infinite; }
+    @keyframes ticker-blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
+    .ticker-track-wrap { flex: 1; overflow: hidden; }
+    .ticker-track { display: inline-flex; animation: ticker-scroll 60s linear infinite; }
+    .ticker-track:hover { animation-play-state: paused; }
+    @keyframes ticker-scroll { 0%{transform:translateX(0)} 100%{transform:translateX(-50%)} }
+    .ticker-item { display: inline-flex; align-items: center; gap: 5px; padding: 0 16px; font-size: 11.5px; border-right: 1px solid var(--border-dim); height: 34px; white-space: nowrap; }
+    .t-sym { font-weight: 700; color: var(--text); font-size: 11px; letter-spacing: .3px; }
+    .t-price { color: var(--text-2); }
+    .t-chg { font-weight: 600; font-size: 11px; }
+    .t-chg.up { color: var(--green); }
+    .t-chg.dn { color: var(--red); }
     main { padding: 32px; flex: 1; }
     .tab-panel { display: none; }
     .tab-panel.active { display: block; }
@@ -523,6 +538,11 @@
       </button>
       </div>
     </header>
+    <!-- ── STOCK TICKER ── -->
+    <div class="ticker-strip" id="stock-ticker">
+      <div class="ticker-label"><div class="ticker-dot"></div>MARKETS</div>
+      <div class="ticker-track-wrap"><div class="ticker-track" id="ticker-track"></div></div>
+    </div>
 
     <main>
 
@@ -2185,7 +2205,7 @@ async function savePassword(){
 }
 
 // ── CHARTS ──
-const CC={blue:'#6CB33F',blueFade:'rgba(108,179,63,0.15)',green:'#05B169',greenFade:'rgba(5,177,105,0.15)',red:'#CF5252',redFade:'rgba(207,82,82,0.15)',palette:['#6CB33F','#05B169','#F5A623','#7B61FF','#CF5252','#89CE14','#FF6F2C','#E879F9','#22D3EE','#84CC16','#FB923C','#A78BFA','#34D399','#FBBF24','#F472B6']};
+const CC={blue:'#39FF14',blueFade:'rgba(57,255,20,0.15)',green:'#05B169',greenFade:'rgba(5,177,105,0.15)',red:'#CF5252',redFade:'rgba(207,82,82,0.15)',palette:['#39FF14','#05B169','#F5A623','#7B61FF','#CF5252','#39FF14','#FF6F2C','#E879F9','#22D3EE','#84CC16','#FB923C','#A78BFA','#34D399','#FBBF24','#F472B6']};
 const CB={responsive:true,maintainAspectRatio:true,plugins:{legend:{labels:{color:'#5B616E',font:{size:11,family:'Inter'}}}},scales:{x:{ticks:{color:'#5B616E',font:{size:11}},grid:{color:'rgba(44,48,56,0.5)'}},y:{ticks:{color:'#5B616E',font:{size:11}},grid:{color:'rgba(44,48,56,0.5)'}}}};
 
 function initCharts(){
@@ -2268,9 +2288,9 @@ function renderThemePreview(active) {
   const el = document.getElementById('settings-theme-preview');
   if(!el) return;
   const colors = {
-    dark:     { bg:'#0A0B0D', accent:'#6CB33F', label:'Dark',     lc:'#fff',   lb:'#131519', bb:'#2C3038' },
-    light:    { bg:'#F0F4F8', accent:'#6CB33F', label:'Light',    lc:'#0A0B0D',lb:'#FFFFFF', bb:'#DDE3EE' },
-    midnight: { bg:'#05091A', accent:'#89CE14', label:'Midnight', lc:'#E4EEFF',lb:'#0C1228', bb:'#1E2D52' },
+    dark:     { bg:'#0A0B0D', accent:'#39FF14', label:'Dark',     lc:'#fff',   lb:'#131519', bb:'#2C3038' },
+    light:    { bg:'#F0F4F8', accent:'#39FF14', label:'Light',    lc:'#0A0B0D',lb:'#FFFFFF', bb:'#DDE3EE' },
+    midnight: { bg:'#05091A', accent:'#39FF14', label:'Midnight', lc:'#E4EEFF',lb:'#0C1228', bb:'#1E2D52' },
   };
   el.innerHTML = Object.entries(colors).map(([key, c]) => `
     <div onclick="selectTheme('${key}');confirmTheme()" style="flex:1;border:2px solid ${key===active?'var(--blue)':'var(--border)'};border-radius:10px;overflow:hidden;cursor:pointer;transition:border-color .2s;">
@@ -2317,7 +2337,7 @@ const TUTORIAL_KEY = 'sft_tutorial_done_v1';
 const TUTORIAL_STEPS = [
   {
     icon: `<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>`,
-    color: '#6CB33F', bg: 'rgba(108,179,63,0.15)',
+    color: '#39FF14', bg: 'rgba(57,255,20,0.15)',
     title: 'Welcome to Your Financial Tracker',
     body: 'This app helps you track every dollar — income, expenses, savings, investments, debt, and net worth — all in one place, privately stored in your browser.\n\nUse the <strong>left sidebar</strong> to navigate between tabs. Let\'s take a quick tour of each section.'
   },
@@ -2671,7 +2691,7 @@ const ANALYSTS = [
   {name:'Dave Ramsey',       color:'#E8A317', bg:'rgba(232,163,23,.18)',  initials:'DR'},
   {name:'Warren Buffett',    color:'#05B169', bg:'rgba(5,177,105,.18)',   initials:'WB'},
   {name:'Suze Orman',        color:'#C084FC', bg:'rgba(192,132,252,.18)', initials:'SO'},
-  {name:'Ray Dalio',         color:'#6CB33F', bg:'rgba(108,179,63,0.18)',    initials:'RD'},
+  {name:'Ray Dalio',         color:'#39FF14', bg:'rgba(57,255,20,0.18)',    initials:'RD'},
   {name:'Tony Robbins',      color:'#FF6B35', bg:'rgba(255,107,53,.18)',  initials:'TR'},
   {name:'Ramit Sethi',       color:'#22D3EE', bg:'rgba(34,211,238,.18)',  initials:'RS'},
   {name:'Robert Kiyosaki',   color:'#F43F5E', bg:'rgba(244,63,94,.18)',   initials:'RK'},
@@ -2913,6 +2933,78 @@ function renderInsightsPanel(){
 
   document.getElementById('insights-body').innerHTML=html;
 }
+
+// ── STOCK TICKER ──
+(function(){
+  const CFG=[
+    {sym:'AAPL',  yf:'AAPL',          fp:210.00},
+    {sym:'MSFT',  yf:'MSFT',          fp:390.00},
+    {sym:'NVDA',  yf:'NVDA',          fp:115.00},
+    {sym:'GOOGL', yf:'GOOGL',         fp:170.00},
+    {sym:'AMZN',  yf:'AMZN',          fp:200.00},
+    {sym:'META',  yf:'META',          fp:600.00},
+    {sym:'TSLA',  yf:'TSLA',          fp:260.00},
+    {sym:'JPM',   yf:'JPM',           fp:240.00},
+    {sym:'SPY',   yf:'SPY',           fp:550.00},
+    {sym:'QQQ',   yf:'QQQ',           fp:470.00},
+    {sym:'BRK.B', yf:'BRK-B',         fp:460.00},
+    {sym:'AMD',   yf:'AMD',           fp:110.00},
+    {sym:'BTC',   yf:'BTC-USD',       fp:82000, big:true, cg:'bitcoin'},
+    {sym:'ETH',   yf:'ETH-USD',       fp:1800,  big:true, cg:'ethereum'},
+    {sym:'TAO',   yf:'TAO22990-USD',  fp:350,   big:true, cg:'bittensor'},
+  ];
+  let _d=CFG.map(c=>({...c,price:c.fp,chg:0,_live:false}));
+
+  function fmtPrice(p,big){
+    if(big&&p>=1000)return '$'+p.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
+    return '$'+p.toFixed(2);
+  }
+  function render(){
+    const el=document.getElementById('ticker-track');
+    if(!el)return;
+    const html=_d.map(t=>`<div class="ticker-item"><span class="t-sym">${t.sym}</span><span class="t-price">${fmtPrice(t.price,t.big)}</span><span class="t-chg ${t.chg>=0?'up':'dn'}">${t.chg>=0?'+':''}${t.chg.toFixed(2)}%</span></div>`).join('');
+    el.innerHTML=html+html;
+  }
+
+  async function fetchYF(){
+    const syms=CFG.map(c=>c.yf).join(',');
+    const r=await fetch(`https://query1.finance.yahoo.com/v7/finance/quote?symbols=${syms}&fields=regularMarketPrice,regularMarketChangePercent`,{headers:{Accept:'application/json'}});
+    if(!r.ok)throw new Error('yf');
+    const j=await r.json();
+    (j?.quoteResponse?.result||[]).forEach(q=>{
+      const i=_d.findIndex(d=>d.yf===q.symbol);
+      if(i<0)return;
+      _d[i].price=q.regularMarketPrice;
+      _d[i].chg=+(q.regularMarketChangePercent||0).toFixed(2);
+      _d[i]._live=true;
+    });
+  }
+
+  async function fetchCG(){
+    const need=_d.filter(d=>d.cg&&!d._live).map(d=>d.cg).join(',');
+    if(!need)return;
+    const r=await fetch(`https://api.coingecko.com/api/v3/simple/price?ids=${need}&vs_currencies=usd&include_24h_change=true`);
+    if(!r.ok)return;
+    const j=await r.json();
+    _d.filter(d=>d.cg&&!d._live).forEach(d=>{
+      const e=j[d.cg];
+      if(!e)return;
+      d.price=e.usd;
+      d.chg=+(e.usd_24h_change||0).toFixed(2);
+      d._live=true;
+    });
+  }
+
+  async function load(){
+    try{await fetchYF();}catch(e){}
+    try{await fetchCG();}catch(e){}
+    render();
+  }
+
+  render();
+  load();
+  setInterval(load,5*60*1000);
+})();
 </script>
 
 <!-- ── THEME PICKER ── -->
@@ -2924,9 +3016,9 @@ function renderInsightsPanel(){
 
       <div class="theme-option" id="theme-opt-dark" onclick="selectTheme('dark')">
         <div class="theme-preview" style="background:#0A0B0D">
-          <div class="tp-bar" style="background:#6CB33F;width:60%"></div>
+          <div class="tp-bar" style="background:#39FF14;width:60%"></div>
           <div class="tp-card" style="background:#1A1D23">
-            <div class="tp-col" style="background:#6CB33F;height:45px"></div>
+            <div class="tp-col" style="background:#39FF14;height:45px"></div>
             <div class="tp-col" style="background:#05B169;height:32px"></div>
             <div class="tp-col" style="background:#CF5252;height:55px"></div>
             <div class="tp-col" style="background:#F5A623;height:38px"></div>
@@ -2940,9 +3032,9 @@ function renderInsightsPanel(){
 
       <div class="theme-option" id="theme-opt-light" onclick="selectTheme('light')">
         <div class="theme-preview" style="background:#F0F4F8">
-          <div class="tp-bar" style="background:#6CB33F;width:60%"></div>
+          <div class="tp-bar" style="background:#39FF14;width:60%"></div>
           <div class="tp-card" style="background:#FFFFFF;border:1px solid #DDE3EE">
-            <div class="tp-col" style="background:#6CB33F;height:45px"></div>
+            <div class="tp-col" style="background:#39FF14;height:45px"></div>
             <div class="tp-col" style="background:#00A86B;height:32px"></div>
             <div class="tp-col" style="background:#E02D3C;height:55px"></div>
             <div class="tp-col" style="background:#D97706;height:38px"></div>
@@ -2956,9 +3048,9 @@ function renderInsightsPanel(){
 
       <div class="theme-option" id="theme-opt-midnight" onclick="selectTheme('midnight')">
         <div class="theme-preview" style="background:#05091A">
-          <div class="tp-bar" style="background:#89CE14;width:60%"></div>
+          <div class="tp-bar" style="background:#39FF14;width:60%"></div>
           <div class="tp-card" style="background:#101830">
-            <div class="tp-col" style="background:#89CE14;height:45px"></div>
+            <div class="tp-col" style="background:#39FF14;height:45px"></div>
             <div class="tp-col" style="background:#00E5A0;height:32px"></div>
             <div class="tp-col" style="background:#FF4D6A;height:55px"></div>
             <div class="tp-col" style="background:#FFB547;height:38px"></div>
