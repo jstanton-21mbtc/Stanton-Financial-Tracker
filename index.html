@@ -117,6 +117,15 @@
     [data-theme="light"] .stale-alert-btn { background:#ffe082; color:#5a3a00; }
     [data-theme="light"] .stale-alert-btn:hover { background:#ffd54f; }
     [data-theme="light"] .stale-alert-close { color:#7a5200; }
+    /* ── DEMO MODE BANNER ── */
+    .demo-mode-banner { display:none; align-items:center; gap:10px; padding:8px 18px; background:#1a0d3a; border-bottom:1px solid #4a2d8a; color:#c9a0ff; font-size:12.5px; flex-shrink:0; }
+    .demo-mode-banner strong { color:#e0c0ff; }
+    .demo-exit-btn { margin-left:auto; background:#4a2d8a; border:none; color:#e0c0ff; padding:5px 14px; border-radius:999px; font-size:12px; font-weight:700; cursor:pointer; white-space:nowrap; transition:background .15s; }
+    .demo-exit-btn:hover { background:#6040aa; }
+    [data-theme="light"] .demo-mode-banner { background:#f3eaff; border-bottom-color:#c9a0ff; color:#5a2d8a; }
+    [data-theme="light"] .demo-mode-banner strong { color:#3d1a6e; }
+    [data-theme="light"] .demo-exit-btn { background:#c9a0ff; color:#3d1a6e; }
+    [data-theme="light"] .demo-exit-btn:hover { background:#b080ef; }
     /* ── TICKER PICKER ── */
     .ticker-picker-overlay { position:fixed; inset:0; background:rgba(0,0,0,.65); z-index:660; display:flex; align-items:center; justify-content:center; padding:20px; }
     .ticker-picker-card { background:var(--card); border:1px solid var(--border); border-radius:20px; width:100%; max-width:620px; max-height:82vh; display:flex; flex-direction:column; animation:fadeUp .3s ease; }
@@ -670,6 +679,11 @@
       <span class="stale-alert-msg" id="stale-alert-msg"></span>
       <button class="stale-alert-btn" onclick="showTab('pnl');dismissStalenessAlert()">Update Now</button>
       <button class="stale-alert-close" onclick="dismissStalenessAlert()" title="Dismiss">&#215;</button>
+    </div>
+    <div class="demo-mode-banner" id="demo-mode-banner">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+      <span><strong>Demo Mode</strong> — You're viewing sample data (Alex Rivera). Changes are not saved to your account.</span>
+      <button class="demo-exit-btn" onclick="exitDemoMode()">Exit Demo &rarr; Sign In</button>
     </div>
 
     <main>
@@ -1620,7 +1634,10 @@ let appData = {};
 let charts  = {};
 
 function loadDataLocal() { try { const r=localStorage.getItem(STORAGE_KEY); if(r) return JSON.parse(r); } catch(e){} return null; }
+let isDemoMode = false;
+
 function saveData() {
+  if (isDemoMode) return;
   localStorage.setItem(STORAGE_KEY, JSON.stringify(appData));
   showToast('Saved');
   if (!_supabase) return;
@@ -1728,6 +1745,8 @@ function dismissStalenessAlert() {
 }
 
 function _openApp() {
+  isDemoMode = false;
+  document.getElementById('demo-mode-banner').style.display = 'none';
   const stored = loadDataLocal();
   appData = _dataIsBlank(stored) ? _getJamesStantonData() : stored;
   // Seed localStorage with James Stanton data if it was blank
@@ -3224,6 +3243,7 @@ function getDemoData() {
 }
 
 function loadDemoData() {
+  isDemoMode = true;
   appData = getDemoData();
   appData.customCats = {
     income:      JSON.parse(JSON.stringify(INCOME_CATS)),
@@ -3232,10 +3252,17 @@ function loadDemoData() {
     investments: JSON.parse(JSON.stringify(INVEST_CATS)),
   };
   document.getElementById('login-overlay').style.display = 'none';
+  document.getElementById('demo-mode-banner').style.display = 'flex';
   refreshAll();
   if (charts.ie) { updateCharts(); } else { initCharts(); }
   setTimeout(()=>{ if(generateInsights().filter(i=>i.priority==='high').length>0) document.getElementById('insights-dot').classList.add('show'); },400);
-  showToast('Demo loaded — data is not saved');
+}
+
+function exitDemoMode() {
+  isDemoMode = false;
+  document.getElementById('demo-mode-banner').style.display = 'none';
+  document.getElementById('login-overlay').style.display = 'flex';
+  initLoginScreen();
 }
 
 // ── INIT ──
