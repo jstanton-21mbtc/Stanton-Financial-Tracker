@@ -645,6 +645,7 @@
         Log Out
       </button>
       <input type="file" id="importFile" accept=".json" style="display:none" onchange="importData(event)" />
+      <input type="file" id="importOldFile" accept=".json" style="display:none" onchange="importFromOldTracker(event)" />
     </div>
   </aside>
 
@@ -1032,6 +1033,10 @@
                 <button class="settings-data-btn" onclick="document.getElementById('importFile').click()">
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
                   <div class="settings-data-btn-text"><strong>Import Backup</strong><span>Restore from an exported JSON file</span></div>
+                </button>
+                <button class="settings-data-btn" onclick="document.getElementById('importOldFile').click()">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--yellow)" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/><circle cx="12" cy="19" r="1" fill="var(--yellow)"/></svg>
+                  <div class="settings-data-btn-text"><strong>Import from Stanton Tracker 1.0</strong><span>Map exported JSON from the old desktop app</span></div>
                 </button>
                 <button class="settings-data-btn danger" onclick="confirmReset()">
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--red)" stroke-width="2"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 102.13-9.36L1 10"/></svg>
@@ -2873,6 +2878,66 @@ function importData(e){
   const file=e.target.files[0];if(!file)return;
   const reader=new FileReader();
   reader.onload=ev=>{try{appData=JSON.parse(ev.target.result);saveData();refreshAll();showToast('Imported!');}catch{alert('Invalid backup file.');}};
+  reader.readAsText(file);e.target.value='';
+}
+function importFromOldTracker(e){
+  const file=e.target.files[0];if(!file)return;
+  const reader=new FileReader();
+  reader.onload=ev=>{
+    try{
+      const old=JSON.parse(ev.target.result);
+      if(!old.income||!old.expenses){alert('Not a valid Stanton Tracker 1.0 export file.');return;}
+      const mk=['jan','feb','mar','apr','may','jun','jul','aug','sep','oct','nov','dec'];
+      // ── Income: direct field matches only ──
+      mk.forEach(m=>{
+        const o=old.income[m]||{};
+        const n=appData.income[m]||(appData.income[m]={});
+        if(o.salary!=null)    n.salary    = parseFloat(o.salary)||0;
+        if(o.bonus!=null)     n.bonus     = parseFloat(o.bonus)||0;
+        if(o.freelance!=null) n.freelance = parseFloat(o.freelance)||0;
+        if(o.rental!=null)    n.rental    = parseFloat(o.rental)||0;
+        if(o.other!=null)     n.other     = parseFloat(o.other)||0;
+      });
+      // ── Expenses: appropriate field matches ──
+      // housing→mortgage, utilities→electric, internet→tv; childcare/personal skipped (no equivalent)
+      mk.forEach(m=>{
+        const o=old.expenses[m]||{};
+        const n=appData.expenses[m]||(appData.expenses[m]={});
+        if(o.housing!=null)       n.mortgage      = parseFloat(o.housing)||0;
+        if(o.vehicle!=null)       n.vehicle       = parseFloat(o.vehicle)||0;
+        if(o.insurance!=null)     n.insurance     = parseFloat(o.insurance)||0;
+        if(o.phone!=null)         n.phone         = parseFloat(o.phone)||0;
+        if(o.utilities!=null)     n.electric      = parseFloat(o.utilities)||0;
+        if(o.internet!=null)      n.tv            = parseFloat(o.internet)||0;
+        if(o.groceries!=null)     n.groceries     = parseFloat(o.groceries)||0;
+        if(o.dining!=null)        n.dining        = parseFloat(o.dining)||0;
+        if(o.gas!=null)           n.gas           = parseFloat(o.gas)||0;
+        if(o.health!=null)        n.health        = parseFloat(o.health)||0;
+        if(o.creditCard!=null)    n.creditCard    = parseFloat(o.creditCard)||0;
+        if(o.subscriptions!=null) n.subscriptions = parseFloat(o.subscriptions)||0;
+        if(o.other!=null)         n.other         = parseFloat(o.other)||0;
+        // childcare and personal have no appropriate equivalent — not imported
+      });
+      // ── Savings: direct matches; brokerage skipped (no equivalent in 5Stack.ai) ──
+      mk.forEach(m=>{
+        const o=(old.savings&&old.savings[m])||{};
+        const n=appData.savings[m]||(appData.savings[m]={});
+        if(o.emergency!=null) n.emergency   = parseFloat(o.emergency)||0;
+        if(o.general!=null)   n.general     = parseFloat(o.general)||0;
+        if(o.k401!=null)      n.k401        = parseFloat(o.k401)||0;
+        if(o.roth!=null)      n.roth        = parseFloat(o.roth)||0;
+        if(o.crypto!=null)    n.cryptoOther = parseFloat(o.crypto)||0;
+        if(o.other!=null)     n.other       = parseFloat(o.other)||0;
+        // brokerage has no appropriate equivalent — not imported
+      });
+      // ── Goals: direct copy ──
+      if(Array.isArray(old.goals)) appData.goals=old.goals;
+      // ── Notes: direct copy (same structure) ──
+      if(old.notes) mk.forEach(m=>{ if(old.notes[m]) appData.notes[m]={...old.notes[m]}; });
+      saveData();refreshAll();
+      showToast('Stanton Tracker 1.0 imported!');
+    }catch(err){alert('Invalid Stanton Tracker 1.0 file.');}
+  };
   reader.readAsText(file);e.target.value='';
 }
 function confirmReset(){
