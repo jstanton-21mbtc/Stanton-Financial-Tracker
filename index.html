@@ -134,7 +134,7 @@
     @media (max-width: 1000px) { .charts-grid { grid-template-columns: 1fr; } }
     .chart-card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 24px; }
     .chart-card h3 { font-size: 12px; font-weight: 600; color: var(--text-2); text-transform: uppercase; letter-spacing: .6px; margin-bottom: 20px; }
-    .chart-card canvas { height: 240px !important; width: 100% !important; }
+    .chart-card canvas { height: 160px !important; width: 100% !important; }
 
     /* ── TABLES ── */
     .table-wrap { overflow-x: auto; background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); }
@@ -638,7 +638,7 @@
           <div id="nw-history-empty" style="display:none;text-align:center;padding:32px;background:var(--card);border:1px solid var(--border);border-radius:var(--radius);color:var(--text-3);font-size:13px;">No snapshots yet. Click "Save Snapshot" to record your current net worth.</div>
           <div id="nw-chart-card" class="chart-card" style="display:none;margin-bottom:20px;">
             <h3>Net Worth Over Time</h3>
-            <canvas id="chart-nw" style="height:260px;width:100%"></canvas>
+            <canvas id="chart-nw" style="height:180px;width:100%"></canvas>
           </div>
           <div class="table-wrap" id="nw-history-wrap" style="display:none"></div>
         </div>
@@ -754,7 +754,7 @@
             <div class="subsection-title">Balance Over Time</div>
             <div class="chart-card">
               <h3>Projected Debt Payoff (Avalanche Strategy)</h3>
-              <canvas id="chart-debt" style="height:280px;width:100%"></canvas>
+              <canvas id="chart-debt" style="height:180px;width:100%"></canvas>
             </div>
           </div>
         </div>
