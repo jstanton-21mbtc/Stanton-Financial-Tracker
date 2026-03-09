@@ -452,7 +452,10 @@
       <button onclick="loadDemoData()" style="background:none;border:1px solid var(--border);color:var(--text-2);font-size:12px;font-family:inherit;padding:8px 20px;border-radius:999px;cursor:pointer;transition:all .15s" onmouseover="this.style.borderColor='var(--text-3)';this.style.color='var(--text)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--text-2)'">View Demo</button>
       <div style="font-size:11px;color:var(--text-3);margin-top:6px">Explore with sample data — no account needed</div>
     </div>
-    <div class="login-hint" id="login-hint" style="display:none">You can update your password from Settings.</div>
+    <div class="login-hint" id="login-hint" style="display:none">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-2px;margin-right:4px;opacity:.7"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
+      <strong>Your data stays private.</strong> Everything you enter is stored only in <em>your</em> browser — never uploaded, never shared, never seen by anyone else. You can update your password anytime in Settings.
+    </div>
   </div>
 </div>
 
@@ -1266,7 +1269,7 @@ function initLoginScreen() {
     document.getElementById('login-toggle').style.display = 'none';
     document.getElementById('login-title').textContent = '5Stack.ai';
     if (isFirstTime()) {
-      document.getElementById('login-subtitle').textContent = 'Create a password to protect your tracker.';
+      document.getElementById('login-subtitle').textContent = 'Welcome! Create a password to get started.';
       document.getElementById('login-pw-label').textContent = 'New Password';
       document.getElementById('login-input').placeholder    = 'Choose a password';
       document.getElementById('login-confirm-field').style.display = '';
