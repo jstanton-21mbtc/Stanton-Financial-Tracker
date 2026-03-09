@@ -87,15 +87,15 @@
     .topbar-title { font-size: 17px; font-weight: 700; }
     .topbar-sub { font-size: 12px; color: var(--text-3); margin-top: 2px; }
     /* ── STOCK TICKER ── */
-    .ticker-strip { background: var(--elevated); border-bottom: 1px solid var(--border-dim); height: 34px; display: flex; align-items: center; overflow: hidden; flex-shrink: 0; }
-    .ticker-label { font-size: 10px; font-weight: 700; color: var(--blue); letter-spacing: 1.2px; padding: 0 14px; flex-shrink: 0; border-right: 1px solid var(--border); height: 100%; display: flex; align-items: center; gap: 5px; }
+    .ticker-strip { background: var(--elevated); border-bottom: 1px solid var(--border-dim); height: 26px; display: flex; align-items: center; overflow: hidden; flex-shrink: 0; }
+    .ticker-label { font-size: 9px; font-weight: 700; color: var(--blue); letter-spacing: 1.2px; padding: 0 10px; flex-shrink: 0; border-right: 1px solid var(--border); height: 100%; display: flex; align-items: center; gap: 4px; }
     .ticker-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--blue); animation: ticker-blink 1.5s ease infinite; }
     @keyframes ticker-blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
     .ticker-track-wrap { flex: 1; overflow: hidden; }
     .ticker-track { display: inline-flex; animation: ticker-scroll 60s linear infinite; }
     .ticker-track:hover { animation-play-state: paused; }
     @keyframes ticker-scroll { 0%{transform:translateX(0)} 100%{transform:translateX(-50%)} }
-    .ticker-item { display: inline-flex; align-items: center; gap: 5px; padding: 0 16px; font-size: 11.5px; border-right: 1px solid var(--border-dim); height: 34px; white-space: nowrap; }
+    .ticker-item { display: inline-flex; align-items: center; gap: 4px; padding: 0 12px; font-size: 11px; border-right: 1px solid var(--border-dim); height: 26px; white-space: nowrap; }
     .t-sym { font-weight: 700; color: var(--text); font-size: 11px; letter-spacing: .3px; }
     .t-price { color: var(--text-2); }
     .t-chg { font-weight: 600; font-size: 11px; }
@@ -2938,21 +2938,11 @@ function renderInsightsPanel(){
 // ── STOCK TICKER ──
 (function(){
   const CFG=[
-    {sym:'AAPL',  yf:'AAPL',          fp:210.00},
-    {sym:'MSFT',  yf:'MSFT',          fp:390.00},
-    {sym:'NVDA',  yf:'NVDA',          fp:115.00},
-    {sym:'GOOGL', yf:'GOOGL',         fp:170.00},
-    {sym:'AMZN',  yf:'AMZN',          fp:200.00},
-    {sym:'META',  yf:'META',          fp:600.00},
-    {sym:'TSLA',  yf:'TSLA',          fp:260.00},
-    {sym:'JPM',   yf:'JPM',           fp:240.00},
-    {sym:'SPY',   yf:'SPY',           fp:550.00},
-    {sym:'QQQ',   yf:'QQQ',           fp:470.00},
-    {sym:'BRK.B', yf:'BRK-B',         fp:460.00},
-    {sym:'AMD',   yf:'AMD',           fp:110.00},
-    {sym:'BTC',   yf:'BTC-USD',       fp:82000, big:true, cg:'bitcoin'},
-    {sym:'ETH',   yf:'ETH-USD',       fp:1800,  big:true, cg:'ethereum'},
-    {sym:'TAO',   yf:'TAO22990-USD',  fp:350,   big:true, cg:'bittensor'},
+    {sym:'BTC',  yf:'BTC-USD',      fp:82000, big:true, cg:'bitcoin'},
+    {sym:'ETH',  yf:'ETH-USD',      fp:1800,  big:true, cg:'ethereum'},
+    {sym:'TAO',  yf:'TAO22990-USD', fp:350,   big:true, cg:'bittensor'},
+    {sym:'NVDA', yf:'NVDA',         fp:115.00},
+    {sym:'AAPL', yf:'AAPL',         fp:210.00},
   ];
   let _d=CFG.map(c=>({...c,price:c.fp,chg:0,_live:false}));
 
