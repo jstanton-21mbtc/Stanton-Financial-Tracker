@@ -714,6 +714,10 @@
           </button>
         </div>
         <div class="table-wrap" id="pl-wrap"></div>
+        <div class="subsection" id="pl-net-income-panel" style="display:none;">
+          <div class="subsection-title">Net Income After Taxes &amp; Deductions</div>
+          <div id="pl-net-income-wrap"></div>
+        </div>
         <div class="subsection" id="paystub-ytd-panel" style="display:none;">
           <div class="subsection-title">Paystub YTD Summary</div>
           <div id="paystub-ytd-wrap"></div>
@@ -734,6 +738,10 @@
       <div id="tab-savings" class="tab-panel">
         <div class="section-title">Savings &amp; Wealth Building</div>
         <div class="table-wrap" id="savings-wrap"></div>
+        <div class="subsection" id="savings-k401ytd-panel" style="display:none;">
+          <div class="subsection-title">401(k) Year-to-Date (from Paystubs)</div>
+          <div id="savings-k401ytd-wrap"></div>
+        </div>
         <div class="subsection">
           <div class="subsection-title">YTD Cumulative Savings</div>
           <div class="table-wrap" id="savings-ytd-wrap"></div>
@@ -1558,6 +1566,7 @@ const SCORECARD_GOALS = [
 const RECUR_EXP = {mortgage:2640.85,vehicle:750,insurance:0,phone:25,electric:250,propane:0,water:0,tv:220.58,groceries:0,dining:0,gas:0,creditCard:0,subscriptions:0,health:0,other:0};
 const RECUR_SAV = {emergency:600,general:1930,k401:920,roth:200,bitcoin:200,bitcoinIRA:0,cryptoOther:0,lifeInsurance:13.81,other:0};
 const ZERO_INC  = {salary:0,commission:0,bonus:0,freelance:0,rental:0,other:0};
+const ZERO_DED  = {taxes:0};
 const ZERO_EXP  = {mortgage:0,vehicle:0,insurance:0,phone:0,electric:0,propane:0,water:0,tv:0,groceries:0,dining:0,gas:0,creditCard:0,subscriptions:0,health:0,other:0};
 const ZERO_SAV  = {emergency:0,general:0,k401:0,roth:0,bitcoin:0,bitcoinIRA:0,cryptoOther:0,lifeInsurance:0,other:0};
 const ZERO_INV  = {property:0,homeImprovement:0,health:0,vehicle:0,education:0,other:0};
@@ -1597,6 +1606,11 @@ function getDefaultData() {
       expenses: {mortgage:0,vehicle:0,insurance:0,phone:0,electric:0,propane:0,water:0,tv:0,groceries:0,dining:0,gas:0,creditCard:0,subscriptions:0,health:0,other:0},
     },
     paystubYtd: {k401:0,taxesFed:0,taxesState:0,taxesFica:0,taxesMed:0},
+    deductions: {
+      jan:{...ZERO_DED},feb:{...ZERO_DED},mar:{...ZERO_DED},apr:{...ZERO_DED},
+      may:{...ZERO_DED},jun:{...ZERO_DED},jul:{...ZERO_DED},aug:{...ZERO_DED},
+      sep:{...ZERO_DED},oct:{...ZERO_DED},nov:{...ZERO_DED},dec:{...ZERO_DED},
+    },
     netWorth: {
       assets: {
         cashChecking:0, cashSavings:0, emergencyFund:0,
@@ -1693,6 +1707,11 @@ function _getJamesStantonData() {
     debts: [],
     budget: {income:{salary:0,commission:0,bonus:0,freelance:0,rental:0,other:0}, expenses:{mortgage:2640.85,vehicle:750,insurance:0,phone:25,electric:250,propane:0,water:0,tv:220.58,groceries:0,dining:0,gas:0,creditCard:0,subscriptions:0,health:0,other:0}},
     paystubYtd: {k401:0,taxesFed:0,taxesState:0,taxesFica:0,taxesMed:0},
+    deductions: {
+      jan:{...ZERO_DED},feb:{...ZERO_DED},mar:{...ZERO_DED},apr:{...ZERO_DED},
+      may:{...ZERO_DED},jun:{...ZERO_DED},jul:{...ZERO_DED},aug:{...ZERO_DED},
+      sep:{...ZERO_DED},oct:{...ZERO_DED},nov:{...ZERO_DED},dec:{...ZERO_DED},
+    },
     netWorth: {assets:{cashChecking:0,cashSavings:0,emergencyFund:0,retirement401k:0,rothIRA:0,brokerageAccount:0,bitcoin:0,cryptoOther:0,primaryHome:0,rentalProperty:0,vehicle:0,lifeInsuranceCash:0,otherAssets:0}, liabilities:{mortgageBalance:0,homeLoanOther:0,vehicleLoan:0,studentLoan:0,creditCardDebt:0,medicalDebt:0,otherDebt:0}, history:[]},
     goals: [],
     scorecard: Object.fromEntries(MK.map(m=>[m,{wins:'',challenges:'',actions:'',notes:''}])),
@@ -1777,6 +1796,8 @@ function _openApp() {
   }
   // Migrate: ensure paystubYtd exists
   if(!appData.paystubYtd) appData.paystubYtd={k401:0,taxesFed:0,taxesState:0,taxesFica:0,taxesMed:0};
+  if(!appData.deductions) { appData.deductions={}; MK.forEach(m=>{ appData.deductions[m]={taxes:0}; }); }
+  MK.forEach(m=>{ if(!appData.deductions[m]) appData.deductions[m]={taxes:0}; });
   document.getElementById('login-overlay').style.display = 'none';
   refreshAll();
   if (charts.ie) { updateCharts(); } else { initCharts(); }
@@ -2071,6 +2092,29 @@ function deleteCat(sectionKey, key) {
 // ── P&L ──
 function renderPL(){
   renderDataTable('pl-wrap',getCats('income'),'income');
+
+  // ── Net Income After Deductions panel ──
+  const netPanel = document.getElementById('pl-net-income-panel');
+  if (netPanel) {
+    const ded = appData.deductions || {};
+    const hasDed = MK.some(m => (ded[m]&&ded[m].taxes>0) || (appData.savings&&appData.savings[m]&&appData.savings[m].k401>0));
+    netPanel.style.display = hasDed ? '' : 'none';
+    if (hasDed) {
+      let html = `<div class="table-wrap"><table><thead><tr><th>Line</th>${MONTH_SHORT.map(m=>`<th>${m}</th>`).join('')}<th>Total</th></tr></thead><tbody>`;
+      // Gross income row
+      html += `<tr><td>Gross Income</td>${MK.map(m=>`<td>${fmt$(monthIncome(m))}</td>`).join('')}<td>${fmt$(annualTotal(monthIncome))}</td></tr>`;
+      // Taxes row
+      html += `<tr><td style="color:var(--red)">— Taxes Withheld</td>${MK.map(m=>`<td>${(ded[m]&&ded[m].taxes>0)?`<span class="val-negative">-${fmt$(ded[m].taxes)}</span>`:'<span class="val-neutral">—</span>'}</td>`).join('')}<td><span class="val-negative">-${fmt$(MK.reduce((a,m)=>a+((ded[m]&&ded[m].taxes)||0),0))}</span></td></tr>`;
+      // 401k row
+      const sav = appData.savings || {};
+      html += `<tr><td style="color:var(--yellow)">— 401(k) Contributions</td>${MK.map(m=>`<td>${(sav[m]&&sav[m].k401>0)?`<span style="color:var(--yellow)">-${fmt$(sav[m].k401)}</span>`:'<span class="val-neutral">—</span>'}</td>`).join('')}<td><span style="color:var(--yellow)">-${fmt$(MK.reduce((a,m)=>a+((sav[m]&&sav[m].k401)||0),0))}</span></td></tr>`;
+      // Net take-home row
+      html += `<tr class="total-row"><td>Net Take-Home Income</td>${MK.map(m=>{const net=monthIncome(m)-((ded[m]&&ded[m].taxes)||0)-((sav[m]&&sav[m].k401)||0);return`<td>${fmt$(net)}</td>`;}).join('')}<td>${fmt$(MK.reduce((a,m)=>a+monthIncome(m)-((ded[m]&&ded[m].taxes)||0)-((sav[m]&&sav[m].k401)||0),0))}</td></tr>`;
+      html += '</tbody></table></div>';
+      document.getElementById('pl-net-income-wrap').innerHTML = html;
+    }
+  }
+
   // YTD panel
   const ytdPanel=document.getElementById('paystub-ytd-panel');
   if(ytdPanel){
@@ -2102,6 +2146,18 @@ function renderPL(){
 // ── SAVINGS ──
 function renderSavings(){
   renderDataTable('savings-wrap',getCats('savings'),'savings');
+  // ── 401k YTD from Paystub ──
+  const ytd = appData.paystubYtd || {};
+  const k401YtdPanel = document.getElementById('savings-k401ytd-panel');
+  if (k401YtdPanel) {
+    if (ytd.k401 > 0) {
+      k401YtdPanel.style.display = '';
+      document.getElementById('savings-k401ytd-wrap').innerHTML =
+        `<div class="paystub-ytd-grid"><div class="paystub-ytd-card"><div class="paystub-ytd-label">401(k) YTD (from Paystubs)</div><div class="paystub-ytd-value" style="color:var(--green)">${fmt$(ytd.k401)}</div></div></div>`;
+    } else {
+      k401YtdPanel.style.display = 'none';
+    }
+  }
   const cumul=ytdSavings();
   let html=`<table><thead><tr><th>Metric</th>${MONTH_SHORT.map(m=>`<th>${m}</th>`).join('')}</tr></thead><tbody>`;
   html+=`<tr><td>Savings Rate %</td>${MK.map(m=>{const r=monthSavRate(m);return`<td>${r!=null?`<span class="val-blue">${fmtPct(r)}</span>`:'—'}</td>`;}).join('')}</tr>`;
@@ -2896,7 +2952,7 @@ const THEMES = {
   light:    { name: 'Light',    desc: 'Clean white · Blue accent' },
   midnight: { name: 'Midnight', desc: 'Deep space · Cyan accent' },
 };
-let _pendingTheme = 'dark';
+let _pendingTheme = 'light';
 
 function applyTheme(name) {
   const t = THEMES[name] ? name : 'dark';
@@ -3298,7 +3354,7 @@ async function _initApp(userId) {
 }
 
 document.addEventListener('DOMContentLoaded', async () => {
-  applyTheme(localStorage.getItem(THEME_KEY)||'dark');
+  applyTheme(localStorage.getItem(THEME_KEY)||'light');
 
   if (!SUPABASE_CONFIGURED) {
     initLoginScreen();
@@ -3803,6 +3859,8 @@ async function psCallClaude(base64, mediaType, apiKey) {
 - "taxStateYtd": state income tax withheld year-to-date (number or null)
 - "taxFicaYtd": social security / OASDI tax year-to-date (number or null)
 - "taxMedYtd": medicare tax year-to-date (number or null)
+- "taxesPeriod": total taxes withheld this pay period only — sum of federal + state + social security + medicare for current period (number or null)
+- "k401Period": 401(k) employee contribution this pay period only (not YTD) (number or null)
 - "month": pay period end month as 3-letter lowercase (jan/feb/mar/apr/may/jun/jul/aug/sep/oct/nov/dec, or null)
 
 Return ONLY the JSON object, nothing else.`;
@@ -3830,7 +3888,8 @@ function psClaudeToFields(j) {
   return {
     month: j.month||null, salary:w(j.salary), commission:w(j.commission),
     k401Ytd:w(j.k401Ytd), taxFedYtd:w(j.taxFedYtd), taxStateYtd:w(j.taxStateYtd),
-    taxFicaYtd:w(j.taxFicaYtd), taxMedYtd:w(j.taxMedYtd)
+    taxFicaYtd:w(j.taxFicaYtd), taxMedYtd:w(j.taxMedYtd),
+    taxesPeriod:w(j.taxesPeriod), k401Period:w(j.k401Period)
   };
 }
 
@@ -3925,6 +3984,7 @@ async function psBulkProcess(files) {
     idx: i, file: f, month: MK[new Date().getMonth()],
     salary: 0, commission: 0, k401Ytd: 0,
     taxFedYtd: 0, taxStateYtd: 0, taxFicaYtd: 0, taxMedYtd: 0,
+    taxesPeriod: 0, k401Period: 0,
     status: 'pending', error: ''
   }));
 
@@ -3954,6 +4014,8 @@ async function psBulkProcess(files) {
       r.taxStateYtd= parseFloat(j.taxStateYtd)|| 0;
       r.taxFicaYtd = parseFloat(j.taxFicaYtd) || 0;
       r.taxMedYtd  = parseFloat(j.taxMedYtd)  || 0;
+      r.taxesPeriod = parseFloat(j.taxesPeriod) || 0;
+      r.k401Period  = parseFloat(j.k401Period)  || 0;
       r.status = 'ok';
     } catch(err) {
       r.status = 'err';
@@ -3995,6 +4057,8 @@ function psBulkRowHTML(r, i) {
     <td><select onchange="psBulkEdit(${i},'month',this.value)">${monthOpts}</select></td>
     <td>${numInput('salary',     r.salary)}</td>
     <td>${numInput('commission', r.commission)}</td>
+    <td>${numInput('taxesPeriod', r.taxesPeriod)}</td>
+    <td>${numInput('k401Period',  r.k401Period)}</td>
     <td>${numInput('k401Ytd',   r.k401Ytd)}</td>
     <td>${numInput('taxFedYtd', r.taxFedYtd)}</td>
     <td>${numInput('taxStateYtd',r.taxStateYtd)}</td>
@@ -4016,8 +4080,17 @@ function psBulkApply() {
   _psBulkResults.forEach(r => {
     const month = r.month;
     if (!appData.income[month]) appData.income[month] = {...ZERO_INC};
-    if (r.salary     > 0) appData.income[month].salary     = r.salary;
-    if (r.commission > 0) appData.income[month].commission = r.commission;
+    if (r.salary     > 0) appData.income[month].salary     = (appData.income[month].salary || 0) + r.salary;
+    if (r.commission > 0) appData.income[month].commission = (appData.income[month].commission || 0) + r.commission;
+    if (r.taxesPeriod > 0) {
+      if (!appData.deductions) appData.deductions = {};
+      if (!appData.deductions[month]) appData.deductions[month] = {taxes:0};
+      appData.deductions[month].taxes = (appData.deductions[month].taxes || 0) + r.taxesPeriod;
+    }
+    if (r.k401Period > 0) {
+      if (!appData.savings[month]) appData.savings[month] = {...ZERO_SAV};
+      appData.savings[month].k401 = (appData.savings[month].k401 || 0) + r.k401Period;
+    }
   });
 
   // Use most recent month's YTD values for the summary panel
@@ -4057,9 +4130,9 @@ function psShowFields(parsed) {
   sel.value = MK[new Date().getMonth()];
 
   // Clear fields & badges
-  ['ps-salary','ps-commission','ps-k401ytd','ps-taxfed','ps-taxstate','ps-taxfica','ps-taxmed']
+  ['ps-salary','ps-commission','ps-k401ytd','ps-taxfed','ps-taxstate','ps-taxfica','ps-taxmed','ps-taxes-period','ps-k401-period']
     .forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
-  ['ps-salary-conf','ps-commission-conf','ps-k401-conf','ps-taxfed-conf','ps-taxstate-conf','ps-taxfica-conf','ps-taxmed-conf']
+  ['ps-salary-conf','ps-commission-conf','ps-k401-conf','ps-taxfed-conf','ps-taxstate-conf','ps-taxfica-conf','ps-taxmed-conf','ps-taxes-period-conf','ps-k401-period-conf']
     .forEach(id => { const el = document.getElementById(id); if (el) el.innerHTML = ''; });
 
   if (parsed) psPopulateFields(parsed);
@@ -4082,6 +4155,8 @@ function psPopulateFields(parsed) {
   setField('ps-taxstate',  'ps-taxstate-conf',    parsed.taxStateYtd);
   setField('ps-taxfica',   'ps-taxfica-conf',     parsed.taxFicaYtd);
   setField('ps-taxmed',    'ps-taxmed-conf',      parsed.taxMedYtd);
+  setField('ps-taxes-period', 'ps-taxes-period-conf', parsed.taxesPeriod);
+  setField('ps-k401-period',  'ps-k401-period-conf',  parsed.k401Period);
 }
 
 function parsePaystubText(rawText) {
@@ -4137,6 +4212,15 @@ function parsePaystubText(rawText) {
     }
   }
 
+  // Compute current-period taxes by summing first amount from each tax line
+  function getTaxesPeriod() {
+    const fedP   = (findCurrent(['FEDERAL INCOME','FED INCOME','FED TAX','FEDERAL TAX','FIT']).value || 0);
+    const stateP = (findCurrent(['STATE INCOME','STATE TAX','STATE INC TAX','SIT']).value || 0);
+    const ficaP  = (findCurrent(['SOCIAL SECURITY','OASDI','SS TAX','FICA']).value || 0);
+    const medP   = (findCurrent(['MEDICARE']).value || 0);
+    const total = fedP + stateP + ficaP + medP;
+    return total > 0 ? {value: total, confidence: 'high'} : {value: null, confidence: 'low'};
+  }
   return {
     month,
     salary:      findCurrent(['REGULAR','BASE PAY','BASE SALARY','SALARY','REG PAY','REGULAR PAY']),
@@ -4146,6 +4230,8 @@ function parsePaystubText(rawText) {
     taxStateYtd: findYtd(['STATE INCOME','STATE TAX','STATE INC TAX','SIT']),
     taxFicaYtd:  findYtd(['SOCIAL SECURITY','OASDI','SS TAX','FICA']),
     taxMedYtd:   findYtd(['MEDICARE']),
+    taxesPeriod: getTaxesPeriod(),
+    k401Period:  findCurrent(['401(K)','401K','401 (K)','RETIREMENT','PRE-TAX RET','PRETAX RET']),
   };
 }
 
@@ -4158,11 +4244,13 @@ function psApply() {
   const taxState   = parseFloat(document.getElementById('ps-taxstate').value)   || 0;
   const taxFica    = parseFloat(document.getElementById('ps-taxfica').value)    || 0;
   const taxMed     = parseFloat(document.getElementById('ps-taxmed').value)     || 0;
+  const taxesPeriod = parseFloat(document.getElementById('ps-taxes-period').value) || 0;
+  const k401Period  = parseFloat(document.getElementById('ps-k401-period').value)  || 0;
 
   if (!appData.income[month]) appData.income[month] = {...ZERO_INC};
 
-  if (salary > 0)     appData.income[month].salary     = salary;
-  if (commission > 0) appData.income[month].commission = commission;
+  if (salary > 0)     appData.income[month].salary     = (appData.income[month].salary || 0) + salary;
+  if (commission > 0) appData.income[month].commission = (appData.income[month].commission || 0) + commission;
 
   if (!appData.paystubYtd) appData.paystubYtd = {k401:0,taxesFed:0,taxesState:0,taxesFica:0,taxesMed:0};
   if (k401Ytd  > 0) appData.paystubYtd.k401       = k401Ytd;
@@ -4170,6 +4258,13 @@ function psApply() {
   if (taxState > 0) appData.paystubYtd.taxesState  = taxState;
   if (taxFica  > 0) appData.paystubYtd.taxesFica   = taxFica;
   if (taxMed   > 0) appData.paystubYtd.taxesMed    = taxMed;
+
+  if (!appData.deductions) { appData.deductions={}; MK.forEach(m=>{ appData.deductions[m]={taxes:0}; }); }
+  if (!appData.deductions[month]) appData.deductions[month] = {taxes:0};
+  if (taxesPeriod > 0) appData.deductions[month].taxes = (appData.deductions[month].taxes || 0) + taxesPeriod;
+
+  if (!appData.savings[month]) appData.savings[month] = {...ZERO_SAV};
+  if (k401Period > 0) appData.savings[month].k401 = (appData.savings[month].k401 || 0) + k401Period;
 
   saveData();
   refreshAll();
@@ -4458,6 +4553,7 @@ function psApply() {
         <table class="ps-bulk-table" id="ps-bulk-table">
           <thead><tr>
             <th>File</th><th>Month</th><th>Salary</th><th>Commission</th>
+            <th>Period Taxes</th><th>Period 401k</th>
             <th>401k YTD</th><th>Fed Tax YTD</th><th>State Tax YTD</th><th>FICA YTD</th><th>Medicare YTD</th><th>Status</th>
           </tr></thead>
           <tbody id="ps-bulk-tbody"></tbody>
@@ -4497,6 +4593,18 @@ function psApply() {
         <div class="modal-field" style="grid-column:1/-1;">
           <label>401(k) Contributions YTD <span id="ps-k401-conf"></span></label>
           <input type="number" id="ps-k401ytd" placeholder="0.00" step="0.01" min="0">
+        </div>
+
+        <div class="paystub-section-label">Deductions — Current Period</div>
+        <div class="modal-field">
+          <label>Total Taxes Withheld (This Period) <span id="ps-taxes-period-conf"></span></label>
+          <input type="number" id="ps-taxes-period" placeholder="0.00" step="0.01" min="0">
+          <div class="paystub-field-hint">Fed + State + FICA + Medicare for this pay period</div>
+        </div>
+        <div class="modal-field">
+          <label>401(k) Contribution (This Period) <span id="ps-k401-period-conf"></span></label>
+          <input type="number" id="ps-k401-period" placeholder="0.00" step="0.01" min="0">
+          <div class="paystub-field-hint">Employee 401(k) deduction this pay period</div>
         </div>
 
         <div class="paystub-section-label">Taxes Paid — Year To Date</div>
