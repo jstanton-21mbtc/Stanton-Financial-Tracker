@@ -2135,34 +2135,33 @@ function renderPL(){
     }
   }
 
-  // YTD panel — computed from per-period data (accrues with every import)
+  // YTD panel — totals sourced from Net Income panel data so both panels always agree
   const ytdPanel=document.getElementById('paystub-ytd-panel');
   if(ytdPanel){
-    const ded=appData.deductions||{};
-    const sav=appData.savings||{};
+    const ded2=appData.deductions||{};
+    const sav2=appData.savings||{};
     const ytdFallback=appData.paystubYtd||{};
-    // Compute YTD by summing per-period values across all months
-    const k401Computed   = MK.reduce((a,m)=>a+((sav[m]&&sav[m].k401)||0),0);
-    const fedComputed    = MK.reduce((a,m)=>a+((ded[m]&&ded[m].taxesFed)||0),0);
-    const stateComputed  = MK.reduce((a,m)=>a+((ded[m]&&ded[m].taxesState)||0),0);
-    const ficaComputed   = MK.reduce((a,m)=>a+((ded[m]&&ded[m].taxesFica)||0),0);
-    const medComputed    = MK.reduce((a,m)=>a+((ded[m]&&ded[m].taxesMed)||0),0);
-    // Fall back to explicit paystubYtd if no per-period breakdown available
-    const k401Show  = k401Computed  > 0 ? k401Computed  : (ytdFallback.k401||0);
-    const fedShow   = fedComputed   > 0 ? fedComputed   : (ytdFallback.taxesFed||0);
-    const stateShow = stateComputed > 0 ? stateComputed : (ytdFallback.taxesState||0);
-    const ficaShow  = ficaComputed  > 0 ? ficaComputed  : (ytdFallback.taxesFica||0);
-    const medShow   = medComputed   > 0 ? medComputed   : (ytdFallback.taxesMed||0);
-    const totalTax  = fedShow+stateShow+ficaShow+medShow;
-    const hasData   = k401Show>0||totalTax>0;
+    // 401k YTD — same sum as Net Income panel
+    const k401Ytd = MK.reduce((a,m)=>a+((sav2[m]&&sav2[m].k401)||0),0);
+    // Total Taxes YTD — same totalTaxes sum as Net Income panel's "Taxes Withheld" total
+    const totalTaxesYtd = MK.reduce((a,m)=>a+((ded2[m]&&ded2[m].totalTaxes)||0),0);
+    // Individual breakdowns from component fields (for detail cards); fall back to paystubYtd
+    const fedYtd   = MK.reduce((a,m)=>a+((ded2[m]&&ded2[m].taxesFed)||0),0)   || (ytdFallback.taxesFed||0);
+    const stateYtd = MK.reduce((a,m)=>a+((ded2[m]&&ded2[m].taxesState)||0),0) || (ytdFallback.taxesState||0);
+    const ficaYtd  = MK.reduce((a,m)=>a+((ded2[m]&&ded2[m].taxesFica)||0),0)  || (ytdFallback.taxesFica||0);
+    const medYtd   = MK.reduce((a,m)=>a+((ded2[m]&&ded2[m].taxesMed)||0),0)   || (ytdFallback.taxesMed||0);
+    // Use totalTaxesYtd as authoritative total; fall back to component sum if totalTaxes not yet set
+    const totalTax = totalTaxesYtd > 0 ? totalTaxesYtd : (fedYtd+stateYtd+ficaYtd+medYtd);
+    const k401Show = k401Ytd > 0 ? k401Ytd : (ytdFallback.k401||0);
+    const hasData  = k401Show>0||totalTax>0;
     ytdPanel.style.display=hasData?'':'none';
     if(hasData){
       let cards='';
-      if(k401Show>0)  cards+=`<div class="paystub-ytd-card"><div class="paystub-ytd-label">401(k) YTD</div><div class="paystub-ytd-value" style="color:var(--green)">${fmt$(k401Show)}</div></div>`;
-      if(fedShow>0)   cards+=`<div class="paystub-ytd-card"><div class="paystub-ytd-label">Federal Tax YTD</div><div class="paystub-ytd-value" style="color:var(--red)">${fmt$(fedShow)}</div></div>`;
-      if(stateShow>0) cards+=`<div class="paystub-ytd-card"><div class="paystub-ytd-label">State Tax YTD</div><div class="paystub-ytd-value" style="color:var(--red)">${fmt$(stateShow)}</div></div>`;
-      if(ficaShow+medShow>0) cards+=`<div class="paystub-ytd-card"><div class="paystub-ytd-label">FICA / Medicare YTD</div><div class="paystub-ytd-value" style="color:var(--red)">${fmt$(ficaShow+medShow)}</div></div>`;
-      if(totalTax>0)  cards+=`<div class="paystub-ytd-card"><div class="paystub-ytd-label">Total Taxes YTD</div><div class="paystub-ytd-value" style="color:var(--red)">${fmt$(totalTax)}</div></div>`;
+      if(k401Show>0)   cards+=`<div class="paystub-ytd-card"><div class="paystub-ytd-label">401(k) YTD</div><div class="paystub-ytd-value" style="color:var(--green)">${fmt$(k401Show)}</div></div>`;
+      if(fedYtd>0)     cards+=`<div class="paystub-ytd-card"><div class="paystub-ytd-label">Federal Tax YTD</div><div class="paystub-ytd-value" style="color:var(--red)">${fmt$(fedYtd)}</div></div>`;
+      if(stateYtd>0)   cards+=`<div class="paystub-ytd-card"><div class="paystub-ytd-label">State Tax YTD</div><div class="paystub-ytd-value" style="color:var(--red)">${fmt$(stateYtd)}</div></div>`;
+      if(ficaYtd+medYtd>0) cards+=`<div class="paystub-ytd-card"><div class="paystub-ytd-label">FICA / Medicare YTD</div><div class="paystub-ytd-value" style="color:var(--red)">${fmt$(ficaYtd+medYtd)}</div></div>`;
+      if(totalTax>0)   cards+=`<div class="paystub-ytd-card"><div class="paystub-ytd-label">Total Taxes YTD</div><div class="paystub-ytd-value" style="color:var(--red)">${fmt$(totalTax)}</div></div>`;
       document.getElementById('paystub-ytd-wrap').innerHTML=`<div class="paystub-ytd-grid">${cards}</div><div style="text-align:right;margin-top:10px;"><button class="btn btn-ghost" onclick="showPaystubModal()" style="font-size:12px;padding:7px 14px;">Add Paystub</button></div>`;
     }
   }
