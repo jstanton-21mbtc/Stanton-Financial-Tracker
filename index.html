@@ -1566,7 +1566,7 @@ const SCORECARD_GOALS = [
 const RECUR_EXP = {mortgage:2640.85,vehicle:750,insurance:0,phone:25,electric:250,propane:0,water:0,tv:220.58,groceries:0,dining:0,gas:0,creditCard:0,subscriptions:0,health:0,other:0};
 const RECUR_SAV = {emergency:600,general:1930,k401:920,roth:200,bitcoin:200,bitcoinIRA:0,cryptoOther:0,lifeInsurance:13.81,other:0};
 const ZERO_INC  = {salary:0,commission:0,bonus:0,freelance:0,rental:0,other:0};
-const ZERO_DED  = {taxesFed:0, taxesState:0, taxesFica:0, taxesMed:0, taxes:0};
+const ZERO_DED  = {taxesFed:0, taxesState:0, taxesFica:0, taxesMed:0, taxes:0, totalTaxes:0};
 const ZERO_EXP  = {mortgage:0,vehicle:0,insurance:0,phone:0,electric:0,propane:0,water:0,tv:0,groceries:0,dining:0,gas:0,creditCard:0,subscriptions:0,health:0,other:0};
 const ZERO_SAV  = {emergency:0,general:0,k401:0,roth:0,bitcoin:0,bitcoinIRA:0,cryptoOther:0,lifeInsurance:0,other:0};
 const ZERO_INV  = {property:0,homeImprovement:0,health:0,vehicle:0,education:0,other:0};
@@ -1800,8 +1800,14 @@ function _openApp() {
   MK.forEach(m=>{
     if(!appData.deductions[m]) appData.deductions[m]={...ZERO_DED};
     else if(appData.deductions[m].taxesFed==null) Object.assign(appData.deductions[m],{taxesFed:0,taxesState:0,taxesFica:0,taxesMed:0});
-    // Clear the old combined 'taxes' field — it caused double-counting; individual components are the source of truth
+    // Clear old combined 'taxes' accumulator — caused double-counting
     appData.deductions[m].taxes = 0;
+    // Seed totalTaxes from individual components if not already user-set
+    if(!appData.deductions[m].totalTaxes) {
+      const d=appData.deductions[m];
+      const computed=(d.taxesFed||0)+(d.taxesState||0)+(d.taxesFica||0)+(d.taxesMed||0);
+      if(computed>0) appData.deductions[m].totalTaxes=computed;
+    }
   });
   document.getElementById('login-overlay').style.display = 'none';
   refreshAll();
@@ -2102,22 +2108,28 @@ function renderPL(){
   const netPanel = document.getElementById('pl-net-income-panel');
   if (netPanel) {
     const ded = appData.deductions || {};
-    // Compute per-month taxes from individual components (avoids double-counting from combined 'taxes' field)
-    function monthTaxes(m) { const d=ded[m]||{}; return (d.taxesFed||0)+(d.taxesState||0)+(d.taxesFica||0)+(d.taxesMed||0); }
+    // Use totalTaxes (user-editable, auto-seeded from imports) as the authoritative per-month tax figure
+    function monthTaxes(m) { return (ded[m]&&ded[m].totalTaxes)||0; }
     const sav = appData.savings || {};
-    const hasDed = MK.some(m => monthTaxes(m)>0 || (sav[m]&&sav[m].k401>0));
+    const hasDed = MK.some(m => monthIncome(m)>0);
     netPanel.style.display = hasDed ? '' : 'none';
     if (hasDed) {
-      let html = `<div class="table-wrap"><table><thead><tr><th>Line</th>${MONTH_SHORT.map(m=>`<th>${m}</th>`).join('')}<th>Total</th></tr></thead><tbody>`;
-      // Gross income row
-      html += `<tr><td>Gross Income</td>${MK.map(m=>`<td>${fmt$(monthIncome(m))}</td>`).join('')}<td>${fmt$(annualTotal(monthIncome))}</td></tr>`;
-      // Taxes row — uses sum of individual components, not the combined 'taxes' field
       const totalTaxesAll = MK.reduce((a,m)=>a+monthTaxes(m),0);
-      html += `<tr><td style="color:var(--red)">— Taxes Withheld</td>${MK.map(m=>`<td>${monthTaxes(m)>0?`<span class="val-negative">-${fmt$(monthTaxes(m))}</span>`:'<span class="val-neutral">—</span>'}</td>`).join('')}<td><span class="val-negative">-${fmt$(totalTaxesAll)}</span></td></tr>`;
-      // 401k row
-      html += `<tr><td style="color:var(--yellow)">— 401(k) Contributions</td>${MK.map(m=>`<td>${(sav[m]&&sav[m].k401>0)?`<span style="color:var(--yellow)">-${fmt$(sav[m].k401)}</span>`:'<span class="val-neutral">—</span>'}</td>`).join('')}<td><span style="color:var(--yellow)">-${fmt$(MK.reduce((a,m)=>a+((sav[m]&&sav[m].k401)||0),0))}</span></td></tr>`;
-      // Net take-home row
-      html += `<tr class="total-row"><td>Net Take-Home Income</td>${MK.map(m=>{const net=monthIncome(m)-monthTaxes(m)-((sav[m]&&sav[m].k401)||0);return`<td>${fmt$(net)}</td>`;}).join('')}<td>${fmt$(MK.reduce((a,m)=>a+monthIncome(m)-monthTaxes(m)-((sav[m]&&sav[m].k401)||0),0))}</td></tr>`;
+      const total401k     = MK.reduce((a,m)=>a+((sav[m]&&sav[m].k401)||0),0);
+      const netTotal      = MK.reduce((a,m)=>a+monthIncome(m)-monthTaxes(m)-((sav[m]&&sav[m].k401)||0),0);
+      let html = `<div class="table-wrap"><table><thead><tr><th>Line</th>${MONTH_SHORT.map(m=>`<th>${m}</th>`).join('')}<th>Total</th></tr></thead><tbody>`;
+      // Gross income row (read-only)
+      html += `<tr><td>Gross Income</td>${MK.map(m=>`<td>${monthIncome(m)>0?fmt$(monthIncome(m)):'<span class="val-neutral">—</span>'}</td>`).join('')}<td>${fmt$(annualTotal(monthIncome))}</td></tr>`;
+      // Taxes Withheld — editable inputs
+      html += `<tr><td style="color:var(--red)">— Taxes Withheld <span style="font-size:10px;color:var(--text-3);font-weight:400;">(editable)</span></td>`;
+      html += MK.map(m=>`<td><input type="number" step="0.01" min="0" value="${monthTaxes(m)||''}" placeholder="0.00" onchange="updateNetIncomeTax('${m}',this.value)" style="color:var(--red);" /></td>`).join('');
+      html += `<td><span class="val-negative">${totalTaxesAll>0?'-'+fmt$(totalTaxesAll):'—'}</span></td></tr>`;
+      // 401k — editable inputs
+      html += `<tr><td style="color:var(--yellow)">— 401(k) Contributions <span style="font-size:10px;color:var(--text-3);font-weight:400;">(editable)</span></td>`;
+      html += MK.map(m=>`<td><input type="number" step="0.01" min="0" value="${(sav[m]&&sav[m].k401)||''}" placeholder="0.00" onchange="updateNetIncome401k('${m}',this.value)" style="color:var(--yellow);" /></td>`).join('');
+      html += `<td><span style="color:var(--yellow)">${total401k>0?'-'+fmt$(total401k):'—'}</span></td></tr>`;
+      // Net take-home (computed, read-only)
+      html += `<tr class="total-row"><td>Net Take-Home Income</td>${MK.map(m=>{const net=monthIncome(m)-monthTaxes(m)-((sav[m]&&sav[m].k401)||0);return`<td>${net!==0||monthIncome(m)>0?fmt$(net):'—'}</td>`;}).join('')}<td>${fmt$(netTotal)}</td></tr>`;
       html += '</tbody></table></div>';
       document.getElementById('pl-net-income-wrap').innerHTML = html;
     }
@@ -2230,6 +2242,19 @@ function renderBalances(containerId, cats, section){
     <td>${totalRet!=null?`<span class="${totalRet>=0?'val-positive':'val-negative'}">${totalRet>=0?'+':''}${fmtPct(totalRet)}</span>`:'—'}</td>
   </tr></tbody></table>`;
   document.getElementById(containerId).innerHTML=html;
+}
+
+function updateNetIncomeTax(month, val) {
+  if (!appData.deductions) appData.deductions = {};
+  if (!appData.deductions[month]) appData.deductions[month] = {...ZERO_DED};
+  appData.deductions[month].totalTaxes = parseFloat(val) || 0;
+  saveData(); renderPL();
+}
+
+function updateNetIncome401k(month, val) {
+  if (!appData.savings[month]) appData.savings[month] = {...ZERO_SAV};
+  appData.savings[month].k401 = parseFloat(val) || 0;
+  saveData(); renderPL(); renderSavings();
 }
 
 function updateBalance(section,key,val){
@@ -4121,6 +4146,8 @@ function psBulkApply() {
     if (r.taxStatePeriod > 0) appData.deductions[month].taxesState = (appData.deductions[month].taxesState || 0) + r.taxStatePeriod;
     if (r.taxFicaPeriod  > 0) appData.deductions[month].taxesFica  = (appData.deductions[month].taxesFica  || 0) + r.taxFicaPeriod;
     if (r.taxMedPeriod   > 0) appData.deductions[month].taxesMed   = (appData.deductions[month].taxesMed   || 0) + r.taxMedPeriod;
+    const _bt = r.taxFedPeriod + r.taxStatePeriod + r.taxFicaPeriod + r.taxMedPeriod;
+    if (_bt > 0) appData.deductions[month].totalTaxes = (appData.deductions[month].totalTaxes || 0) + _bt;
     if (r.k401Period > 0) {
       if (!appData.savings[month]) appData.savings[month] = {...ZERO_SAV};
       appData.savings[month].k401 = (appData.savings[month].k401 || 0) + r.k401Period;
@@ -4299,6 +4326,8 @@ function psApply() {
   if (taxStatePeriod > 0) appData.deductions[month].taxesState = (appData.deductions[month].taxesState || 0) + taxStatePeriod;
   if (taxFicaPeriod  > 0) appData.deductions[month].taxesFica  = (appData.deductions[month].taxesFica  || 0) + taxFicaPeriod;
   if (taxMedPeriod   > 0) appData.deductions[month].taxesMed   = (appData.deductions[month].taxesMed   || 0) + taxMedPeriod;
+  const _totalPeriodTax = taxFedPeriod + taxStatePeriod + taxFicaPeriod + taxMedPeriod;
+  if (_totalPeriodTax > 0) appData.deductions[month].totalTaxes = (appData.deductions[month].totalTaxes || 0) + _totalPeriodTax;
 
   if (!appData.savings[month]) appData.savings[month] = {...ZERO_SAV};
   if (k401Period > 0) appData.savings[month].k401 = (appData.savings[month].k401 || 0) + k401Period;
