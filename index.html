@@ -3835,7 +3835,7 @@ let _reloadTicker;
   function render(){
     const el=document.getElementById('ticker-track');
     if(!el)return;
-    const html=_d.map(t=>`<div class="ticker-item"><span class="t-sym">${t.sym}</span><span class="t-price">${fmtPrice(t.price,t.big)}</span><span class="t-chg ${t.chg>=0?'up':'dn'}">${t.chg>=0?'+':''}${t.chg.toFixed(2)}%</span></div>`).join('');
+    const html=_d.map(t=>`<div class="ticker-item"><span class="t-sym">${t.sym}</span><span class="t-price">${fmtPrice(t.price,t.big)}</span></div>`).join('');
     el.innerHTML=html+html;
   }
 
