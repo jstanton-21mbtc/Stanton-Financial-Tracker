@@ -3347,6 +3347,31 @@ function getDemoData() {
       dec:{wins:'',challenges:'',actions:'',notes:''},
     },
     customCats: null,
+    // Paystub import data — Jan/Feb/Mar paystubs imported
+    // Alex Rivera: $9,500/mo salary | Feb includes $8,000 bonus
+    // Fed ~17.7% | State ~5% | SS 6.2% | Medicare 1.45% | 401k $1,000/mo
+    deductions: {
+      jan:{taxesFed:1680, taxesState:475, taxesFica:589, taxesMed:138, taxes:0, totalTaxes:2882},
+      feb:{taxesFed:3500, taxesState:875, taxesFica:1085,taxesMed:254, taxes:0, totalTaxes:5714},
+      mar:{taxesFed:1680, taxesState:475, taxesFica:589, taxesMed:138, taxes:0, totalTaxes:2882},
+      apr:{taxesFed:0,taxesState:0,taxesFica:0,taxesMed:0,taxes:0,totalTaxes:0},
+      may:{taxesFed:0,taxesState:0,taxesFica:0,taxesMed:0,taxes:0,totalTaxes:0},
+      jun:{taxesFed:0,taxesState:0,taxesFica:0,taxesMed:0,taxes:0,totalTaxes:0},
+      jul:{taxesFed:0,taxesState:0,taxesFica:0,taxesMed:0,taxes:0,totalTaxes:0},
+      aug:{taxesFed:0,taxesState:0,taxesFica:0,taxesMed:0,taxes:0,totalTaxes:0},
+      sep:{taxesFed:0,taxesState:0,taxesFica:0,taxesMed:0,taxes:0,totalTaxes:0},
+      oct:{taxesFed:0,taxesState:0,taxesFica:0,taxesMed:0,taxes:0,totalTaxes:0},
+      nov:{taxesFed:0,taxesState:0,taxesFica:0,taxesMed:0,taxes:0,totalTaxes:0},
+      dec:{taxesFed:0,taxesState:0,taxesFica:0,taxesMed:0,taxes:0,totalTaxes:0},
+    },
+    // YTD totals from most recent paystub (March)
+    paystubYtd: {
+      k401:      3000,   // $1,000/mo × 3 months
+      taxesFed:  6860,   // Jan $1,680 + Feb $3,500 + Mar $1,680
+      taxesState:1825,   // Jan $475  + Feb $875  + Mar $475
+      taxesFica: 2263,   // Jan $589  + Feb $1,085 + Mar $589
+      taxesMed:  530,    // Jan $138  + Feb $254  + Mar $138
+    },
   };
 }
 
