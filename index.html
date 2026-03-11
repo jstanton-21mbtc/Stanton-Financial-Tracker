@@ -757,6 +757,25 @@
             Import Bank Statement
           </button>
         </div>
+
+        <!-- Demo-only callout -->
+        <div id="bs-demo-callout" style="display:none;background:linear-gradient(135deg,rgba(57,255,20,0.07) 0%,rgba(57,255,20,0.03) 100%);border:1px solid rgba(57,255,20,0.25);border-radius:var(--radius);padding:20px 24px;margin-bottom:24px;display:none;">
+          <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:16px;">
+            <div style="display:flex;align-items:center;gap:14px;">
+              <div style="width:40px;height:40px;background:rgba(57,255,20,0.12);border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--blue)" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="2"/><polyline points="2 10 12 16 22 10"/></svg>
+              </div>
+              <div>
+                <div style="font-size:14px;font-weight:700;color:var(--text);margin-bottom:3px;">Try the Bank Statement Import</div>
+                <div style="font-size:12px;color:var(--text-2);line-height:1.5;">See how AI reads Alex's April bank statement and auto-categorizes every transaction — then apply it directly to the tracker.</div>
+              </div>
+            </div>
+            <button onclick="bsDemoPreview()" style="background:var(--blue);color:#000;border:none;border-radius:8px;padding:10px 20px;font-size:12.5px;font-weight:700;cursor:pointer;font-family:inherit;white-space:nowrap;flex-shrink:0;transition:background .15s;" onmouseover="this.style.background='var(--blue-hover)'" onmouseout="this.style.background='var(--blue)'">
+              Try Sample Import &rarr;
+            </button>
+          </div>
+        </div>
+
         <div class="table-wrap" id="expenses-wrap"></div>
       </div>
 
@@ -3420,6 +3439,7 @@ function loadDemoData() {
   };
   document.getElementById('login-overlay').style.display = 'none';
   document.getElementById('demo-mode-banner').style.display = 'flex';
+  document.getElementById('bs-demo-callout').style.display = '';
   refreshAll();
   if (charts.ie) { updateCharts(); } else { initCharts(); }
   setTimeout(()=>{ if(generateInsights().filter(i=>i.priority==='high').length>0) document.getElementById('insights-dot').classList.add('show'); },400);
@@ -5068,6 +5088,40 @@ function bsSetCat(id, val) {
 function bsSelectAll(val) {
   _bsTransactions.forEach(t => t.include = val);
   bsRenderReview();
+}
+
+// ── DEMO: pre-loaded April 2026 transactions for Alex Rivera ──
+function bsDemoPreview() {
+  const demoTxns = [
+    {date:'2026-04-01', description:'Mortgage Payment — Wells Fargo',     amount:2640.00, category:'mortgage'},
+    {date:'2026-04-03', description:'Trader Joe\'s',                       amount:134.56,  category:'groceries'},
+    {date:'2026-04-05', description:'Honda Financial Services',            amount:485.00,  category:'vehicle'},
+    {date:'2026-04-07', description:'Shell Gas Station',                   amount:68.20,   category:'gas'},
+    {date:'2026-04-08', description:'Chipotle Mexican Grill',              amount:18.75,   category:'dining'},
+    {date:'2026-04-09', description:'Netflix',                             amount:15.49,   category:'tv'},
+    {date:'2026-04-10', description:'Spotify Premium',                     amount:10.99,   category:'subscriptions'},
+    {date:'2026-04-11', description:'Verizon Wireless',                    amount:95.00,   category:'phone'},
+    {date:'2026-04-12', description:'Starbucks',                           amount:24.30,   category:'dining'},
+    {date:'2026-04-14', description:'Whole Foods Market',                  amount:89.43,   category:'groceries'},
+    {date:'2026-04-15', description:'State Farm — Auto Insurance',         amount:210.00,  category:'insurance'},
+    {date:'2026-04-16', description:'CVS Pharmacy',                        amount:43.20,   category:'health'},
+    {date:'2026-04-17', description:'National Grid — Electric',            amount:142.80,  category:'electric'},
+    {date:'2026-04-18', description:'Olive Garden',                        amount:67.50,   category:'dining'},
+    {date:'2026-04-19', description:'Amazon Prime',                        amount:14.99,   category:'subscriptions'},
+    {date:'2026-04-20', description:'Costco Wholesale',                    amount:218.74,  category:'groceries'},
+    {date:'2026-04-21', description:'Chase Visa Payment',                  amount:450.00,  category:'creditCard'},
+    {date:'2026-04-22', description:'BP Gas Station',                      amount:55.40,   category:'gas'},
+    {date:'2026-04-23', description:'Planet Fitness',                      amount:24.99,   category:'health'},
+    {date:'2026-04-25', description:'Crunchyroll',                         amount:7.99,    category:'tv'},
+    {date:'2026-04-26', description:'Walmart Supercenter',                 amount:113.22,  category:'groceries'},
+    {date:'2026-04-28', description:'Town Water & Sewer',                  amount:78.00,   category:'water'},
+    {date:'2026-04-29', description:'DoorDash',                            amount:42.15,   category:'dining'},
+    {date:'2026-04-30', description:'Home Depot',                          amount:156.88,  category:'other'},
+  ];
+  showBankStmtModal();
+  // Skip the upload step — go straight to review
+  document.getElementById('bs-status').style.display = 'none';
+  bsShowReview(demoTxns);
 }
 
 function bsApply() {
