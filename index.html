@@ -3899,22 +3899,30 @@ function psImageToBase64(file) {
 }
 
 async function psCallClaude(base64, mediaType, apiKey) {
-  const prompt = `This is a Rippling payroll paystub. Extract the following fields and return ONLY a valid JSON object with no explanation or extra text:
-- "salary": current period regular/base pay amount (number or null)
-- "commission": current period commission earned amount (number or null)
-- "k401Ytd": 401(k) employee contributions year-to-date total (number or null)
-- "taxFedYtd": federal income tax withheld year-to-date (number or null)
-- "taxStateYtd": state income tax withheld year-to-date (number or null)
-- "taxFicaYtd": social security / OASDI tax year-to-date (number or null)
-- "taxMedYtd": medicare tax year-to-date (number or null)
-- "taxFedPeriod": federal income tax withheld this pay period only — current period column (number or null)
-- "taxStatePeriod": state income tax withheld this pay period only — current period column (number or null)
-- "taxFicaPeriod": social security / OASDI tax this pay period only — current period column (number or null)
-- "taxMedPeriod": medicare tax this pay period only — current period column (number or null)
-- "k401Period": 401(k) employee contribution this pay period only — current period column, not YTD (number or null)
-- "month": pay period end month as 3-letter lowercase (jan/feb/mar/apr/may/jun/jul/aug/sep/oct/nov/dec, or null)
+  const prompt = `This is a payroll paystub. It may be from any payroll provider including ADP, Paychex, Gusto, Rippling, Paylocity, Paycom, ADP Workforce Now, Ceridian, Kronos, or another provider. Field labels vary by provider — use the mappings below to find the correct values regardless of format.
 
-Return ONLY the JSON object, nothing else.`;
+Extract the following fields and return ONLY a valid JSON object with no explanation or extra text:
+
+- "salary": current period regular/base pay (look for: Regular, REG, Regular Earnings, Base Pay, Salary, Regular Hours pay, Base Salary — use the CURRENT PERIOD column only, not YTD)
+- "commission": current period commission pay (look for: Commission, Comm, Sales Commission, Variable Pay — current period only; null if not present)
+- "k401Period": 401(k) employee contribution this pay period (look for: 401(k), 401K, Employee 401(k), Ret 401K, DPSP, Retirement — current period column only, NOT YTD; null if not present)
+- "k401Ytd": 401(k) employee contributions year-to-date (same labels as above — YTD column)
+- "taxFedPeriod": federal income tax withheld this period (look for: Federal Income Tax, Fed Tax, FWT, Federal W/H, Fed Income Tax, FED TAX — current period column)
+- "taxFedYtd": federal income tax withheld year-to-date (same labels — YTD column)
+- "taxStatePeriod": state income tax withheld this period (look for: State Income Tax, State Tax, SWT, State W/H, ST Tax, State Withholding — current period column)
+- "taxStateYtd": state income tax withheld year-to-date (same labels — YTD column)
+- "taxFicaPeriod": social security tax this period (look for: Social Security, Soc Sec, OASDI, SS Tax, FICA-SS, Social Security Tax — current period column)
+- "taxFicaYtd": social security tax year-to-date (same labels — YTD column)
+- "taxMedPeriod": medicare tax this period (look for: Medicare, Med Tax, FICA-MED, Medicare Tax, MED — current period column)
+- "taxMedYtd": medicare tax year-to-date (same labels — YTD column)
+- "month": pay period end month as 3-letter lowercase (jan/feb/mar/apr/may/jun/jul/aug/sep/oct/nov/dec — look for Pay Period End Date, Period End, Check Date, Pay Date; null if not found)
+
+Rules:
+- Always use the CURRENT PERIOD / THIS PERIOD column for "Period" fields, never YTD
+- Always use the YTD / YEAR-TO-DATE column for "Ytd" fields
+- Return numbers only (no $ signs, no commas)
+- If a field is not present on this paystub, return null
+- Return ONLY the JSON object, nothing else.`;
   const res = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
     headers: {'Content-Type':'application/json','x-api-key':apiKey,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
