@@ -505,6 +505,16 @@
     .insights-dot.show { display: block; }
     @media (max-width: 600px) { .insights-panel { width: 100vw; } }
 
+    /* ── VIEW DEMO PULSE (first-time visitor) ── */
+    @keyframes demoPulse {
+      0%   { border-color: var(--border); color: var(--text-2); box-shadow: none; }
+      40%  { border-color: var(--blue); color: var(--blue); box-shadow: 0 0 14px 2px rgba(57,255,20,0.35); }
+      70%  { border-color: var(--border); color: var(--text-2); box-shadow: none; }
+      100% { border-color: var(--blue); color: var(--blue); box-shadow: 0 0 14px 2px rgba(57,255,20,0.35); }
+    }
+    #demo-btn.demo-pulse {
+      animation: demoPulse 0.75s ease-in-out 3;
+    }
     /* ── BANK STATEMENT IMPORT ── */
     .bs-review-wrap { max-height: 360px; overflow-y: auto; border: 1px solid var(--border); border-radius: var(--radius-sm); }
     .bs-review-table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
@@ -554,7 +564,7 @@
       Don't have an account? <a href="#" onclick="toggleAuthMode();return false;" id="login-toggle-link" style="color:var(--blue);text-decoration:none">Create one</a>
     </div>
     <div style="margin-top:20px;padding-top:16px;border-top:1px solid var(--border-dim);text-align:center">
-      <button onclick="loadDemoData()" style="background:none;border:1px solid var(--border);color:var(--text-2);font-size:12px;font-family:inherit;padding:8px 20px;border-radius:999px;cursor:pointer;transition:all .15s" onmouseover="this.style.borderColor='var(--text-3)';this.style.color='var(--text)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--text-2)'">View Demo</button>
+      <button id="demo-btn" onclick="loadDemoData()" style="background:none;border:1px solid var(--border);color:var(--text-2);font-size:12px;font-family:inherit;padding:8px 20px;border-radius:999px;cursor:pointer;transition:border-color .15s,color .15s,box-shadow .15s" onmouseover="this.style.borderColor='var(--text-3)';this.style.color='var(--text)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--text-2)'">View Demo</button>
       <div style="font-size:11px;color:var(--text-3);margin-top:6px">Explore with sample data — no account needed</div>
     </div>
     <div class="login-hint" id="login-hint" style="display:none">
@@ -1855,6 +1865,14 @@ function initLoginScreen() {
       document.getElementById('login-confirm-field').style.display = '';
       document.getElementById('login-btn').textContent      = 'Create Password';
       document.getElementById('login-hint').style.display   = '';
+      // Pulse the View Demo button to catch the first-timer's eye
+      setTimeout(() => {
+        const btn = document.getElementById('demo-btn');
+        if (btn) {
+          btn.classList.add('demo-pulse');
+          btn.addEventListener('animationend', () => btn.classList.remove('demo-pulse'), {once: true});
+        }
+      }, 900);
     } else {
       document.getElementById('login-subtitle').textContent = 'Enter your password to continue.';
       document.getElementById('login-pw-label').textContent = 'Password';
