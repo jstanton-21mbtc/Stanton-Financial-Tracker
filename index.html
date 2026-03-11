@@ -505,6 +505,16 @@
     .insights-dot.show { display: block; }
     @media (max-width: 600px) { .insights-panel { width: 100vw; } }
 
+    /* ── BANK STATEMENT IMPORT ── */
+    .bs-review-wrap { max-height: 360px; overflow-y: auto; border: 1px solid var(--border); border-radius: var(--radius-sm); }
+    .bs-review-table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+    .bs-review-table th { background: var(--elevated); color: var(--text-3); font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; padding: 8px 10px; position: sticky; top: 0; z-index: 1; text-align: left; border-bottom: 1px solid var(--border); }
+    .bs-review-table td { padding: 7px 10px; border-bottom: 1px solid var(--border-dim); vertical-align: middle; }
+    .bs-review-table tr:last-child td { border-bottom: none; }
+    .bs-row-excluded td { opacity: 0.38; }
+    .bs-cat-select { background: var(--elevated); border: 1px solid var(--border); color: var(--text); border-radius: 6px; padding: 4px 7px; font-size: 11.5px; font-family: 'Inter', sans-serif; outline: none; cursor: pointer; width: 100%; }
+    .bs-cat-select:focus { border-color: var(--blue); }
+    .bs-summary-bar { background: var(--elevated); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 10px 14px; font-size: 12.5px; color: var(--text-2); margin-bottom: 12px; display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
     /* ── TOAST ── */
     #toast { position: fixed; bottom: 28px; right: 28px; background: var(--blue); color: #fff; padding: 10px 20px; border-radius: 999px; font-size: 13px; font-weight: 600; opacity: 0; transform: translateY(8px); transition: all .25s; pointer-events: none; z-index: 999; box-shadow: 0 4px 20px rgba(108,179,63,0.4); }
     #toast.show { opacity: 1; transform: translateY(0); }
@@ -730,7 +740,13 @@
 
       <!-- EXPENSES -->
       <div id="tab-expenses" class="tab-panel">
-        <div class="section-title">Expenses</div>
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;">
+          <div class="section-title" style="margin-bottom:0;">Expenses</div>
+          <button class="btn btn-primary" onclick="showBankStmtModal()" style="font-size:12.5px;padding:8px 16px;gap:7px;flex-shrink:0;">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="2" y="5" width="20" height="14" rx="2"/><polyline points="2 10 12 16 22 10"/></svg>
+            Import Bank Statement
+          </button>
+        </div>
         <div class="table-wrap" id="expenses-wrap"></div>
       </div>
 
@@ -4743,5 +4759,329 @@ function psApply() {
 
   </div>
 </div>
+
+<!-- ══════════════════════════════════════════════════
+     BANK STATEMENT IMPORT MODAL
+════════════════════════════════════════════════════ -->
+<div class="modal-overlay" id="bankstmt-modal" onclick="closeBankStmtModal(event)">
+  <div class="paystub-modal-card" style="max-width:800px;" onclick="event.stopPropagation()">
+
+    <!-- Header -->
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:20px;">
+      <div>
+        <div class="modal-title">Import Bank Statement</div>
+        <div class="modal-sub">Upload a bank statement (CSV, PDF, or image) — AI categorizes every transaction automatically</div>
+      </div>
+      <button onclick="closeBankStmtModal()" style="background:none;border:none;cursor:pointer;color:var(--text-2);padding:2px;line-height:0;flex-shrink:0;">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+
+    <!-- Step 1: Upload -->
+    <div id="bs-upload-step">
+      <div id="bs-status" class="paystub-parse-status" style="display:none;"></div>
+      <div class="paystub-dropzone" id="bs-dropzone"
+           onclick="document.getElementById('bs-file-input').click()"
+           ondragover="bsOnDragOver(event)"
+           ondragleave="bsOnDragLeave()"
+           ondrop="bsOnDrop(event)">
+        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="var(--text-3)" stroke-width="1.5"><rect x="2" y="5" width="20" height="14" rx="2"/><polyline points="2 10 12 16 22 10"/><line x1="12" y1="19" x2="12" y2="12"/><polyline points="9 15 12 12 15 15"/></svg>
+        <div class="paystub-dropzone-title">Drop your bank statement here</div>
+        <div class="paystub-dropzone-sub">Supports CSV, PDF, JPG, PNG &mdash; AI reads every charge and assigns a category</div>
+      </div>
+      <input type="file" id="bs-file-input" accept=".csv,.pdf,.jpg,.jpeg,.png" style="display:none" onchange="bsHandleFileInput(this)">
+      <div style="margin-top:14px;padding:12px 16px;background:var(--elevated);border:1px solid var(--border-dim);border-radius:var(--radius-sm);font-size:12px;color:var(--text-3);line-height:1.75;">
+        <strong style="color:var(--text-2);">How it works:</strong>
+        Claude reads every debit / charge on your statement, maps each one to an expense category (Groceries, Dining, Gas, etc.), then lets you review and edit before anything is saved. Only selected transactions are added to your Expenses tab — amounts are <em>added</em> to existing values, never overwritten.
+      </div>
+    </div>
+
+    <!-- Step 2: Review & Confirm -->
+    <div id="bs-review-step" style="display:none;">
+      <div class="bs-summary-bar">
+        <span id="bs-summary" style="font-size:13px;"></span>
+        <div style="display:flex;gap:8px;flex-shrink:0;">
+          <button class="btn btn-ghost" onclick="bsSelectAll(true)"  style="font-size:11px;padding:5px 10px;">Select All</button>
+          <button class="btn btn-ghost" onclick="bsSelectAll(false)" style="font-size:11px;padding:5px 10px;">Deselect All</button>
+        </div>
+      </div>
+      <div class="bs-review-wrap">
+        <table class="bs-review-table">
+          <thead>
+            <tr>
+              <th style="width:36px;"></th>
+              <th style="width:98px;">Date</th>
+              <th>Description</th>
+              <th style="width:88px;text-align:right;">Amount</th>
+              <th style="width:195px;">Category</th>
+            </tr>
+          </thead>
+          <tbody id="bs-tbody"></tbody>
+        </table>
+      </div>
+      <div style="font-size:11px;color:var(--text-3);margin-top:8px;line-height:1.6;">
+        Uncheck any transaction you want to skip. Change categories using the dropdown. Click <strong style="color:var(--text-2);">Apply to Tracker</strong> when ready — each amount adds to the correct month &amp; category.
+      </div>
+      <div class="modal-actions">
+        <button class="btn btn-ghost" onclick="bsShowUpload()">&#8592; Back</button>
+        <button class="btn btn-primary" onclick="bsApply()">Apply to Tracker</button>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+// ══════════════════════════════════════════════════
+//  BANK STATEMENT IMPORT
+// ══════════════════════════════════════════════════
+let _bsTransactions = [];
+
+function showBankStmtModal() {
+  bsShowUpload();
+  document.getElementById('bankstmt-modal').classList.add('open');
+}
+function closeBankStmtModal(e) {
+  if (e && e.target !== e.currentTarget) return;
+  document.getElementById('bankstmt-modal').classList.remove('open');
+}
+function bsShowUpload() {
+  document.getElementById('bs-upload-step').style.display = '';
+  document.getElementById('bs-review-step').style.display = 'none';
+  const st = document.getElementById('bs-status');
+  st.style.display = 'none'; st.textContent = '';
+  const fi = document.getElementById('bs-file-input');
+  if (fi) fi.value = '';
+}
+function bsOnDragOver(e) { e.preventDefault(); document.getElementById('bs-dropzone').classList.add('drag-over'); }
+function bsOnDragLeave()  { document.getElementById('bs-dropzone').classList.remove('drag-over'); }
+function bsOnDrop(e) {
+  e.preventDefault();
+  document.getElementById('bs-dropzone').classList.remove('drag-over');
+  const file = Array.from(e.dataTransfer.files)[0];
+  if (file) bsHandleFile(file);
+}
+function bsHandleFileInput(input) {
+  const file = input.files[0];
+  if (file) bsHandleFile(file);
+}
+
+async function bsHandleFile(file) {
+  const status  = document.getElementById('bs-status');
+  const apiKey  = localStorage.getItem('sft_anthropic_key_v1') || '';
+  const isCsv   = file.name.toLowerCase().endsWith('.csv') || file.type === 'text/csv' || file.type === 'text/plain';
+  const isPdf   = file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf');
+  const isImage = file.type.startsWith('image/');
+
+  status.style.display = ''; status.className = 'paystub-parse-status';
+
+  if (!apiKey) {
+    status.className = 'paystub-parse-status error';
+    status.textContent = 'No Anthropic API key found — add it in Settings → AI / API.';
+    return;
+  }
+  if (!isCsv && !isPdf && !isImage) {
+    status.className = 'paystub-parse-status error';
+    status.textContent = 'Unsupported file type. Please upload a CSV, PDF, JPG, or PNG.';
+    return;
+  }
+
+  try {
+    status.textContent = 'Analyzing bank statement with AI…';
+    let transactions;
+    if (isCsv) {
+      const text = await file.text();
+      transactions = await bsCallClaudeText(text, apiKey);
+    } else {
+      const {base64, mediaType} = isPdf ? await psPdfToBase64(file) : await psImageToBase64(file);
+      transactions = await bsCallClaudeImage(base64, mediaType, apiKey);
+    }
+    if (!Array.isArray(transactions) || !transactions.length) throw new Error('No expense transactions found in this statement.');
+    status.style.display = 'none';
+    bsShowReview(transactions);
+  } catch(err) {
+    status.className = 'paystub-parse-status error';
+    status.textContent = 'Error: ' + (err.message || 'Unknown error — check your API key and try again.');
+  }
+}
+
+function bsBuildCatList() {
+  return getCats('expenses').map(c => `"${c.key}" = ${c.label}`).join(', ');
+}
+
+async function bsCallClaudeText(csvText, apiKey) {
+  const prompt = `You are a senior financial analyst and bookkeeper. Below is raw bank statement data (CSV or plain text).
+
+Extract every EXPENSE transaction — meaning debits, charges, purchases, and withdrawals. Skip deposits, credits, incoming transfers, direct deposits, payroll, and refunds.
+
+Return ONLY a valid JSON array with no explanation, no markdown, no code fences. Each object in the array must have exactly these fields:
+{
+  "date": "YYYY-MM-DD",
+  "description": "clean readable merchant/payee name",
+  "amount": 45.23,
+  "category": "groceries"
+}
+
+Assign each transaction exactly one category key from this list:
+${bsBuildCatList()}
+
+Rules:
+- "amount" is always a positive number (absolute value of the debit)
+- "date" must be YYYY-MM-DD; if no year is present assume ${new Date().getFullYear()}
+- "category" must be exactly one of the keys shown above; use "other" only when nothing else fits
+- "description" should be a clean, readable version of the payee name (remove check numbers, IDs, and codes)
+- Do NOT include income, deposits, balance entries, or credits
+- Return ONLY the raw JSON array — no other text whatsoever
+
+Bank statement data:
+${csvText.slice(0, 10000)}`;
+
+  const res = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {'Content-Type':'application/json','x-api-key':apiKey,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
+    body: JSON.stringify({
+      model: 'claude-haiku-4-5-20251001', max_tokens: 4096,
+      messages: [{role:'user', content: prompt}]
+    })
+  });
+  if (!res.ok) { const e = await res.json().catch(()=>{}); throw new Error(`API error ${res.status}: ${e?.error?.message||''}`); }
+  const data = await res.json();
+  const raw  = data.content?.[0]?.text || '';
+  const m    = raw.match(/\[[\s\S]*\]/);
+  if (!m) throw new Error('No transaction list returned by AI. Ensure the file is a readable bank statement.');
+  return JSON.parse(m[0]);
+}
+
+async function bsCallClaudeImage(base64, mediaType, apiKey) {
+  const prompt = `You are a senior financial analyst and bookkeeper. This image shows a bank statement.
+
+Extract every EXPENSE transaction — meaning debits, charges, purchases, and withdrawals. Skip deposits, credits, incoming transfers, direct deposits, payroll, and refunds.
+
+Return ONLY a valid JSON array with no explanation, no markdown, no code fences. Each object must have exactly these fields:
+{
+  "date": "YYYY-MM-DD",
+  "description": "clean readable merchant/payee name",
+  "amount": 45.23,
+  "category": "groceries"
+}
+
+Assign each transaction exactly one category key from this list:
+${bsBuildCatList()}
+
+Rules:
+- "amount" is always a positive number (absolute value of the debit)
+- "date" must be YYYY-MM-DD; if no year present assume ${new Date().getFullYear()}
+- "category" must be exactly one of the keys shown above; use "other" only when nothing else fits
+- "description" should be a clean, readable version of the payee name
+- Do NOT include income, deposits, balance entries, or credits
+- Return ONLY the raw JSON array — no other text`;
+
+  const res = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {'Content-Type':'application/json','x-api-key':apiKey,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
+    body: JSON.stringify({
+      model: 'claude-haiku-4-5-20251001', max_tokens: 4096,
+      messages: [{role:'user', content:[
+        {type:'image', source:{type:'base64', media_type:mediaType, data:base64}},
+        {type:'text',  text:prompt}
+      ]}]
+    })
+  });
+  if (!res.ok) { const e = await res.json().catch(()=>{}); throw new Error(`API error ${res.status}: ${e?.error?.message||''}`); }
+  const data = await res.json();
+  const raw  = data.content?.[0]?.text || '';
+  const m    = raw.match(/\[[\s\S]*\]/);
+  if (!m) throw new Error('No transaction list returned by AI. Ensure the image shows a readable bank statement.');
+  return JSON.parse(m[0]);
+}
+
+function bsShowReview(transactions) {
+  _bsTransactions = transactions.map((t, i) => ({
+    id: i,
+    date: t.date || '',
+    description: t.description || '',
+    amount: Math.abs(parseFloat(t.amount) || 0),
+    category: t.category || 'other',
+    include: true
+  })).filter(t => t.amount > 0);
+  document.getElementById('bs-upload-step').style.display = 'none';
+  document.getElementById('bs-review-step').style.display = '';
+  bsRenderReview();
+}
+
+function bsRenderReview() {
+  const txs      = _bsTransactions;
+  const included = txs.filter(t => t.include);
+  const total    = included.reduce((a, t) => a + t.amount, 0);
+
+  document.getElementById('bs-summary').innerHTML =
+    `<strong>${included.length}</strong> of <strong>${txs.length}</strong> transactions selected &nbsp;&middot;&nbsp; Total: <strong style="color:var(--red)">${fmt$(total)}</strong>`;
+
+  const allCats  = getCats('expenses');
+  const validKeys = new Set(allCats.map(c => c.key));
+  const catOpts  = allCats.map(c => `<option value="${esc(c.key)}">${esc(c.label)}</option>`).join('');
+
+  let rows = '';
+  txs.forEach(t => {
+    const catKey = validKeys.has(t.category) ? t.category : 'other';
+    const opts   = catOpts.replace(`value="${esc(catKey)}"`, `value="${esc(catKey)}" selected`);
+    rows += `<tr class="${t.include ? '' : 'bs-row-excluded'}">
+      <td style="text-align:center;">
+        <input type="checkbox" ${t.include ? 'checked' : ''} onchange="bsToggle(${t.id},this.checked)"
+          style="cursor:pointer;accent-color:var(--blue);width:15px;height:15px;">
+      </td>
+      <td style="white-space:nowrap;color:var(--text-2);font-size:11.5px;">${esc(t.date)}</td>
+      <td style="max-width:230px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12.5px;" title="${esc(t.description)}">${esc(t.description)}</td>
+      <td style="text-align:right;color:var(--red);font-weight:600;">${fmt$(t.amount)}</td>
+      <td><select class="bs-cat-select" onchange="bsSetCat(${t.id},this.value)">${opts}</select></td>
+    </tr>`;
+  });
+  document.getElementById('bs-tbody').innerHTML = rows;
+}
+
+function bsToggle(id, checked) {
+  const t = _bsTransactions.find(x => x.id === id);
+  if (t) { t.include = checked; bsRenderReview(); }
+}
+function bsSetCat(id, val) {
+  const t = _bsTransactions.find(x => x.id === id);
+  if (t) t.category = val;
+}
+function bsSelectAll(val) {
+  _bsTransactions.forEach(t => t.include = val);
+  bsRenderReview();
+}
+
+function bsApply() {
+  const included = _bsTransactions.filter(t => t.include);
+  if (!included.length) { alert('No transactions selected.'); return; }
+
+  included.forEach(t => {
+    const parts = (t.date || '').split('-');
+    const mo    = parseInt(parts[1]);
+    if (!mo || mo < 1 || mo > 12) return;
+    const mk  = MK[mo - 1];
+    const key = t.category || 'other';
+    if (!appData.expenses[mk]) return;
+    if (appData.expenses[mk][key] === undefined) appData.expenses[mk][key] = 0;
+    appData.expenses[mk][key] = +(appData.expenses[mk][key] + t.amount).toFixed(2);
+  });
+
+  saveData();
+  refreshAll();
+  document.getElementById('bankstmt-modal').classList.remove('open');
+  showTab('expenses');
+
+  const total = included.reduce((a, t) => a + t.amount, 0);
+  setTimeout(() => {
+    const toast = document.createElement('div');
+    toast.style.cssText = 'position:fixed;bottom:28px;left:50%;transform:translateX(-50%);background:var(--green);color:#fff;padding:11px 22px;border-radius:10px;font-size:13px;font-weight:600;z-index:9999;box-shadow:0 4px 20px rgba(0,0,0,.3);white-space:nowrap;';
+    toast.textContent = `✓ ${included.length} transactions imported — ${fmt$(total)} added to Expenses`;
+    document.body.appendChild(toast);
+    setTimeout(() => toast.remove(), 3800);
+  }, 150);
+}
+</script>
+
 </body>
 </html>
