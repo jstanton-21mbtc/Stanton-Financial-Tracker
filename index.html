@@ -960,10 +960,16 @@
       <div id="tab-pl" class="tab-panel">
         <div class="mob-section-header" style="display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;">
           <div class="section-title" style="margin-bottom:0;">P&amp;L — Income &amp; Profitability</div>
-          <button class="btn btn-primary" onclick="showPaystubModal()" style="font-size:12.5px;padding:8px 16px;gap:7px;flex-shrink:0;">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-            Import Paystub
-          </button>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;">
+            <button class="btn btn-ghost" onclick="resetPaystubData()" style="font-size:12.5px;padding:8px 14px;gap:7px;flex-shrink:0;color:var(--red);border-color:var(--red);" title="Clear all paystub tax data and YTD totals">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 102.13-9.36L1 10"/></svg>
+              Reset Paystubs
+            </button>
+            <button class="btn btn-primary" onclick="showPaystubModal()" style="font-size:12.5px;padding:8px 16px;gap:7px;flex-shrink:0;">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+              Import Paystub
+            </button>
+          </div>
         </div>
         <div class="table-wrap" id="pl-wrap"></div>
         <div class="subsection" id="pl-net-income-panel" style="display:none;">
@@ -2270,6 +2276,22 @@ function showTab(id) {
   }
   // Scroll content to top on mobile
   if (window.innerWidth <= 768) window.scrollTo(0, 0);
+}
+
+function resetPaystubData() {
+  if (!confirm('Clear all paystub tax data and YTD totals? Your income and expense entries will not be affected.')) return;
+  appData.paystubYtd = {k401:0, taxesFed:0, taxesState:0, taxesFica:0, taxesMed:0};
+  MK.forEach(m => {
+    if (appData.deductions && appData.deductions[m]) {
+      appData.deductions[m] = {taxesFed:0, taxesState:0, taxesFica:0, taxesMed:0, taxes:0, totalTaxes:0};
+    }
+  });
+  if (appData.savings) {
+    MK.forEach(m => { if (appData.savings[m]) appData.savings[m].k401 = 0; });
+  }
+  saveData();
+  renderPL();
+  showToast('Paystub data cleared — ready for fresh import');
 }
 
 function openMobDrawer() {
