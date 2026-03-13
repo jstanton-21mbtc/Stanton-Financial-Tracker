@@ -2453,11 +2453,17 @@ function renderPL(){
     const k401Ytd = MK.reduce((a,m)=>a+((sav2[m]&&sav2[m].k401)||0),0);
     // Total Taxes YTD — same totalTaxes sum as Net Income panel's "Taxes Withheld" total
     const totalTaxesYtd = MK.reduce((a,m)=>a+((ded2[m]&&ded2[m].totalTaxes)||0),0);
-    // Individual breakdowns from component fields (for detail cards); fall back to paystubYtd
-    const fedYtd   = MK.reduce((a,m)=>a+((ded2[m]&&ded2[m].taxesFed)||0),0)   || (ytdFallback.taxesFed||0);
-    const stateYtd = MK.reduce((a,m)=>a+((ded2[m]&&ded2[m].taxesState)||0),0) || (ytdFallback.taxesState||0);
-    const ficaYtd  = MK.reduce((a,m)=>a+((ded2[m]&&ded2[m].taxesFica)||0),0)  || (ytdFallback.taxesFica||0);
-    const medYtd   = MK.reduce((a,m)=>a+((ded2[m]&&ded2[m].taxesMed)||0),0)   || (ytdFallback.taxesMed||0);
+    // Individual breakdowns — prefer paystubYtd (actual YTD box from paystub) over summing periods
+    const _fedRaw   = (ytdFallback.taxesFed||0)   || MK.reduce((a,m)=>a+((ded2[m]&&ded2[m].taxesFed)||0),0);
+    const _stateRaw = (ytdFallback.taxesState||0)  || MK.reduce((a,m)=>a+((ded2[m]&&ded2[m].taxesState)||0),0);
+    const _ficaRaw  = (ytdFallback.taxesFica||0)   || MK.reduce((a,m)=>a+((ded2[m]&&ded2[m].taxesFica)||0),0);
+    const _medRaw   = (ytdFallback.taxesMed||0)    || MK.reduce((a,m)=>a+((ded2[m]&&ded2[m].taxesMed)||0),0);
+    // Cap each component at totalTaxesYtd — a component can never exceed the total
+    const cap = totalTaxesYtd > 0 ? totalTaxesYtd : Infinity;
+    const fedYtd   = Math.min(_fedRaw,   cap);
+    const stateYtd = Math.min(_stateRaw, cap);
+    const ficaYtd  = Math.min(_ficaRaw,  cap);
+    const medYtd   = Math.min(_medRaw,   cap);
     // Use totalTaxesYtd as authoritative total; fall back to component sum if totalTaxes not yet set
     const totalTax = totalTaxesYtd > 0 ? totalTaxesYtd : (fedYtd+stateYtd+ficaYtd+medYtd);
     const k401Show = k401Ytd > 0 ? k401Ytd : (ytdFallback.k401||0);
