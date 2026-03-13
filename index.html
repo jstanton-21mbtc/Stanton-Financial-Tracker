@@ -2,8 +2,26 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <title>5Stack.ai</title>
+
+  <!-- PWA -->
+  <link rel="manifest" href="/manifest.json" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="5Stack" />
+  <meta name="theme-color" content="#39FF14" />
+  <style>
+    #pwa-install-banner {
+      display: none; position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+      background: #39FF14; color: #05091A; border: none; border-radius: 12px;
+      padding: 13px 24px; font-size: 14px; font-weight: 700; cursor: pointer;
+      z-index: 9999; box-shadow: 0 4px 24px rgba(57,255,20,0.35);
+      white-space: nowrap; font-family: inherit;
+    }
+    #pwa-install-banner:hover { background: #2ED410; }
+  </style>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
@@ -538,6 +556,8 @@
 <body>
 
 <!-- ── LOGIN ── -->
+<button id="pwa-install-banner" onclick="pwaInstall()">⬇ Install 5Stack.ai</button>
+
 <div class="login-overlay" id="login-overlay">
   <div class="login-card">
     <div class="login-logo"><svg width="26" height="22" viewBox="0 0 26 22" fill="none"><rect x="0" y="0"  width="26" height="3.2" rx="1.6" fill="white"/><rect x="0" y="4.7" width="26" height="3.2" rx="1.6" fill="white"/><rect x="0" y="9.4" width="26" height="3.2" rx="1.6" fill="white"/><rect x="0" y="14.1" width="26" height="3.2" rx="1.6" fill="white"/><rect x="0" y="18.8" width="26" height="3.2" rx="1.6" fill="white"/></svg></div>
@@ -5153,6 +5173,42 @@ function bsApply() {
     setTimeout(() => toast.remove(), 3800);
   }, 150);
 }
+</script>
+
+<script>
+  // Service Worker
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('/sw.js').catch(() => {});
+    });
+  }
+
+  // Chrome / Android install prompt
+  let _pwaPrompt = null;
+  window.addEventListener('beforeinstallprompt', e => {
+    e.preventDefault();
+    _pwaPrompt = e;
+    // Only show if not already installed
+    if (!window.matchMedia('(display-mode: standalone)').matches) {
+      document.getElementById('pwa-install-banner').style.display = 'block';
+    }
+  });
+
+  function pwaInstall() {
+    if (!_pwaPrompt) return;
+    _pwaPrompt.prompt();
+    _pwaPrompt.userChoice.then(() => {
+      _pwaPrompt = null;
+      document.getElementById('pwa-install-banner').style.display = 'none';
+    });
+  }
+
+  // Hide banner if already running as installed app
+  if (window.matchMedia('(display-mode: standalone)').matches) {
+    document.addEventListener('DOMContentLoaded', () => {
+      document.getElementById('pwa-install-banner').style.display = 'none';
+    });
+  }
 </script>
 
 </body>
