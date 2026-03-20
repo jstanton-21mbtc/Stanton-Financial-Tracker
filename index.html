@@ -1042,7 +1042,7 @@
           <div class="section-title" style="margin-bottom:0;">Expenses</div>
           <button class="btn btn-primary" onclick="showBankStmtModal()" style="font-size:12.5px;padding:8px 16px;gap:7px;flex-shrink:0;">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="2" y="5" width="20" height="14" rx="2"/><polyline points="2 10 12 16 22 10"/></svg>
-            Import Bank Statement
+            Import Statement
           </button>
         </div>
 
@@ -5402,8 +5402,8 @@ function psApply() {
     <!-- Header -->
     <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:20px;">
       <div>
-        <div class="modal-title">Import Bank Statement</div>
-        <div class="modal-sub">Upload a bank statement (CSV, PDF, or image) — AI categorizes every transaction automatically</div>
+        <div class="modal-title">Import Bank or Credit Card Statement</div>
+        <div class="modal-sub">Upload a statement (CSV, PDF, or image) — AI recognizes the format and categorizes every transaction automatically</div>
       </div>
       <button onclick="closeBankStmtModal()" style="background:none;border:none;cursor:pointer;color:var(--text-2);padding:2px;line-height:0;flex-shrink:0;">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
@@ -5419,13 +5419,13 @@ function psApply() {
            ondragleave="bsOnDragLeave()"
            ondrop="bsOnDrop(event)">
         <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="var(--text-3)" stroke-width="1.5"><rect x="2" y="5" width="20" height="14" rx="2"/><polyline points="2 10 12 16 22 10"/><line x1="12" y1="19" x2="12" y2="12"/><polyline points="9 15 12 12 15 15"/></svg>
-        <div class="paystub-dropzone-title">Drop your bank statement here</div>
-        <div class="paystub-dropzone-sub">Supports CSV, PDF, JPG, PNG &mdash; AI reads every charge and assigns a category</div>
+        <div class="paystub-dropzone-title">Drop your bank or credit card statement here</div>
+        <div class="paystub-dropzone-sub">Supports CSV, PDF, JPG, PNG &mdash; works with any bank or credit card (Gemini, Chase, Amex, Citi, Capital One, Discover, and more)</div>
       </div>
       <input type="file" id="bs-file-input" accept=".csv,.pdf,.jpg,.jpeg,.png" style="display:none" onchange="bsHandleFileInput(this)">
       <div style="margin-top:14px;padding:12px 16px;background:var(--elevated);border:1px solid var(--border-dim);border-radius:var(--radius-sm);font-size:12px;color:var(--text-3);line-height:1.75;">
         <strong style="color:var(--text-2);">How it works:</strong>
-        Claude reads every debit / charge on your statement, maps each one to an expense category (Groceries, Dining, Gas, etc.), then lets you review and edit before anything is saved. Only selected transactions are added to your Expenses tab — amounts are <em>added</em> to existing values, never overwritten.
+        Claude automatically recognizes the statement format — bank or credit card — reads every charge, maps each one to an expense category (Groceries, Dining, Gas, etc.), and skips payments, refunds, and credits. Review and adjust categories before anything is saved. Amounts are <em>added</em> to existing values, never overwritten.
       </div>
     </div>
 
@@ -5543,9 +5543,9 @@ function bsBuildCatList() {
 }
 
 async function bsCallClaudeText(csvText, apiKey) {
-  const prompt = `You are a senior financial analyst and bookkeeper. Below is raw bank statement data (CSV or plain text).
+  const prompt = `You are a senior financial analyst and bookkeeper. Below is raw financial statement data (CSV or plain text). This may be a bank statement OR a credit card statement (such as from Gemini, Chase, Amex, Citi, Capital One, Discover, etc.).
 
-Extract every EXPENSE transaction — meaning debits, charges, purchases, and withdrawals. Skip deposits, credits, incoming transfers, direct deposits, payroll, and refunds.
+Extract every EXPENSE transaction — meaning charges, purchases, debits, and withdrawals. For credit cards, charges are the expenses. Skip payments TO the card, credits, refunds, rewards, deposits, incoming transfers, direct deposits, and payroll.
 
 Return ONLY a valid JSON array with no explanation, no markdown, no code fences. Each object in the array must have exactly these fields:
 {
@@ -5559,15 +5559,16 @@ Assign each transaction exactly one category key from this list:
 ${bsBuildCatList()}
 
 Rules:
-- "amount" is always a positive number (absolute value of the debit)
+- "amount" is always a positive number (absolute value of the charge or debit)
 - "date" must be YYYY-MM-DD; if no year is present assume ${new Date().getFullYear()}
 - "category" must be exactly one of the keys shown above; use "other" only when nothing else fits
-- "description" should be a clean, readable version of the payee name (remove check numbers, IDs, and codes)
-- Do NOT include income, deposits, balance entries, or credits
+- "description" should be a clean, readable version of the merchant/payee name (remove transaction IDs, codes, and trailing numbers)
+- For credit cards: skip the monthly payment/balance payment row entirely — that is not an expense
+- Do NOT include income, deposits, balance entries, refunds, or credits
 - Return ONLY the raw JSON array — no other text whatsoever
 
-Bank statement data:
-${csvText.slice(0, 10000)}`;
+Statement data:
+${csvText.slice(0, 12000)}`;
 
   const res = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
@@ -5586,9 +5587,9 @@ ${csvText.slice(0, 10000)}`;
 }
 
 async function bsCallClaudeImage(base64, mediaType, apiKey) {
-  const prompt = `You are a senior financial analyst and bookkeeper. This image shows a bank statement.
+  const prompt = `You are a senior financial analyst and bookkeeper. This image shows a financial statement — it may be a bank statement or a credit card statement (Gemini, Chase, Amex, Citi, Capital One, Discover, Wells Fargo, Bank of America, etc.).
 
-Extract every EXPENSE transaction — meaning debits, charges, purchases, and withdrawals. Skip deposits, credits, incoming transfers, direct deposits, payroll, and refunds.
+First, determine whether this is a bank statement or credit card statement. Then extract every EXPENSE transaction — meaning charges, purchases, debits, and withdrawals. For credit cards, charges are the expenses. Skip payments TO the card, credits, refunds, rewards, deposits, incoming transfers, and payroll.
 
 Return ONLY a valid JSON array with no explanation, no markdown, no code fences. Each object must have exactly these fields:
 {
@@ -5602,11 +5603,12 @@ Assign each transaction exactly one category key from this list:
 ${bsBuildCatList()}
 
 Rules:
-- "amount" is always a positive number (absolute value of the debit)
+- "amount" is always a positive number (absolute value of the charge or debit)
 - "date" must be YYYY-MM-DD; if no year present assume ${new Date().getFullYear()}
 - "category" must be exactly one of the keys shown above; use "other" only when nothing else fits
-- "description" should be a clean, readable version of the payee name
-- Do NOT include income, deposits, balance entries, or credits
+- "description" should be a clean, readable version of the merchant/payee name
+- For credit cards: skip the monthly payment/balance payment row — that is not an expense
+- Do NOT include income, deposits, balance entries, refunds, or credits
 - Return ONLY the raw JSON array — no other text`;
 
   const res = await fetch('https://api.anthropic.com/v1/messages', {
