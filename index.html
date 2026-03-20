@@ -4357,51 +4357,86 @@ function _chatQuickSend(text) {
 
 function _chatBuildContext() {
   try {
-    const d = appData;
-    const months = (d.months || []).slice(-12);
-    const totalIncome  = months.reduce((s,m)=>(m.income||[]).reduce((a,e)=>a+(parseFloat(e.amount)||0),s),0);
-    const totalExpense = months.reduce((s,m)=>(m.expenses||[]).reduce((a,e)=>a+(parseFloat(e.amount)||0),s),0);
-    const savings = (d.savings || []);
-    const debts = (d.debts || []);
-    const goals = (d.goals || []);
-    const nwSnaps = (d.nwSnapshots || []);
-    const latestNW = nwSnaps.length ? nwSnaps[nwSnaps.length-1] : null;
+    const MK_LABELS = {jan:'Jan',feb:'Feb',mar:'Mar',apr:'Apr',may:'May',jun:'Jun',jul:'Jul',aug:'Aug',sep:'Sep',oct:'Oct',nov:'Nov',dec:'Dec'};
+    const MK_ALL = ['jan','feb','mar','apr','may','jun','jul','aug','sep','oct','nov','dec'];
 
-    let ctx = `You are a helpful personal finance advisor built into 5Stack.ai. The user has shared their financial data below. Answer their questions concisely and helpfully. Format responses clearly — use plain text, short paragraphs, and bold key numbers with **asterisks**.\n\n`;
-    ctx += `== FINANCIAL SUMMARY ==\n`;
-    ctx += `Income (last 12 months): $${totalIncome.toLocaleString()}\n`;
-    ctx += `Expenses (last 12 months): $${totalExpense.toLocaleString()}\n`;
-    ctx += `Net P&L: $${(totalIncome-totalExpense).toLocaleString()}\n\n`;
+    const sumMonth = (section, mk) => Object.values(appData[section]?.[mk] || {}).reduce((a,v)=>a+(parseFloat(v)||0),0);
+    const totalIncome  = MK_ALL.reduce((a,m)=>a+sumMonth('income',m),0);
+    const totalExpense = MK_ALL.reduce((a,m)=>a+sumMonth('expenses',m),0);
+    const totalSavings = MK_ALL.reduce((a,m)=>a+sumMonth('savings',m),0);
 
-    if (latestNW) {
-      ctx += `Latest Net Worth Snapshot (${latestNW.date||''}): Assets $${(latestNW.assets||0).toLocaleString()}, Liabilities $${(latestNW.liabilities||0).toLocaleString()}, Net Worth $${((latestNW.assets||0)-(latestNW.liabilities||0)).toLocaleString()}\n\n`;
-    }
+    let ctx = `You are a helpful personal finance advisor built into 5Stack.ai. The user has shared their real financial data below. Answer concisely and helpfully. Bold key numbers with **asterisks**.\n\n`;
 
-    if (savings.length) {
-      ctx += `== SAVINGS ACCOUNTS ==\n`;
-      savings.forEach(s=>{ ctx+=`${s.name||'Savings'}: $${(parseFloat(s.balance)||0).toLocaleString()}\n`; });
+    ctx += `== YEAR-TO-DATE SUMMARY ==\n`;
+    ctx += `Total Income: $${totalIncome.toLocaleString()}\n`;
+    ctx += `Total Expenses: $${totalExpense.toLocaleString()}\n`;
+    ctx += `Net P&L: $${(totalIncome-totalExpense).toLocaleString()}\n`;
+    ctx += `Total Saved: $${totalSavings.toLocaleString()}\n\n`;
+
+    // Monthly breakdown
+    const activeMonths = MK_ALL.filter(m => sumMonth('income',m)+sumMonth('expenses',m) > 0);
+    if (activeMonths.length) {
+      ctx += `== MONTHLY BREAKDOWN ==\n`;
+      activeMonths.forEach(m => {
+        const inc = sumMonth('income',m);
+        const exp = sumMonth('expenses',m);
+        const sav = sumMonth('savings',m);
+        ctx += `${MK_LABELS[m]}: Income $${inc.toLocaleString()}, Expenses $${exp.toLocaleString()}, Saved $${sav.toLocaleString()}, Net $${(inc-exp).toLocaleString()}\n`;
+      });
       ctx += '\n';
     }
 
+    // Expense breakdown by category
+    const expCats = appData.customCats?.expenses || [];
+    if (expCats.length && activeMonths.length) {
+      ctx += `== EXPENSE CATEGORIES (YTD) ==\n`;
+      expCats.forEach(c => {
+        const total = MK_ALL.reduce((a,m)=>a+(parseFloat(appData.expenses?.[m]?.[c.key])||0),0);
+        if (total > 0) ctx += `${c.label}: $${total.toLocaleString()}\n`;
+      });
+      ctx += '\n';
+    }
+
+    // Savings balances
+    const savCats = appData.customCats?.savings || [];
+    const savBalances = appData.balances?.savings || {};
+    const hasSavBal = savCats.some(c => savBalances[c.key] > 0);
+    if (hasSavBal) {
+      ctx += `== SAVINGS BALANCES ==\n`;
+      savCats.forEach(c => {
+        const bal = parseFloat(savBalances[c.key]) || 0;
+        if (bal > 0) ctx += `${c.label}: $${bal.toLocaleString()}\n`;
+      });
+      ctx += '\n';
+    }
+
+    // Debts
+    const debts = appData.debts || [];
     if (debts.length) {
       ctx += `== DEBTS ==\n`;
-      debts.forEach(db=>{ ctx+=`${db.name||'Debt'}: $${(parseFloat(db.balance)||0).toLocaleString()} at ${db.rate||0}% APR, min $${db.minPayment||0}/mo\n`; });
-      ctx += '\n';
-    }
-
-    if (goals.length) {
-      ctx += `== GOALS ==\n`;
-      goals.forEach(g=>{ ctx+=`${g.name||'Goal'}: $${(parseFloat(g.current)||0).toLocaleString()} / $${(parseFloat(g.target)||0).toLocaleString()}\n`; });
-      ctx += '\n';
-    }
-
-    if (months.length) {
-      ctx += `== MONTHLY BREAKDOWN (recent months) ==\n`;
-      months.slice(-6).forEach(m=>{
-        const inc = (m.income||[]).reduce((a,e)=>a+(parseFloat(e.amount)||0),0);
-        const exp = (m.expenses||[]).reduce((a,e)=>a+(parseFloat(e.amount)||0),0);
-        ctx += `${m.month||''}: Income $${inc.toLocaleString()}, Expenses $${exp.toLocaleString()}, Net $${(inc-exp).toLocaleString()}\n`;
+      debts.forEach(d => {
+        ctx += `${d.name||'Debt'}: $${(parseFloat(d.balance)||0).toLocaleString()} balance at ${d.rate||0}% APR, min $${d.minPayment||0}/mo\n`;
       });
+      ctx += '\n';
+    }
+
+    // Goals
+    const goals = appData.goals || [];
+    if (goals.length) {
+      ctx += `== SAVINGS GOALS ==\n`;
+      goals.forEach(g => {
+        const pct = g.target ? Math.round((g.current/g.target)*100) : 0;
+        ctx += `${g.name||'Goal'}: $${(parseFloat(g.current)||0).toLocaleString()} / $${(parseFloat(g.target)||0).toLocaleString()} (${pct}%) — ${g.status||''}\n`;
+      });
+      ctx += '\n';
+    }
+
+    // Net worth
+    const nwHistory = appData.netWorth?.history || [];
+    if (nwHistory.length) {
+      const latest = nwHistory[nwHistory.length-1];
+      ctx += `== NET WORTH ==\n`;
+      ctx += `Latest snapshot (${latest.date||''}): Assets $${(latest.assets||0).toLocaleString()}, Liabilities $${(latest.liabilities||0).toLocaleString()}, Net Worth $${(latest.net||0).toLocaleString()}\n\n`;
     }
 
     return ctx;
