@@ -523,6 +523,52 @@
     .insights-dot.show { display: block; }
     @media (max-width: 600px) { .insights-panel { width: 100vw; } }
 
+    /* ── AI CHAT PANEL ── */
+    .chat-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,.45); z-index: 300; opacity: 0; pointer-events: none; transition: opacity .3s; }
+    .chat-backdrop.open { opacity: 1; pointer-events: all; }
+    .chat-panel { position: fixed; top: 0; right: 0; width: 380px; height: 100vh; background: var(--surface); border-left: 1px solid var(--border); z-index: 400; display: flex; flex-direction: column; transform: translateX(100%); transition: transform .32s cubic-bezier(.4,0,.2,1); }
+    .chat-panel.open { transform: translateX(0); }
+    @media (max-width: 600px) { .chat-panel { width: 100vw; } }
+    .chat-panel-header { padding: 18px 18px 14px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; }
+    .chat-panel-title { font-size: 14px; font-weight: 700; color: var(--text); }
+    .chat-panel-sub { font-size: 11px; color: var(--text-3); margin-top: 2px; }
+    .chat-panel-close { background: none; border: none; cursor: pointer; color: var(--text-3); padding: 4px; line-height: 0; border-radius: 6px; transition: background .15s, color .15s; }
+    .chat-panel-close:hover { background: var(--elevated); color: var(--text); }
+    .chat-panel-icon { width: 34px; height: 34px; background: linear-gradient(135deg, #39FF14 0%, #05B169 100%); border-radius: 9px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .chat-messages { flex: 1; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 12px; }
+    .chat-messages::-webkit-scrollbar { width: 4px; }
+    .chat-messages::-webkit-scrollbar-track { background: transparent; }
+    .chat-messages::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+    .chat-msg { display: flex; flex-direction: column; gap: 4px; max-width: 88%; }
+    .chat-msg.user { align-self: flex-end; align-items: flex-end; }
+    .chat-msg.assistant { align-self: flex-start; align-items: flex-start; }
+    .chat-bubble { padding: 10px 13px; border-radius: 14px; font-size: 13px; line-height: 1.55; }
+    .chat-msg.user .chat-bubble { background: var(--blue); color: #000; border-bottom-right-radius: 4px; font-weight: 500; }
+    .chat-msg.assistant .chat-bubble { background: var(--card); border: 1px solid var(--border); color: var(--text); border-bottom-left-radius: 4px; white-space: pre-wrap; }
+    .chat-msg-time { font-size: 10px; color: var(--text-3); }
+    .chat-empty { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; color: var(--text-3); padding: 32px; }
+    .chat-empty svg { opacity: .35; }
+    .chat-empty-title { font-size: 14px; font-weight: 600; color: var(--text-2); }
+    .chat-empty-sub { font-size: 12px; text-align: center; line-height: 1.6; }
+    .chat-suggestions { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; margin-top: 4px; }
+    .chat-suggestion { background: var(--card); border: 1px solid var(--border); color: var(--text-2); font-size: 11px; font-weight: 500; padding: 6px 10px; border-radius: 8px; cursor: pointer; font-family: inherit; transition: background .15s, color .15s, border-color .15s; }
+    .chat-suggestion:hover { background: var(--blue-dim); border-color: var(--blue); color: var(--blue); }
+    .chat-input-area { padding: 12px 14px calc(12px + env(safe-area-inset-bottom)); border-top: 1px solid var(--border); flex-shrink: 0; }
+    .chat-input-row { display: flex; align-items: flex-end; gap: 8px; background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 8px 8px 8px 12px; transition: border-color .2s; }
+    .chat-input-row:focus-within { border-color: var(--blue); }
+    .chat-textarea { flex: 1; background: none; border: none; outline: none; color: var(--text); font-size: 13px; font-family: inherit; resize: none; max-height: 100px; min-height: 20px; line-height: 1.5; }
+    .chat-textarea::placeholder { color: var(--text-3); }
+    .chat-send-btn { background: var(--blue); border: none; border-radius: 8px; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; cursor: pointer; color: #000; flex-shrink: 0; transition: background .15s, opacity .15s; }
+    .chat-send-btn:hover { background: var(--blue-hover); }
+    .chat-send-btn:disabled { opacity: .4; cursor: not-allowed; }
+    .chat-typing { display: flex; align-items: center; gap: 5px; padding: 10px 13px; background: var(--card); border: 1px solid var(--border); border-radius: 14px; border-bottom-left-radius: 4px; align-self: flex-start; }
+    .chat-typing span { width: 6px; height: 6px; background: var(--text-3); border-radius: 50%; animation: chatDot .9s ease-in-out infinite; }
+    .chat-typing span:nth-child(2) { animation-delay: .15s; }
+    .chat-typing span:nth-child(3) { animation-delay: .3s; }
+    @keyframes chatDot { 0%,60%,100% { transform: translateY(0); opacity: .4; } 30% { transform: translateY(-5px); opacity: 1; } }
+    .chat-no-key { margin: 16px; padding: 14px 16px; background: var(--yellow-dim); border: 1px solid var(--yellow); border-radius: 10px; font-size: 12px; color: var(--text); line-height: 1.6; }
+    .chat-no-key a { color: var(--blue); text-decoration: none; cursor: pointer; }
+
     /* ── VIEW DEMO PULSE (first-time visitor) ── */
     @keyframes demoPulse {
       0%   { border-color: var(--border); color: var(--text-2); box-shadow: none; }
@@ -912,6 +958,10 @@
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
         Analyst Tips
         <span class="insights-dot" id="insights-dot"></span>
+      </button>
+      <button class="btn" onclick="toggleChat()" id="chat-toggle-btn" title="AI Finance Chat" style="gap:6px;">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+        Ask AI
       </button>
       <button class="btn btn-danger" onclick="logOut()" title="Lock &amp; Log Out">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
@@ -1363,10 +1413,10 @@
           <div class="settings-card">
             <div class="settings-card-header">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
-              <div><div class="settings-card-title">AI / API</div><div class="settings-card-sub">Claude API key for smart paystub parsing</div></div>
+              <div><div class="settings-card-title">AI / API</div><div class="settings-card-sub">Claude API key for AI chat &amp; smart imports</div></div>
             </div>
             <div class="settings-card-body">
-              <div style="font-size:13px;color:var(--text-2);margin-bottom:16px;line-height:1.6;">Add your Anthropic API key to enable AI-powered paystub import. Claude will automatically read and extract all fields from your Rippling paystubs.</div>
+              <div style="font-size:13px;color:var(--text-2);margin-bottom:16px;line-height:1.6;">Add your Anthropic API key to enable the AI chat advisor and AI-powered paystub &amp; bank statement imports.</div>
               <div class="settings-field">
                 <label>Anthropic API Key</label>
                 <div style="position:relative;">
@@ -4230,6 +4280,197 @@ let _reloadTicker;
 </script>
 
 <script>
+// ── AI CHAT AGENT ──
+let _chatHistory = []; // {role, content, time}
+let _chatLoading = false;
+
+function toggleChat() {
+  const panel = document.getElementById('chat-panel');
+  const bd    = document.getElementById('chat-backdrop');
+  const isOpen = panel.classList.contains('open');
+  panel.classList.toggle('open', !isOpen);
+  bd.classList.toggle('open', !isOpen);
+  if (!isOpen) {
+    _chatRenderMessages();
+    setTimeout(() => document.getElementById('chat-input').focus(), 350);
+  }
+}
+
+function chatClear() {
+  _chatHistory = [];
+  _chatRenderMessages();
+}
+
+function _chatRenderMessages() {
+  const container = document.getElementById('chat-messages');
+  const apiKey = localStorage.getItem('sft_anthropic_key_v1') || '';
+
+  if (!apiKey) {
+    container.innerHTML = `<div class="chat-no-key">
+      No Anthropic API key found. <a onclick="toggleChat();showTab('settings')">Add it in Settings → AI / API</a> to enable AI chat.
+    </div>`;
+    return;
+  }
+
+  if (_chatHistory.length === 0) {
+    container.innerHTML = `<div class="chat-empty">
+      <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+      <div class="chat-empty-title">Your AI Finance Advisor</div>
+      <div class="chat-empty-sub">Ask anything about your budget, spending habits, debt strategy, savings goals, or net worth.</div>
+      <div class="chat-suggestions">
+        <button class="chat-suggestion" onclick="_chatQuickSend('How is my spending this year?')">How is my spending this year?</button>
+        <button class="chat-suggestion" onclick="_chatQuickSend('Am I on track with my savings goals?')">Am I on track with savings?</button>
+        <button class="chat-suggestion" onclick="_chatQuickSend('What should I focus on to improve my finances?')">What should I focus on?</button>
+        <button class="chat-suggestion" onclick="_chatQuickSend('Summarize my net worth situation.')">Summarize my net worth</button>
+      </div>
+    </div>`;
+    return;
+  }
+
+  let html = '';
+  for (const msg of _chatHistory) {
+    const cls = msg.role === 'user' ? 'user' : 'assistant';
+    const timeStr = msg.time || '';
+    html += `<div class="chat-msg ${cls}">
+      <div class="chat-bubble">${_chatEscape(msg.content)}</div>
+      <div class="chat-msg-time">${timeStr}</div>
+    </div>`;
+  }
+  if (_chatLoading) {
+    html += `<div class="chat-typing"><span></span><span></span><span></span></div>`;
+  }
+  container.innerHTML = html;
+  container.scrollTop = container.scrollHeight;
+}
+
+function _chatEscape(text) {
+  return text
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>')
+    .replace(/\n/g,'<br>');
+}
+
+function _chatQuickSend(text) {
+  document.getElementById('chat-input').value = text;
+  chatSend();
+}
+
+function _chatBuildContext() {
+  try {
+    const d = appData;
+    const months = (d.months || []).slice(-12);
+    const totalIncome  = months.reduce((s,m)=>(m.income||[]).reduce((a,e)=>a+(parseFloat(e.amount)||0),s),0);
+    const totalExpense = months.reduce((s,m)=>(m.expenses||[]).reduce((a,e)=>a+(parseFloat(e.amount)||0),s),0);
+    const savings = (d.savings || []);
+    const debts = (d.debts || []);
+    const goals = (d.goals || []);
+    const nwSnaps = (d.nwSnapshots || []);
+    const latestNW = nwSnaps.length ? nwSnaps[nwSnaps.length-1] : null;
+
+    let ctx = `You are a helpful personal finance advisor built into 5Stack.ai. The user has shared their financial data below. Answer their questions concisely and helpfully. Format responses clearly — use plain text, short paragraphs, and bold key numbers with **asterisks**.\n\n`;
+    ctx += `== FINANCIAL SUMMARY ==\n`;
+    ctx += `Income (last 12 months): $${totalIncome.toLocaleString()}\n`;
+    ctx += `Expenses (last 12 months): $${totalExpense.toLocaleString()}\n`;
+    ctx += `Net P&L: $${(totalIncome-totalExpense).toLocaleString()}\n\n`;
+
+    if (latestNW) {
+      ctx += `Latest Net Worth Snapshot (${latestNW.date||''}): Assets $${(latestNW.assets||0).toLocaleString()}, Liabilities $${(latestNW.liabilities||0).toLocaleString()}, Net Worth $${((latestNW.assets||0)-(latestNW.liabilities||0)).toLocaleString()}\n\n`;
+    }
+
+    if (savings.length) {
+      ctx += `== SAVINGS ACCOUNTS ==\n`;
+      savings.forEach(s=>{ ctx+=`${s.name||'Savings'}: $${(parseFloat(s.balance)||0).toLocaleString()}\n`; });
+      ctx += '\n';
+    }
+
+    if (debts.length) {
+      ctx += `== DEBTS ==\n`;
+      debts.forEach(db=>{ ctx+=`${db.name||'Debt'}: $${(parseFloat(db.balance)||0).toLocaleString()} at ${db.rate||0}% APR, min $${db.minPayment||0}/mo\n`; });
+      ctx += '\n';
+    }
+
+    if (goals.length) {
+      ctx += `== GOALS ==\n`;
+      goals.forEach(g=>{ ctx+=`${g.name||'Goal'}: $${(parseFloat(g.current)||0).toLocaleString()} / $${(parseFloat(g.target)||0).toLocaleString()}\n`; });
+      ctx += '\n';
+    }
+
+    if (months.length) {
+      ctx += `== MONTHLY BREAKDOWN (recent months) ==\n`;
+      months.slice(-6).forEach(m=>{
+        const inc = (m.income||[]).reduce((a,e)=>a+(parseFloat(e.amount)||0),0);
+        const exp = (m.expenses||[]).reduce((a,e)=>a+(parseFloat(e.amount)||0),0);
+        ctx += `${m.month||''}: Income $${inc.toLocaleString()}, Expenses $${exp.toLocaleString()}, Net $${(inc-exp).toLocaleString()}\n`;
+      });
+    }
+
+    return ctx;
+  } catch(e) {
+    return 'User financial data unavailable.';
+  }
+}
+
+async function chatSend() {
+  if (_chatLoading) return;
+  const input = document.getElementById('chat-input');
+  const text = (input.value || '').trim();
+  if (!text) return;
+
+  const apiKey = localStorage.getItem('sft_anthropic_key_v1') || '';
+  if (!apiKey) { _chatRenderMessages(); return; }
+
+  const now = new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
+  _chatHistory.push({ role: 'user', content: text, time: now });
+  input.value = '';
+  input.style.height = 'auto';
+
+  _chatLoading = true;
+  document.getElementById('chat-send-btn').disabled = true;
+  _chatRenderMessages();
+
+  try {
+    const systemPrompt = _chatBuildContext();
+    const apiMessages = _chatHistory
+      .filter(m => m.role === 'user' || m.role === 'assistant')
+      .map(m => ({ role: m.role, content: m.content }));
+
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true'
+      },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-6',
+        max_tokens: 1024,
+        system: systemPrompt,
+        messages: apiMessages
+      })
+    });
+
+    if (!res.ok) {
+      const err = await res.json().catch(()=>({}));
+      throw new Error(err.error?.message || `API error ${res.status}`);
+    }
+
+    const data = await res.json();
+    const reply = data.content?.[0]?.text || 'No response.';
+    const replyTime = new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
+    _chatHistory.push({ role: 'assistant', content: reply, time: replyTime });
+  } catch(e) {
+    const errTime = new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
+    _chatHistory.push({ role: 'assistant', content: `Error: ${e.message}`, time: errTime });
+  }
+
+  _chatLoading = false;
+  document.getElementById('chat-send-btn').disabled = false;
+  _chatRenderMessages();
+}
+</script>
+
+<script>
 // ── PAYSTUB IMPORT ──
 let _psWorkerSet = false;
 let _psBulkResults = [];
@@ -4941,6 +5182,42 @@ function psApply() {
   </div>
   <div class="insights-body" id="insights-body">
     <div style="text-align:center;padding:40px 20px;color:var(--text-3);font-size:13px;">Loading insights...</div>
+  </div>
+</div>
+
+<!-- ── AI CHAT PANEL ── -->
+<div class="chat-backdrop" id="chat-backdrop" onclick="toggleChat()"></div>
+<div class="chat-panel" id="chat-panel">
+  <div class="chat-panel-header">
+    <div style="display:flex;align-items:center;gap:10px;">
+      <div class="chat-panel-icon">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="2.5"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+      </div>
+      <div>
+        <div class="chat-panel-title">5Stack AI</div>
+        <div class="chat-panel-sub">Ask anything about your finances</div>
+      </div>
+    </div>
+    <div style="display:flex;align-items:center;gap:6px;">
+      <button class="insights-refresh" onclick="chatClear()" title="Clear chat">
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 11-2.12-9.36L23 10"/></svg>
+        Clear
+      </button>
+      <button class="chat-panel-close" onclick="toggleChat()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+  </div>
+  <div class="chat-messages" id="chat-messages"></div>
+  <div class="chat-input-area">
+    <div class="chat-input-row">
+      <textarea class="chat-textarea" id="chat-input" placeholder="Ask about your budget, spending, goals…" rows="1"
+        onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();chatSend();}"
+        oninput="this.style.height='auto';this.style.height=Math.min(this.scrollHeight,100)+'px'"></textarea>
+      <button class="chat-send-btn" id="chat-send-btn" onclick="chatSend()" title="Send">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+      </button>
+    </div>
   </div>
 </div>
 
