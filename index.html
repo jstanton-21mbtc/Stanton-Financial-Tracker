@@ -2861,12 +2861,16 @@ function budgetData() {
   return appData.budget;
 }
 
-function getActuals(monthKey, section) {
+function getActuals(monthKey, section, ytd=false) {
   const cats = section === 'income' ? getCats('income') : getCats('expenses');
   const dataKey = section === 'income' ? 'income' : 'expenses';
   const t = {};
   if(monthKey === 'all') {
     cats.forEach(c => { t[c.key] = MK.reduce((s,m)=>s+(parseFloat(appData[dataKey][m][c.key])||0),0); });
+  } else if(ytd) {
+    const idx = MK.indexOf(monthKey);
+    const months = MK.slice(0, idx+1);
+    cats.forEach(c => { t[c.key] = months.reduce((s,m)=>s+(parseFloat(appData[dataKey][m][c.key])||0),0); });
   } else {
     cats.forEach(c => { t[c.key] = parseFloat(appData[dataKey][monthKey][c.key])||0; });
   }
@@ -2879,47 +2883,56 @@ function renderBudget() {
   const sel = document.getElementById('budget-month-select');
   const monthKey = sel ? sel.value : 'all';
   const isYear = monthKey === 'all';
-  const mult = isYear ? 12 : 1;
+  // For a specific month, mult = months elapsed (YTD budget); for full year, mult = 12
+  const monthIndex = isYear ? 12 : MK.indexOf(monthKey) + 1;
+  const mult = monthIndex;
+  const periodLabel = isYear ? 'Full Year' : `Jan\u2013${MONTHS[monthIndex-1]}`;
 
-  const incActuals = getActuals(monthKey, 'income');
-  const expActuals = getActuals(monthKey, 'expenses');
+  const incCats = getCats('income');
+  const expCats = getCats('expenses');
+
+  // YTD actuals for month views; full year sum for year view
+  const incActuals = getActuals(monthKey, 'income', !isYear);
+  const expActuals = getActuals(monthKey, 'expenses', !isYear);
 
   let totalIncBudget=0, totalIncActual=0;
-  getCats('income').forEach(c => {
+  incCats.forEach(c => {
     totalIncBudget  += (parseFloat(bd.income[c.key])||0) * mult;
     totalIncActual  += incActuals[c.key]||0;
   });
 
   let totalExpBudget=0, totalExpActual=0;
-  getCats('expenses').forEach(c => {
+  expCats.forEach(c => {
     totalExpBudget  += (parseFloat(bd.expenses[c.key])||0) * mult;
     totalExpActual  += expActuals[c.key]||0;
   });
 
   const netBudget  = totalIncBudget  - totalExpBudget;
   const netActual  = totalIncActual  - totalExpActual;
-  const expPctUsed = totalExpBudget > 0 ? totalExpActual / totalExpBudget : 0;
   const incPctMet  = totalIncBudget  > 0 ? totalIncActual / totalIncBudget  : 0;
+
+  const goalSub   = isYear ? 'Annual goal' : `YTD goal (${periodLabel})`;
+  const budgetSub = isYear ? 'Annual (12 × monthly)' : `YTD budget (${periodLabel})`;
 
   // KPI cards
   const kpis = [
-    {label:'Income Target',     value:fmt$(totalIncBudget),  sub:isYear?'Annual goal':'Monthly goal',           cls:'white'},
-    {label:'Actual Income',     value:fmt$(totalIncActual),  sub:incPctMet>=1?'Target met!':'vs income target', cls:incPctMet>=1?'positive':totalIncBudget>0?'negative':'white'},
-    {label:'Expense Budget',    value:fmt$(totalExpBudget),  sub:isYear?'Annual (12 × monthly)':'This month',   cls:'white'},
-    {label:'Actual Expenses',   value:fmt$(totalExpActual),  sub:'vs expense budget',                           cls:totalExpActual<=totalExpBudget&&totalExpBudget>0?'positive':totalExpBudget>0?'negative':'white'},
-    {label:'Budgeted Net',      value:(netBudget<0?'-':'')+fmt$(netBudget),  sub:'Income target − Expense budget', cls:netBudget>=0?'positive':'negative'},
-    {label:'Actual Net',        value:(netActual<0?'-':'')+fmt$(netActual),  sub:'Actual income − Actual expenses',cls:netActual>=0?'positive':'negative'},
+    {label:'Income Target',   value:fmt$(totalIncBudget), sub:goalSub,                                         cls:'white'},
+    {label:'Actual Income',   value:fmt$(totalIncActual), sub:incPctMet>=1?'Target met!':'vs income target',   cls:incPctMet>=1?'positive':totalIncBudget>0?'negative':'white'},
+    {label:'Expense Budget',  value:fmt$(totalExpBudget), sub:budgetSub,                                       cls:'white'},
+    {label:'Actual Expenses', value:fmt$(totalExpActual), sub:'vs expense budget',                             cls:totalExpActual<=totalExpBudget&&totalExpBudget>0?'positive':totalExpBudget>0?'negative':'white'},
+    {label:'Budgeted Net',    value:(netBudget<0?'-':'')+fmt$(Math.abs(netBudget)),  sub:'Income target − Expense budget', cls:netBudget>=0?'positive':'negative'},
+    {label:'Actual Net',      value:(netActual<0?'-':'')+fmt$(Math.abs(netActual)),  sub:'Actual income − Actual expenses',cls:netActual>=0?'positive':'negative'},
   ];
   document.getElementById('budget-kpi').innerHTML = kpis.map(k=>`<div class="kpi-card ${k.cls}"><div class="kpi-label">${k.label}</div><div class="kpi-value">${k.value}</div><div class="kpi-sub">${k.sub}</div></div>`).join('');
 
   // Income targets table
-  renderBudgetTable('budget-income-wrap', getCats('income'), bd.income, incActuals, mult, isYear, 'income', 'val-positive', 'more is better');
+  renderBudgetTable('budget-income-wrap', incCats, bd.income, incActuals, mult, isYear, 'income', periodLabel);
 
   // Expense targets table
-  renderBudgetTable('budget-table-wrap', getCats('expenses'), bd.expenses, expActuals, mult, isYear, 'expenses', 'val-negative', 'less is better');
+  renderBudgetTable('budget-table-wrap', expCats, bd.expenses, expActuals, mult, isYear, 'expenses', periodLabel);
 
-  // Category cards (expenses only)
-  document.getElementById('budget-category-cards').innerHTML = getCats('expenses').map(c => {
+  // Category cards (expenses only) — use YTD actuals + YTD budget
+  document.getElementById('budget-category-cards').innerHTML = expCats.map(c => {
     const bRaw = parseFloat(bd.expenses[c.key])||0;
     const b = bRaw * mult, a = expActuals[c.key]||0;
     if(b===0 && a===0) return '';
@@ -2937,19 +2950,21 @@ function renderBudget() {
     </div>`;
   }).join('');
 
-  renderBudgetChart(expActuals, incActuals, mult, bd);
+  renderBudgetChart(expActuals, incActuals, mult, bd, expCats, incCats);
 }
 
-function renderBudgetTable(containerId, cats, budgetSection, actuals, mult, isYear, section, diffCls, hint) {
-  const period = isYear ? '(Year)' : '(Month)';
-  let html = `<table><thead><tr><th>Category</th><th>Monthly Target</th><th>Actual ${period}</th><th>Difference</th></tr></thead><tbody>`;
-  let totB=0, totA=0;
+function renderBudgetTable(containerId, cats, budgetSection, actuals, mult, isYear, section, periodLabel) {
+  const actualHeader = isYear ? 'Actual (Full Year)' : `YTD Actual (${periodLabel})`;
+  const diffHeader   = isYear ? 'Difference' : 'YTD Difference';
+  let html = `<table><thead><tr><th>Category</th><th>Monthly Target</th><th>${actualHeader}</th><th>${diffHeader}</th></tr></thead><tbody>`;
+  let totBMonthly=0, totBYTD=0, totA=0;
   cats.forEach(c => {
     const bRaw = parseFloat(budgetSection[c.key])||0;
-    const b = bRaw*mult, a = actuals[c.key]||0;
-    totB+=b; totA+=a;
-    const diff = section==='income' ? a-b : b-a;
-    const diffHtml = b>0||a>0 ? `<span class="${diff>=0?'val-positive':'val-negative'}">${diff>=0?'+':''}${fmt$(diff)}</span>` : '<span class="val-neutral">—</span>';
+    const bYTD = bRaw * mult; // YTD or annual budget for this category
+    const a = actuals[c.key]||0;
+    totBMonthly += bRaw; totBYTD += bYTD; totA += a;
+    const diff = section==='income' ? a-bYTD : bYTD-a;
+    const diffHtml = bYTD>0||a>0 ? `<span class="${diff>=0?'val-positive':'val-negative'}">${diff>=0?'+':''}${fmt$(diff)}</span>` : '<span class="val-neutral">—</span>';
     html += `<tr>
       <td>${c.label}</td>
       <td><input type="number" step="1" min="0" value="${bRaw>0?bRaw:''}" placeholder="$0" onchange="updateBudget('${section}','${c.key}',this.value)"/></td>
@@ -2957,15 +2972,15 @@ function renderBudgetTable(containerId, cats, budgetSection, actuals, mult, isYe
       <td>${diffHtml}</td>
     </tr>`;
   });
-  const totDiff = section==='income' ? totA-totB : totB-totA;
-  html += `<tr class="total-row"><td>Total</td><td><strong>${fmt$(totB)}</strong></td><td><strong>${fmt$(totA)}</strong></td><td><span class="${totDiff>=0?'val-positive':'val-negative'}">${totDiff>=0?'+':''}${fmt$(totDiff)}</span></td></tr>`;
+  const totDiff = section==='income' ? totA-totBYTD : totBYTD-totA;
+  html += `<tr class="total-row"><td>Total</td><td><strong>${fmt$(totBMonthly)}<span style="font-size:10px;color:var(--text-3);font-weight:400;display:block;">/mo</span></strong></td><td><strong>${fmt$(totA)}</strong></td><td><span class="${totDiff>=0?'val-positive':'val-negative'}">${totDiff>=0?'+':''}${fmt$(totDiff)}</span></td></tr>`;
   html += '</tbody></table>';
   document.getElementById(containerId).innerHTML = html;
 }
 
-function renderBudgetChart(expActuals, incActuals, mult, bd) {
-  const expCats = getCats('expenses').filter(c => (parseFloat(bd.expenses[c.key])||0)*mult>0 || expActuals[c.key]>0);
-  const incCats = getCats('income').filter(c =>  (parseFloat(bd.income[c.key])||0)*mult>0  || incActuals[c.key]>0);
+function renderBudgetChart(expActuals, incActuals, mult, bd, expCats, incCats) {
+  expCats = expCats.filter(c => (parseFloat(bd.expenses[c.key])||0)*mult>0 || expActuals[c.key]>0);
+  incCats = incCats.filter(c =>  (parseFloat(bd.income[c.key])||0)*mult>0  || incActuals[c.key]>0);
   const allCats = [
     ...incCats.map(c=>({label:'↑ '+c.label, budget:(parseFloat(bd.income[c.key])||0)*mult, actual:incActuals[c.key]||0, type:'income'})),
     ...expCats.map(c=>({label:'↓ '+c.label, budget:(parseFloat(bd.expenses[c.key])||0)*mult, actual:expActuals[c.key]||0, type:'expense'})),
