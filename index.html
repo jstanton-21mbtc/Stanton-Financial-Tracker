@@ -2121,6 +2121,9 @@ function _openApp() {
     savings:     JSON.parse(JSON.stringify(SAVINGS_CATS)),
     investments: JSON.parse(JSON.stringify(INVEST_CATS))
   };
+  // Migrate: round all stored numeric values to 2 decimal places
+  function roundObjVals(obj) { if(obj&&typeof obj==='object') Object.keys(obj).forEach(k=>{ if(typeof obj[k]==='number') obj[k]=Math.round(obj[k]*100)/100; else if(typeof obj[k]==='object') roundObjVals(obj[k]); }); }
+  ['income','expenses','savings','investments','deductions','balances','netWorth','paystubYtd'].forEach(s=>roundObjVals(appData[s]));
   // Migrate: ensure commission category exists in income
   if(appData.customCats && appData.customCats.income && !appData.customCats.income.find(c=>c.key==='commission')){
     const salIdx = appData.customCats.income.findIndex(c=>c.key==='salary');
@@ -2378,6 +2381,7 @@ function countProfitable() { return ytdMonths().filter(m=>monthPL(m)>0).length; 
 function expenseBreakdown(){ const t={}; getCats('expenses').forEach(c=>{t[c.label]=MK.reduce((a,m)=>a+(parseFloat(appData.expenses[m][c.key])||0),0);}); return t; }
 
 // ── FORMATTING ──
+function r2(v)       { return Math.round((parseFloat(v)||0) * 100) / 100; }
 function fmt$(v)     { if(v==null) return '—'; return '$'+Math.abs(v).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}); }
 function fmtPct(v)   { if(v==null) return '—'; return (v*100).toFixed(1)+'%'; }
 function fmtSign$(v) { if(v==null) return '<span class="val-neutral">—</span>'; return `<span class="${v>=0?'val-positive':'val-negative'}">${v<0?'-':''}${fmt$(v)}</span>`; }
@@ -2429,7 +2433,7 @@ function renderDataTable(containerId,cats,sectionKey){
     const ct=MK.reduce((a,m)=>a+(parseFloat(appData[sectionKey][m][cat.key])||0),0);
     const nz=MK.filter(m=>(parseFloat(appData[sectionKey][m][cat.key])||0)>0).length||1;
     html+=`<tr><td><span class="cat-label" ondblclick="startRenameCat(this,'${sectionKey}','${esc(cat.key)}')" title="Double-click to rename">${esc(cat.label)}</span></td>`;
-    MK.forEach(mk=>{const v=appData[sectionKey][mk][cat.key]||0;html+=`<td><input type="number" step="0.01" value="${v>0?v:''}" placeholder="0" onchange="updateValue('${sectionKey}','${mk}','${cat.key}',this.value)"/></td>`;});
+    MK.forEach(mk=>{const v=r2(appData[sectionKey][mk][cat.key]||0);html+=`<td><input type="number" step="0.01" value="${v>0?v:''}" placeholder="0" onchange="updateValue('${sectionKey}','${mk}','${cat.key}',this.value)"/></td>`;});
     html+=`<td><strong>${fmt$(ct)}</strong></td><td class="val-neutral">${ct>0?fmt$(ct/nz):'—'}</td><td class="cat-action-col"><button class="cat-delete-btn" onclick="deleteCat('${sectionKey}','${esc(cat.key)}')" title="Delete row">×</button></td></tr>`;
   });
   html+=`<tr class="total-row"><td>Total</td>`;
@@ -2441,7 +2445,7 @@ function renderDataTable(containerId,cats,sectionKey){
   document.getElementById(containerId).innerHTML=html;
 }
 
-function updateValue(sk,mk,ck,val){ appData[sk][mk][ck]=parseFloat(val)||0; saveData(); refreshAll(); }
+function updateValue(sk,mk,ck,val){ appData[sk][mk][ck]=r2(val); saveData(); refreshAll(); }
 
 // ── CATEGORY MANAGEMENT ──
 function startRenameCat(el, sectionKey, key) {
@@ -2502,11 +2506,11 @@ function renderPL(){
       html += `<tr><td>Gross Income</td>${MK.map(m=>`<td>${monthIncome(m)>0?fmt$(monthIncome(m)):'<span class="val-neutral">—</span>'}</td>`).join('')}<td>${fmt$(annualTotal(monthIncome))}</td></tr>`;
       // Taxes Withheld — editable inputs
       html += `<tr><td style="color:var(--red)">— Taxes Withheld <span style="font-size:10px;color:var(--text-3);font-weight:400;">(editable)</span></td>`;
-      html += MK.map(m=>`<td><input type="number" step="0.01" min="0" value="${monthTaxes(m)||''}" placeholder="0.00" onchange="updateNetIncomeTax('${m}',this.value)" style="color:var(--red);" /></td>`).join('');
+      html += MK.map(m=>`<td><input type="number" step="0.01" min="0" value="${r2(monthTaxes(m))||''}" placeholder="0.00" onchange="updateNetIncomeTax('${m}',this.value)" style="color:var(--red);" /></td>`).join('');
       html += `<td><span class="val-negative">${totalTaxesAll>0?'-'+fmt$(totalTaxesAll):'—'}</span></td></tr>`;
       // 401k — editable inputs
       html += `<tr><td style="color:var(--yellow)">— 401(k) Contributions <span style="font-size:10px;color:var(--text-3);font-weight:400;">(editable)</span></td>`;
-      html += MK.map(m=>`<td><input type="number" step="0.01" min="0" value="${(sav[m]&&sav[m].k401)||''}" placeholder="0.00" onchange="updateNetIncome401k('${m}',this.value)" style="color:var(--yellow);" /></td>`).join('');
+      html += MK.map(m=>`<td><input type="number" step="0.01" min="0" value="${r2((sav[m]&&sav[m].k401)||0)||''}" placeholder="0.00" onchange="updateNetIncome401k('${m}',this.value)" style="color:var(--yellow);" /></td>`).join('');
       html += `<td><span style="color:var(--yellow)">${total401k>0?'-'+fmt$(total401k):'—'}</span></td></tr>`;
       // Net take-home (computed, read-only)
       html += `<tr class="total-row"><td>Net Take-Home Income</td>${MK.map(m=>{const net=monthIncome(m)-monthTaxes(m)-((sav[m]&&sav[m].k401)||0);return`<td>${net!==0||monthIncome(m)>0?fmt$(net):'—'}</td>`;}).join('')}<td>${fmt$(netTotal)}</td></tr>`;
@@ -2603,7 +2607,7 @@ function renderBalances(containerId, cats, section){
   </tr></thead><tbody>`;
   cats.forEach(cat=>{
     const ytd=MK.reduce((a,m)=>a+(parseFloat(appData[section][m][cat.key])||0),0);
-    const current=parseFloat(bal[cat.key])||0;
+    const current=r2(bal[cat.key]||0);
     const gain=current-ytd;
     const ret=ytd>0?(gain/ytd):null;
     totalYTD+=ytd; totalBal+=current;
@@ -2632,20 +2636,20 @@ function renderBalances(containerId, cats, section){
 function updateNetIncomeTax(month, val) {
   if (!appData.deductions) appData.deductions = {};
   if (!appData.deductions[month]) appData.deductions[month] = {...ZERO_DED};
-  appData.deductions[month].totalTaxes = parseFloat(val) || 0;
+  appData.deductions[month].totalTaxes = r2(val);
   saveData(); renderPL();
 }
 
 function updateNetIncome401k(month, val) {
   if (!appData.savings[month]) appData.savings[month] = {...ZERO_SAV};
-  appData.savings[month].k401 = parseFloat(val) || 0;
+  appData.savings[month].k401 = r2(val);
   saveData(); renderPL(); renderSavings();
 }
 
 function updateBalance(section,key,val){
   if(!appData.balances) appData.balances={savings:{},investments:{}};
   if(!appData.balances[section]) appData.balances[section]={};
-  appData.balances[section][key]=parseFloat(val)||0;
+  appData.balances[section][key]=r2(val);
   saveData();
   renderBalances(section==='savings'?'savings-balances-wrap':'investments-balances-wrap', getCats(section), section);
 }
@@ -2933,7 +2937,7 @@ function renderBudget() {
 
   // Category cards (expenses only) — use YTD actuals + YTD budget
   document.getElementById('budget-category-cards').innerHTML = expCats.map(c => {
-    const bRaw = parseFloat(bd.expenses[c.key])||0;
+    const bRaw = r2(bd.expenses[c.key]||0);
     const b = bRaw * mult, a = expActuals[c.key]||0;
     if(b===0 && a===0) return '';
     const pct = b>0 ? (a/b)*100 : (a>0?100:0);
@@ -2959,7 +2963,7 @@ function renderBudgetTable(containerId, cats, budgetSection, actuals, mult, isYe
   let html = `<table><thead><tr><th>Category</th><th>Monthly Target</th><th>${actualHeader}</th><th>${diffHeader}</th></tr></thead><tbody>`;
   let totBMonthly=0, totBYTD=0, totA=0;
   cats.forEach(c => {
-    const bRaw = parseFloat(budgetSection[c.key])||0;
+    const bRaw = r2(budgetSection[c.key]||0);
     const bYTD = bRaw * mult; // YTD or annual budget for this category
     const a = actuals[c.key]||0;
     totBMonthly += bRaw; totBYTD += bYTD; totA += a;
@@ -3018,7 +3022,7 @@ function renderBudgetChart(expActuals, incActuals, mult, bd, expCats, incCats) {
 
 function updateBudget(section, key, val) {
   const bd = budgetData();
-  bd[section][key] = parseFloat(val)||0;
+  bd[section][key] = r2(val);
   saveData(); renderBudget();
 }
 
@@ -3079,7 +3083,7 @@ function buildNwTable(cats, section, total, accentColor) {
   let lastGroup='';
   let html=`<table><thead><tr><th>Category</th><th style="min-width:155px">Current Value</th><th>% of Total</th></tr></thead><tbody>`;
   cats.forEach(cat=>{
-    const val=parseFloat(data[cat.key])||0;
+    const val=r2(data[cat.key]||0);
     const pct=total>0?((val/total)*100):0;
     if(cat.group!==lastGroup){
       html+=`<tr><td colspan="3" style="background:var(--elevated);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--text-3);padding:8px 14px;">${cat.group}</td></tr>`;
@@ -3097,7 +3101,7 @@ function buildNwTable(cats, section, total, accentColor) {
 
 function updateNW(section,key,val){
   if(!appData.netWorth) appData.netWorth={assets:{},liabilities:{},history:[]};
-  appData.netWorth[section][key]=parseFloat(val)||0;
+  appData.netWorth[section][key]=r2(val);
   saveData(); renderNetWorth();
 }
 
@@ -3200,7 +3204,7 @@ function renderGoals(){
   html+='</tbody></table>';
   document.getElementById('goals-wrap').innerHTML=html;
 }
-function updateGoal(i,f,v){ appData.goals[i][f]=(f==='target'||f==='current')?(parseFloat(v)||null):v; saveData(); renderGoals(); }
+function updateGoal(i,f,v){ appData.goals[i][f]=(f==='target'||f==='current')?(r2(v)||null):v; saveData(); renderGoals(); }
 function removeGoal(i){ if(confirm('Remove this goal?')){ appData.goals.splice(i,1); saveData(); renderGoals(); } }
 function openAddGoalModal(){
   document.getElementById('goal-modal-title').textContent='Add a Goal';
@@ -4765,7 +4769,7 @@ function psBulkUpdateRow(i) {
 
 function psBulkRowHTML(r, i) {
   const monthOpts = MK.map((mk, mi) => `<option value="${mk}" ${mk===r.month?'selected':''}>${MONTH_SHORT[mi]}</option>`).join('');
-  const numInput  = (field, val) => `<input type="number" step="0.01" min="0" value="${val||''}" placeholder="0" oninput="psBulkEdit(${i},'${field}',this.value)" style="width:80px">`;
+  const numInput  = (field, val) => `<input type="number" step="0.01" min="0" value="${r2(val||0)||''}" placeholder="0" oninput="psBulkEdit(${i},'${field}',this.value)" style="width:80px">`;
   const statusHTML = r.status === 'ok'         ? '<span class="ps-bulk-status ok">✓ Parsed</span>'
                    : r.status === 'processing'  ? '<span class="ps-bulk-status spin">⏳ Reading…</span>'
                    : r.status === 'err'         ? `<span class="ps-bulk-status err" title="${esc(r.error)}">⚠ Manual</span>`
@@ -4788,7 +4792,7 @@ function psBulkRowHTML(r, i) {
 
 function psBulkEdit(i, field, val) {
   if (!_psBulkResults[i]) return;
-  _psBulkResults[i][field] = field === 'month' ? val : (parseFloat(val) || 0);
+  _psBulkResults[i][field] = field === 'month' ? val : r2(val);
 }
 
 function psBulkApply() {
@@ -4798,19 +4802,19 @@ function psBulkApply() {
   _psBulkResults.forEach(r => {
     const month = r.month;
     if (!appData.income[month]) appData.income[month] = {...ZERO_INC};
-    if (r.salary     > 0) appData.income[month].salary     = (appData.income[month].salary || 0) + r.salary;
-    if (r.commission > 0) appData.income[month].commission = (appData.income[month].commission || 0) + r.commission;
+    if (r.salary     > 0) appData.income[month].salary     = r2((appData.income[month].salary || 0) + r.salary);
+    if (r.commission > 0) appData.income[month].commission = r2((appData.income[month].commission || 0) + r.commission);
     if (!appData.deductions) appData.deductions = {};
     if (!appData.deductions[month]) appData.deductions[month] = {...ZERO_DED};
-    if (r.taxFedPeriod   > 0) appData.deductions[month].taxesFed   = (appData.deductions[month].taxesFed   || 0) + r.taxFedPeriod;
-    if (r.taxStatePeriod > 0) appData.deductions[month].taxesState = (appData.deductions[month].taxesState || 0) + r.taxStatePeriod;
-    if (r.taxFicaPeriod  > 0) appData.deductions[month].taxesFica  = (appData.deductions[month].taxesFica  || 0) + r.taxFicaPeriod;
-    if (r.taxMedPeriod   > 0) appData.deductions[month].taxesMed   = (appData.deductions[month].taxesMed   || 0) + r.taxMedPeriod;
-    const _bt = r.taxFedPeriod + r.taxStatePeriod + r.taxFicaPeriod + r.taxMedPeriod;
-    if (_bt > 0) appData.deductions[month].totalTaxes = (appData.deductions[month].totalTaxes || 0) + _bt;
+    if (r.taxFedPeriod   > 0) appData.deductions[month].taxesFed   = r2((appData.deductions[month].taxesFed   || 0) + r.taxFedPeriod);
+    if (r.taxStatePeriod > 0) appData.deductions[month].taxesState = r2((appData.deductions[month].taxesState || 0) + r.taxStatePeriod);
+    if (r.taxFicaPeriod  > 0) appData.deductions[month].taxesFica  = r2((appData.deductions[month].taxesFica  || 0) + r.taxFicaPeriod);
+    if (r.taxMedPeriod   > 0) appData.deductions[month].taxesMed   = r2((appData.deductions[month].taxesMed   || 0) + r.taxMedPeriod);
+    const _bt = r2(r.taxFedPeriod + r.taxStatePeriod + r.taxFicaPeriod + r.taxMedPeriod);
+    if (_bt > 0) appData.deductions[month].totalTaxes = r2((appData.deductions[month].totalTaxes || 0) + _bt);
     if (r.k401Period > 0) {
       if (!appData.savings[month]) appData.savings[month] = {...ZERO_SAV};
-      appData.savings[month].k401 = (appData.savings[month].k401 || 0) + r.k401Period;
+      appData.savings[month].k401 = r2((appData.savings[month].k401 || 0) + r.k401Period);
     }
   });
 
@@ -4819,11 +4823,11 @@ function psBulkApply() {
   const sorted  = [..._psBulkResults].sort((a, b) => moOrder.indexOf(b.month) - moOrder.indexOf(a.month));
   const latest  = sorted[0];
   if (!appData.paystubYtd) appData.paystubYtd = {};
-  if (latest.k401Ytd    > 0) appData.paystubYtd.k401      = latest.k401Ytd;
-  if (latest.taxFedYtd  > 0) appData.paystubYtd.taxesFed  = latest.taxFedYtd;
-  if (latest.taxStateYtd> 0) appData.paystubYtd.taxesState= latest.taxStateYtd;
-  if (latest.taxFicaYtd > 0) appData.paystubYtd.taxesFica = latest.taxFicaYtd;
-  if (latest.taxMedYtd  > 0) appData.paystubYtd.taxesMed  = latest.taxMedYtd;
+  if (latest.k401Ytd    > 0) appData.paystubYtd.k401      = r2(latest.k401Ytd);
+  if (latest.taxFedYtd  > 0) appData.paystubYtd.taxesFed  = r2(latest.taxFedYtd);
+  if (latest.taxStateYtd> 0) appData.paystubYtd.taxesState= r2(latest.taxStateYtd);
+  if (latest.taxFicaYtd > 0) appData.paystubYtd.taxesFica = r2(latest.taxFicaYtd);
+  if (latest.taxMedYtd  > 0) appData.paystubYtd.taxesMed  = r2(latest.taxMedYtd);
 
   saveData();
   refreshAll();
