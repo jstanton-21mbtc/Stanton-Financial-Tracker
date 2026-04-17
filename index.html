@@ -1340,10 +1340,15 @@
               <div><div class="settings-card-title">Security</div><div class="settings-card-sub">Update your password</div></div>
             </div>
             <div class="settings-card-body">
+              <div class="settings-field" id="sec-username-wrap">
+                <label>Change Username</label>
+                <input type="text" id="sec-username" placeholder="New username" autocomplete="username" />
+                <div class="field-hint">Leave blank to keep your current username.</div>
+              </div>
               <div class="settings-field">
                 <label>New Password</label>
                 <input type="password" id="sec-new" placeholder="Choose a new password" />
-                <div class="field-hint">Minimum 6 characters.</div>
+                <div class="field-hint">Leave blank to keep your current password.</div>
               </div>
               <div class="settings-field">
                 <label>Confirm New Password</label>
@@ -1351,7 +1356,7 @@
               </div>
               <div class="sec-error" id="sec-error"></div>
               <div class="settings-save-row">
-                <button class="btn btn-primary" style="border-radius:8px" onclick="savePassword()">Update Password</button>
+                <button class="btn btn-primary" style="border-radius:8px" onclick="savePassword()">Update Credentials</button>
                 <div class="settings-success" id="sec-success">
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> Updated
                 </div>
@@ -1996,10 +2001,12 @@ function saveData() {
 }
 
 // ── LOCAL AUTH ──
-const PW_KEY = 'sft_stanton_pw_v1';
-function getStoredHash() { return localStorage.getItem(PW_KEY); }
-function hashPw(pw)       { return btoa(unescape(encodeURIComponent(pw))); }
-function isFirstTime()    { return !getStoredHash(); }
+const PW_KEY       = 'sft_stanton_pw_v1';
+const USERNAME_KEY = 'sft_stanton_user_v1';
+function getStoredHash()     { return localStorage.getItem(PW_KEY); }
+function getStoredUsername() { return localStorage.getItem(USERNAME_KEY); }
+function hashPw(pw)          { return btoa(unescape(encodeURIComponent(pw))); }
+function isFirstTime()       { return !getStoredHash(); }
 
 function _getJamesStantonData() {
   const R_EXP = {mortgage:2640.85,vehicle:750,insurance:0,phone:25,electric:250,propane:0,water:0,tv:220.58,groceries:0,dining:0,gas:0,creditCard:0,subscriptions:0,health:0,other:0};
@@ -2164,16 +2171,17 @@ function initLoginScreen() {
   document.getElementById('login-input').classList.remove('error');
 
   if (!SUPABASE_CONFIGURED) {
-    // Local mode — password only, no username field
-    document.getElementById('login-email-field').style.display = 'none';
+    // Local mode — username + password
+    document.getElementById('login-email-field').style.display = '';
     document.getElementById('login-toggle').style.display = 'none';
     document.getElementById('login-title').textContent = '5Stack.ai';
     if (isFirstTime()) {
-      document.getElementById('login-subtitle').textContent = 'Welcome! Create a password to get started.';
-      document.getElementById('login-pw-label').textContent = 'New Password';
+      document.getElementById('login-subtitle').textContent = 'Create a username and password to get started.';
+      document.getElementById('login-email').placeholder    = 'Choose a username';
+      document.getElementById('login-pw-label').textContent = 'Password';
       document.getElementById('login-input').placeholder    = 'Choose a password';
       document.getElementById('login-confirm-field').style.display = '';
-      document.getElementById('login-btn').textContent      = 'Create Password';
+      document.getElementById('login-btn').textContent      = 'Create Account';
       document.getElementById('login-hint').style.display   = '';
       // Pulse the View Demo button to catch the first-timer's eye
       setTimeout(() => {
@@ -2184,7 +2192,8 @@ function initLoginScreen() {
         }
       }, 900);
     } else {
-      document.getElementById('login-subtitle').textContent = 'Enter your password to continue.';
+      document.getElementById('login-subtitle').textContent = 'Enter your username and password to continue.';
+      document.getElementById('login-email').placeholder    = 'Your username';
       document.getElementById('login-pw-label').textContent = 'Password';
       document.getElementById('login-input').placeholder    = 'Enter password';
       document.getElementById('login-confirm-field').style.display = 'none';
@@ -2232,17 +2241,29 @@ async function submitLogin() {
   if (!password) { error.textContent='Please enter your password.'; error.classList.add('show'); return; }
 
   if (!SUPABASE_CONFIGURED) {
-    // Local password auth
+    // Local auth — username + password
+    const username = document.getElementById('login-email').value.trim().toLowerCase().replace(/\s+/g,'');
     if (isFirstTime()) {
+      if (!username) { error.textContent='Please choose a username.'; error.classList.add('show'); return; }
       if (password.length < 4) { error.textContent='Password must be at least 4 characters.'; error.classList.add('show'); return; }
       if (password !== confirm) { error.textContent='Passwords do not match.'; error.classList.add('show'); return; }
+      localStorage.setItem(USERNAME_KEY, username);
       localStorage.setItem(PW_KEY, hashPw(password));
       _openApp();
     } else {
+      const storedUser = getStoredUsername();
+      // If a username is stored, enforce it; otherwise allow login by password only (migration)
+      if (storedUser && username !== storedUser) {
+        error.textContent='Incorrect username or password.';
+        error.classList.add('show');
+        return;
+      }
       if (hashPw(password) === getStoredHash()) {
+        // Save username if migrating from password-only
+        if (!storedUser && username) localStorage.setItem(USERNAME_KEY, username);
         _openApp();
       } else {
-        error.textContent='Incorrect password. Please try again.';
+        error.textContent='Incorrect username or password.';
         document.getElementById('login-input').classList.add('error');
         error.classList.add('show');
       }
@@ -3289,6 +3310,10 @@ function renderSettings(){
   const sz=document.getElementById('storage-size');
   if(sz){try{const b=new Blob([JSON.stringify(localStorage)]).size;sz.textContent=b<1024?b+' B':(b/1024).toFixed(1)+' KB';}catch{sz.textContent='Unknown';}}
   ['sec-new','sec-confirm'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+  const unWrap=document.getElementById('sec-username-wrap');
+  const unEl=document.getElementById('sec-username');
+  if(unWrap) unWrap.style.display=SUPABASE_CONFIGURED?'none':'';
+  if(unEl) unEl.value='';
   const se=document.getElementById('sec-error'),so=document.getElementById('sec-success');
   if(se)se.classList.remove('show');if(so)so.classList.remove('show');
   const ak=document.getElementById('settings-anthropic-key');
@@ -3309,14 +3334,23 @@ async function savePassword(){
   const np=document.getElementById('sec-new').value,cf=document.getElementById('sec-confirm').value;
   const err=document.getElementById('sec-error'),ok=document.getElementById('sec-success');
   err.classList.remove('show');ok.classList.remove('show');
-  if(np.length<4){err.textContent='New password must be at least 4 characters.';err.classList.add('show');return;}
-  if(np!==cf){err.textContent='Passwords do not match.';err.classList.add('show');return;}
   if(!SUPABASE_CONFIGURED){
-    localStorage.setItem(PW_KEY,hashPw(np));
+    const newUser=(document.getElementById('sec-username')||{}).value?.trim().toLowerCase().replace(/\s+/g,'')||'';
+    const changed=[];
+    if(newUser){localStorage.setItem(USERNAME_KEY,newUser);changed.push('username');}
+    if(np){
+      if(np.length<4){err.textContent='New password must be at least 4 characters.';err.classList.add('show');return;}
+      if(np!==cf){err.textContent='Passwords do not match.';err.classList.add('show');return;}
+      localStorage.setItem(PW_KEY,hashPw(np));changed.push('password');
+    }
+    if(!changed.length){err.textContent='Enter a new username or password to update.';err.classList.add('show');return;}
     ['sec-new','sec-confirm'].forEach(id=>document.getElementById(id).value='');
+    const unEl=document.getElementById('sec-username');if(unEl)unEl.value='';
     ok.classList.add('show');setTimeout(()=>ok.classList.remove('show'),2500);
     return;
   }
+  if(np.length<4){err.textContent='New password must be at least 4 characters.';err.classList.add('show');return;}
+  if(np!==cf){err.textContent='Passwords do not match.';err.classList.add('show');return;}
   const { error } = await _supabase.auth.updateUser({ password: np });
   if(error){err.textContent=error.message;err.classList.add('show');return;}
   ['sec-new','sec-confirm'].forEach(id=>document.getElementById(id).value='');
