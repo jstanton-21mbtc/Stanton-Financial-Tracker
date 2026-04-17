@@ -2155,7 +2155,9 @@ function _openApp() {
   isDemoMode = false;
   document.getElementById('demo-mode-banner').style.display = 'none';
   const stored = loadDataLocal();
-  appData = (!_dataIsBlank(stored) ? stored : null) || _getJamesStantonData();
+  const needsRestore = _dataIsBlank(stored);
+  appData = (!needsRestore ? stored : null) || _getJamesStantonData();
+  if (needsRestore) { localStorage.setItem(STORAGE_KEY, JSON.stringify(appData)); }
   if(!appData.meta) appData.meta={name:'',year:new Date().getFullYear().toString(),currency:'$'};
   if(!appData.notes) appData.notes=Object.fromEntries(MK.map(m=>[m,{wins:'',challenges:'',actions:'',notes:''}]));
   if(!appData.balances) appData.balances={savings:{},investments:{}};
@@ -2211,19 +2213,17 @@ function initLoginScreen() {
   document.getElementById('login-input').classList.remove('error');
 
   if (!SUPABASE_CONFIGURED) {
-    // Local mode — username + password
-    document.getElementById('login-email-field').style.display = '';
+    // Local mode — password only
+    document.getElementById('login-email-field').style.display = 'none';
     document.getElementById('login-toggle').style.display = 'none';
     document.getElementById('login-title').textContent = '5Stack.ai';
     if (isFirstTime()) {
-      document.getElementById('login-subtitle').textContent = 'Create a username and password to get started.';
-      document.getElementById('login-email').placeholder    = 'Choose a username';
-      document.getElementById('login-pw-label').textContent = 'Password';
+      document.getElementById('login-subtitle').textContent = 'Welcome! Create a password to get started.';
+      document.getElementById('login-pw-label').textContent = 'New Password';
       document.getElementById('login-input').placeholder    = 'Choose a password';
       document.getElementById('login-confirm-field').style.display = '';
-      document.getElementById('login-btn').textContent      = 'Create Account';
+      document.getElementById('login-btn').textContent      = 'Create Password';
       document.getElementById('login-hint').style.display   = '';
-      // Pulse the View Demo button to catch the first-timer's eye
       setTimeout(() => {
         const btn = document.getElementById('demo-btn');
         if (btn) {
@@ -2232,8 +2232,7 @@ function initLoginScreen() {
         }
       }, 900);
     } else {
-      document.getElementById('login-subtitle').textContent = 'Enter your username and password to continue.';
-      document.getElementById('login-email').placeholder    = 'Your username';
+      document.getElementById('login-subtitle').textContent = 'Enter your password to continue.';
       document.getElementById('login-pw-label').textContent = 'Password';
       document.getElementById('login-input').placeholder    = 'Enter password';
       document.getElementById('login-confirm-field').style.display = 'none';
@@ -2281,29 +2280,17 @@ async function submitLogin() {
   if (!password) { error.textContent='Please enter your password.'; error.classList.add('show'); return; }
 
   if (!SUPABASE_CONFIGURED) {
-    // Local auth — username + password
-    const username = document.getElementById('login-email').value.trim().toLowerCase().replace(/\s+/g,'');
+    // Local auth — password only
     if (isFirstTime()) {
-      if (!username) { error.textContent='Please choose a username.'; error.classList.add('show'); return; }
       if (password.length < 4) { error.textContent='Password must be at least 4 characters.'; error.classList.add('show'); return; }
       if (password !== confirm) { error.textContent='Passwords do not match.'; error.classList.add('show'); return; }
-      localStorage.setItem(USERNAME_KEY, username);
       localStorage.setItem(PW_KEY, hashPw(password));
       _openApp();
     } else {
-      const storedUser = getStoredUsername();
-      // If a username is stored, enforce it; otherwise allow login by password only (migration)
-      if (storedUser && username !== storedUser) {
-        error.textContent='Incorrect username or password.';
-        error.classList.add('show');
-        return;
-      }
       if (hashPw(password) === getStoredHash()) {
-        // Save username if migrating from password-only
-        if (!storedUser && username) localStorage.setItem(USERNAME_KEY, username);
         _openApp();
       } else {
-        error.textContent='Incorrect username or password.';
+        error.textContent='Incorrect password. Please try again.';
         document.getElementById('login-input').classList.add('error');
         error.classList.add('show');
       }
