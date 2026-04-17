@@ -2320,16 +2320,36 @@ async function submitLogin() {
     btn.textContent = 'Creating...';
     if (password.length < 6) { error.textContent='Password must be at least 6 characters.'; error.classList.add('show'); btn.textContent='Create Account'; btn.disabled=false; return; }
     if (password !== confirm)  { error.textContent='Passwords do not match.'; error.classList.add('show'); btn.textContent='Create Account'; btn.disabled=false; return; }
-    const { error: err } = await _supabase.auth.signUp({ email, password });
-    if (err) { error.textContent=err.message; error.classList.add('show'); btn.textContent='Create Account'; btn.disabled=false; return; }
-    error.textContent = 'Account created! Check your email to confirm, then sign in.';
-    error.style.color = 'var(--green)';
-    error.classList.add('show');
+    const { data: signUpData, error: err } = await _supabase.auth.signUp({ email, password });
+    if (err) {
+      // "User already registered" — switch to sign-in
+      if (err.message.toLowerCase().includes('already registered') || err.message.toLowerCase().includes('already been registered')) {
+        error.textContent='Account already exists. Signing you in...'; error.style.color='var(--green)'; error.classList.add('show');
+        const { error: siErr } = await _supabase.auth.signInWithPassword({ email, password });
+        if (siErr) { error.textContent=siErr.message; error.style.color=''; error.classList.add('show'); btn.textContent='Create Account'; btn.disabled=false; return; }
+        btn.textContent='Create Account'; btn.disabled=false; return;
+      }
+      error.textContent=err.message; error.classList.add('show'); btn.textContent='Create Account'; btn.disabled=false; return;
+    }
+    // If session returned immediately (email confirmation disabled), onAuthStateChange handles it
+    if (!signUpData.session) {
+      error.textContent='Account created! Signing you in...'; error.style.color='var(--green)'; error.classList.add('show');
+    }
     btn.textContent='Create Account'; btn.disabled=false;
   } else {
     btn.textContent = 'Signing in...';
     const { error: err } = await _supabase.auth.signInWithPassword({ email, password });
-    if (err) { error.textContent=err.message; error.classList.add('show'); document.getElementById('login-input').classList.add('error'); btn.textContent='Sign In'; btn.disabled=false; return; }
+    if (err) {
+      // Account exists but is unconfirmed — try re-registering to clear the state
+      if (err.message.toLowerCase().includes('not confirmed')) {
+        const { data: reData, error: reErr } = await _supabase.auth.signUp({ email, password });
+        if (!reErr && reData.session) { btn.textContent='Sign In'; btn.disabled=false; return; }
+        error.textContent='Account not yet confirmed. If this persists, use "Create one" to set up fresh.';
+      } else {
+        error.textContent=err.message;
+      }
+      error.classList.add('show'); document.getElementById('login-input').classList.add('error'); btn.textContent='Sign In'; btn.disabled=false; return;
+    }
     btn.textContent='Sign In'; btn.disabled=false;
   }
 }
