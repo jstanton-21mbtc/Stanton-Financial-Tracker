@@ -2155,7 +2155,7 @@ function _openApp() {
   isDemoMode = false;
   document.getElementById('demo-mode-banner').style.display = 'none';
   const stored = loadDataLocal();
-  appData = stored || getDefaultData();
+  appData = (!_dataIsBlank(stored) ? stored : null) || _getJamesStantonData();
   if(!appData.meta) appData.meta={name:'',year:new Date().getFullYear().toString(),currency:'$'};
   if(!appData.notes) appData.notes=Object.fromEntries(MK.map(m=>[m,{wins:'',challenges:'',actions:'',notes:''}]));
   if(!appData.balances) appData.balances={savings:{},investments:{}};
