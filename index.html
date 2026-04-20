@@ -5613,18 +5613,17 @@ function psApply() {
           <thead>
             <tr>
               <th style="width:36px;"></th>
-              <th style="width:90px;">Date</th>
+              <th style="width:98px;">Date</th>
               <th>Description</th>
-              <th style="width:80px;text-align:right;">Amount</th>
-              <th style="width:110px;">Type</th>
-              <th style="width:180px;">Category</th>
+              <th style="width:88px;text-align:right;">Amount</th>
+              <th style="width:195px;">Category</th>
             </tr>
           </thead>
           <tbody id="bs-tbody"></tbody>
         </table>
       </div>
       <div style="font-size:11px;color:var(--text-3);margin-top:8px;line-height:1.6;">
-        Set each transaction's <strong>Type</strong> — Expense, Savings, or Income — then pick the category. Capital One transfers → Savings, payroll deposits → Income. Uncheck anything to skip. <strong>★</strong> means auto-remembered from a previous import.
+        Only <strong>Expense</strong> transactions are imported. Savings and income rows are shown for reference (dimmed) but never added to your tracker — use Paystub Import for income. Uncheck any expense to skip it. <strong>★</strong> means the category was remembered from a previous import.
       </div>
       <div class="modal-actions">
         <button class="btn btn-ghost" onclick="bsShowUpload()">&#8592; Back</button>
@@ -5650,7 +5649,8 @@ function bsLoadMerchantMap() {
     const raw = JSON.parse(localStorage.getItem(BS_MERCHANT_KEY) || '{}');
     const out = {};
     for (const [k, v] of Object.entries(raw)) {
-      out[k] = typeof v === 'string' ? { type: 'expense', category: v } : v;
+      // Migrate old {type,category} objects back to simple category strings
+      out[k] = typeof v === 'string' ? v : (v.category || 'other');
     }
     return out;
   } catch { return {}; }
@@ -5697,15 +5697,13 @@ function bsGuessCat(desc) {
   }
   return 'other';
 }
-function bsGuessTypeAndCat(desc) {
+function bsGuessType(desc) {
   const d = (desc || '').toLowerCase();
   if (['payroll','direct deposit','ach deposit','salary deposit','blockware'].some(kw => d.includes(kw)))
-    return { type: 'income', category: 'salary' };
-  if (['tomplin','emergency fund','emergency savings'].some(kw => d.includes(kw)))
-    return { type: 'savings', category: 'emergency' };
-  if (['capital one transfer','transfer to savings','savings transfer','transfer to cap one'].some(kw => d.includes(kw)))
-    return { type: 'savings', category: 'general' };
-  return { type: 'expense', category: bsGuessCat(desc) };
+    return 'income';
+  if (['tomplin','emergency fund','emergency savings','capital one transfer','transfer to savings','savings transfer'].some(kw => d.includes(kw)))
+    return 'savings';
+  return 'expense';
 }
 
 // ── Native CSV parsing for known bank formats ──
@@ -5847,9 +5845,8 @@ async function bsHandleFile(file) {
         transactions = native.map(t => {
           const norm = bsNormalizeMerchant(t.description);
           const saved = merchantMap[norm];
-          if (saved) return { ...t, type: saved.type, category: saved.category, remembered: true };
-          const g = bsGuessTypeAndCat(t.description);
-          return { ...t, type: g.type, category: g.category, remembered: false };
+          const type  = bsGuessType(t.description);
+          return { ...t, type, category: saved || bsGuessCat(t.description), remembered: !!saved };
         });
         status.style.display = 'none';
       } else {
@@ -5865,11 +5862,9 @@ async function bsHandleFile(file) {
         transactions = transactions.map(t => {
           const norm = bsNormalizeMerchant(t.description);
           const saved = merchantMap[norm];
-          if (saved) return { ...t, type: saved.type, category: saved.category, remembered: true };
-          // Detect income/savings type but preserve AI's expense category
-          const g = bsGuessTypeAndCat(t.description);
-          const category = g.type === 'expense' ? (t.category || g.category) : g.category;
-          return { ...t, type: g.type, category, remembered: false };
+          const type  = bsGuessType(t.description);
+          const category = saved || t.category || bsGuessCat(t.description);
+          return { ...t, type, category, remembered: !!saved };
         });
         status.style.display = 'none';
       }
@@ -5888,11 +5883,9 @@ async function bsHandleFile(file) {
       transactions = transactions.map(t => {
         const norm = bsNormalizeMerchant(t.description);
         const saved = merchantMap[norm];
-        if (saved) return { ...t, type: saved.type, category: saved.category, remembered: true };
-        // Detect income/savings type but preserve AI's expense category
-        const g = bsGuessTypeAndCat(t.description);
-        const category = g.type === 'expense' ? (t.category || g.category) : g.category;
-        return { ...t, type: g.type, category, remembered: false };
+        const type  = bsGuessType(t.description);
+        const category = saved || t.category || bsGuessCat(t.description);
+        return { ...t, type, category, remembered: !!saved };
       });
       status.style.display = 'none';
     }
@@ -6002,17 +5995,20 @@ Rules:
 }
 
 function bsShowReview(transactions) {
-  _bsTransactions = transactions.map((t, i) => ({
-    id: i,
-    date: t.date || '',
-    description: t.description || '',
-    amount: Math.abs(parseFloat(t.amount) || 0),
-    type: t.type || 'expense',
-    category: t.category || 'other',
-    include: true,
-    remembered: t.remembered || false,
-    isDuplicate: t.isDuplicate || false
-  })).filter(t => t.amount > 0);
+  _bsTransactions = transactions.map((t, i) => {
+    const type = t.type || 'expense';
+    return {
+      id: i,
+      date: t.date || '',
+      description: t.description || '',
+      amount: Math.abs(parseFloat(t.amount) || 0),
+      type,
+      category: t.category || 'other',
+      include: type === 'expense', // auto-uncheck savings/income
+      remembered: t.remembered || false,
+      isDuplicate: t.isDuplicate || false
+    };
+  }).filter(t => t.amount > 0);
   document.getElementById('bs-upload-step').style.display = 'none';
   document.getElementById('bs-review-step').style.display = '';
   bsRenderReview();
@@ -6020,52 +6016,38 @@ function bsShowReview(transactions) {
 
 function bsRenderReview() {
   const txs      = _bsTransactions;
-  const included = txs.filter(t => t.include);
-  const dupes    = included.filter(t => t.isDuplicate).length;
-  const expTotal = included.filter(t => (t.type||'expense')==='expense').reduce((a,t)=>a+t.amount,0);
-  const savTotal = included.filter(t => t.type==='savings').reduce((a,t)=>a+t.amount,0);
-  const incTotal = included.filter(t => t.type==='income').reduce((a,t)=>a+t.amount,0);
+  const expenses = txs.filter(t => t.include && (t.type||'expense')==='expense');
+  const expTotal = expenses.reduce((a,t)=>a+t.amount,0);
+  const dupes    = expenses.filter(t => t.isDuplicate).length;
+  const nonExp   = txs.filter(t => (t.type||'expense')!=='expense').length;
 
-  let summaryHTML = `<strong>${included.length}</strong> of <strong>${txs.length}</strong> selected`;
-  if (expTotal > 0) summaryHTML += ` &nbsp;&middot;&nbsp; <span style="color:var(--red);">Exp <strong>${fmt$(expTotal)}</strong></span>`;
-  if (savTotal > 0) summaryHTML += ` &nbsp;&middot;&nbsp; <span style="color:var(--green);">Sav <strong>${fmt$(savTotal)}</strong></span>`;
-  if (incTotal > 0) summaryHTML += ` &nbsp;&middot;&nbsp; <span style="color:var(--blue);">Inc <strong>${fmt$(incTotal)}</strong></span>`;
-  if (dupes > 0)    summaryHTML += ` &nbsp;&middot;&nbsp; <span style="color:var(--yellow);">⚠ ${dupes} dupe${dupes>1?'s':''}</span>`;
+  let summaryHTML = `<strong>${expenses.length}</strong> expenses selected &nbsp;&middot;&nbsp; Total: <strong style="color:var(--red)">${fmt$(expTotal)}</strong>`;
+  if (nonExp > 0) summaryHTML += ` &nbsp;&middot;&nbsp; <span style="color:var(--text-3);">${nonExp} savings/income row${nonExp>1?'s':''} shown for reference — not imported</span>`;
+  if (dupes > 0)  summaryHTML += ` &nbsp;&middot;&nbsp; <span style="color:var(--yellow);">⚠ ${dupes} dupe${dupes>1?'s':''}</span>`;
   document.getElementById('bs-summary').innerHTML = summaryHTML;
 
-  const expCats = getCats('expenses');
-  const savCats = getCats('savings');
-  const incCats = getCats('income');
-  function buildCatOpts(type, selectedKey) {
-    const cats = type === 'savings' ? savCats : type === 'income' ? incCats : expCats;
-    const keys = new Set(cats.map(c => c.key));
-    const key  = keys.has(selectedKey) ? selectedKey : cats[0]?.key || 'other';
-    return cats.map(c => `<option value="${esc(c.key)}"${c.key===key?' selected':''}>${esc(c.label)}</option>`).join('');
-  }
+  const allCats   = getCats('expenses');
+  const validKeys = new Set(allCats.map(c => c.key));
+  const catOpts   = allCats.map(c => `<option value="${esc(c.key)}">${esc(c.label)}</option>`).join('');
 
   let rows = '';
   txs.forEach(t => {
-    const type      = t.type || 'expense';
-    const amtColor  = type === 'savings' ? 'var(--green)' : type === 'income' ? 'var(--blue)' : 'var(--red)';
+    const type     = t.type || 'expense';
+    const isExp    = type === 'expense';
+    const catKey   = validKeys.has(t.category) ? t.category : 'other';
+    const opts     = catOpts.replace(`value="${esc(catKey)}"`, `value="${esc(catKey)}" selected`);
     const dupeBadge = t.isDuplicate ? `<span style="font-size:9px;color:var(--yellow);font-weight:700;" title="Possible duplicate">⚠</span>` : '';
-    const memBadge  = t.remembered ? `<span style="font-size:9px;font-weight:700;color:var(--blue);background:var(--blue-dim);padding:1px 5px;border-radius:3px;margin-left:4px;">★</span>` : '';
-    const catOpts   = buildCatOpts(type, t.category);
-    rows += `<tr class="${t.include ? '' : 'bs-row-excluded'}">
+    const memBadge  = t.remembered && isExp ? `<span style="font-size:9px;font-weight:700;color:var(--blue);background:var(--blue-dim);padding:1px 5px;border-radius:3px;margin-left:4px;">★</span>` : '';
+    const typeBadge = !isExp ? `<span style="font-size:9px;font-weight:700;padding:1px 5px;border-radius:3px;margin-left:4px;color:var(--text-3);background:var(--elevated);">${type}</span>` : '';
+    rows += `<tr class="${t.include ? '' : 'bs-row-excluded'}" style="${!isExp ? 'opacity:0.45;' : ''}">
       <td style="text-align:center;">
-        <input type="checkbox" ${t.include?'checked':''} onchange="bsToggle(${t.id},this.checked)"
-          style="cursor:pointer;accent-color:var(--blue);width:15px;height:15px;">
+        <input type="checkbox" ${t.include?'checked':''} ${!isExp?'disabled':''} onchange="bsToggle(${t.id},this.checked)"
+          style="cursor:${isExp?'pointer':'default'};accent-color:var(--blue);width:15px;height:15px;">
       </td>
       <td style="white-space:nowrap;color:var(--text-2);font-size:11.5px;">${esc(t.date)} ${dupeBadge}</td>
-      <td style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12.5px;" title="${esc(t.description)}">${esc(t.description)}</td>
-      <td style="text-align:right;color:${amtColor};font-weight:600;">${fmt$(t.amount)}</td>
-      <td style="white-space:nowrap;">
-        <select style="font-size:11px;padding:3px 4px;background:var(--elevated);border:1px solid var(--border);border-radius:6px;color:var(--text);cursor:pointer;" onchange="bsSetType(${t.id},this.value)">
-          <option value="expense"${type==='expense'?' selected':''}>Expense</option>
-          <option value="savings"${type==='savings'?' selected':''}>Savings</option>
-          <option value="income"${type==='income'?' selected':''}>Income</option>
-        </select>
-      </td>
-      <td><select class="bs-cat-select" onchange="bsSetCat(${t.id},this.value)">${catOpts}</select>${memBadge}</td>
+      <td style="max-width:230px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12.5px;" title="${esc(t.description)}">${esc(t.description)}${typeBadge}</td>
+      <td style="text-align:right;color:var(--red);font-weight:600;">${fmt$(t.amount)}</td>
+      <td>${isExp ? `<select class="bs-cat-select" onchange="bsSetCat(${t.id},this.value)">${opts}</select>${memBadge}` : `<span style="font-size:11px;color:var(--text-3);">not imported</span>`}</td>
     </tr>`;
   });
   document.getElementById('bs-tbody').innerHTML = rows;
@@ -6078,16 +6060,6 @@ function bsToggle(id, checked) {
 function bsSetCat(id, val) {
   const t = _bsTransactions.find(x => x.id === id);
   if (t) { t.category = val; t.remembered = false; }
-}
-function bsSetType(id, type) {
-  const t = _bsTransactions.find(x => x.id === id);
-  if (!t) return;
-  t.type = type;
-  t.remembered = false;
-  if (type === 'expense') t.category = bsGuessCat(t.description);
-  else if (type === 'savings') t.category = 'general';
-  else if (type === 'income') t.category = 'salary';
-  bsRenderReview();
 }
 function bsSelectAll(val) {
   _bsTransactions.forEach(t => t.include = val);
@@ -6132,47 +6104,39 @@ function bsApply() {
   const included = _bsTransactions.filter(t => t.include);
   if (!included.length) { alert('No transactions selected.'); return; }
 
-  // Save merchant→{type,category} memory
+  // Only import expense-type transactions
+  const expensesOnly = included.filter(t => (t.type || 'expense') === 'expense');
+  if (!expensesOnly.length) { alert('No expense transactions selected to import.'); return; }
+
+  // Save merchant→category memory (expenses only)
   const merchantMap = bsLoadMerchantMap();
-  included.forEach(t => {
+  expensesOnly.forEach(t => {
     const norm = bsNormalizeMerchant(t.description);
-    if (norm) merchantMap[norm] = { type: t.type || 'expense', category: t.category };
+    if (norm) merchantMap[norm] = t.category;
   });
   bsSaveMerchantMap(merchantMap);
 
   // Save fingerprints for future duplicate detection
   const fingerprints = bsLoadFingerprints();
-  included.forEach(t => fingerprints.add(bsFingerprint(t)));
+  expensesOnly.forEach(t => fingerprints.add(bsFingerprint(t)));
   localStorage.setItem(BS_FINGERPRINT_KEY, JSON.stringify([...fingerprints].slice(-2000)));
 
-  // Apply to tracker — route by type
-  included.forEach(t => {
-    // Robust date parsing — handle YYYY-MM-DD, MM/DD/YYYY, MM-DD-YYYY, M/D/YY, etc.
+  // Apply expenses only to the Expenses dashboard
+  expensesOnly.forEach(t => {
     const ds = (t.date || '').trim();
     let mo = null;
-    let ymMatch = ds.match(/^(\d{4})-(\d{1,2})/);        // YYYY-MM...
+    const ymMatch = ds.match(/^(\d{4})-(\d{1,2})/);
     if (ymMatch) { mo = parseInt(ymMatch[2]); }
     else {
-      let mdMatch = ds.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-]\d{2,4}/); // MM/DD/YY or MM-DD-YYYY
+      const mdMatch = ds.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-]\d{2,4}/);
       if (mdMatch) mo = parseInt(mdMatch[1]);
     }
     if (!mo || mo < 1 || mo > 12) return;
     const mk  = MK[mo - 1];
     const key = t.category || 'other';
-    const type = t.type || 'expense';
-    if (type === 'savings') {
-      if (!appData.savings[mk]) appData.savings[mk] = {...ZERO_SAV};
-      if (appData.savings[mk][key] === undefined) appData.savings[mk][key] = 0;
-      appData.savings[mk][key] = +(appData.savings[mk][key] + t.amount).toFixed(2);
-    } else if (type === 'income') {
-      if (!appData.income[mk]) appData.income[mk] = {...ZERO_INC};
-      if (appData.income[mk][key] === undefined) appData.income[mk][key] = 0;
-      appData.income[mk][key] = +(appData.income[mk][key] + t.amount).toFixed(2);
-    } else {
-      if (!appData.expenses[mk]) appData.expenses[mk] = {...ZERO_EXP};
-      if (appData.expenses[mk][key] === undefined) appData.expenses[mk][key] = 0;
-      appData.expenses[mk][key] = +(appData.expenses[mk][key] + t.amount).toFixed(2);
-    }
+    if (!appData.expenses[mk]) appData.expenses[mk] = {...ZERO_EXP};
+    if (appData.expenses[mk][key] === undefined) appData.expenses[mk][key] = 0;
+    appData.expenses[mk][key] = +(appData.expenses[mk][key] + t.amount).toFixed(2);
   });
 
   saveData();
@@ -6180,17 +6144,11 @@ function bsApply() {
   document.getElementById('bankstmt-modal').classList.remove('open');
   showTab('expenses');
 
-  const expTotal = included.filter(t=>(t.type||'expense')==='expense').reduce((a,t)=>a+t.amount,0);
-  const savTotal = included.filter(t=>t.type==='savings').reduce((a,t)=>a+t.amount,0);
-  const incTotal = included.filter(t=>t.type==='income').reduce((a,t)=>a+t.amount,0);
+  const total = expensesOnly.reduce((a,t)=>a+t.amount,0);
   setTimeout(() => {
     const toast = document.createElement('div');
     toast.style.cssText = 'position:fixed;bottom:28px;left:50%;transform:translateX(-50%);background:var(--green);color:#fff;padding:11px 22px;border-radius:10px;font-size:13px;font-weight:600;z-index:9999;box-shadow:0 4px 20px rgba(0,0,0,.3);white-space:nowrap;';
-    let msg = `✓ ${included.length} transactions applied`;
-    if (expTotal > 0) msg += ` · ${fmt$(expTotal)} expenses`;
-    if (savTotal > 0) msg += ` · ${fmt$(savTotal)} savings`;
-    if (incTotal > 0) msg += ` · ${fmt$(incTotal)} income`;
-    toast.textContent = msg;
+    toast.textContent = `✓ ${expensesOnly.length} expenses imported — ${fmt$(total)} added to Expenses`;
     document.body.appendChild(toast);
     setTimeout(() => toast.remove(), 3800);
   }, 150);
