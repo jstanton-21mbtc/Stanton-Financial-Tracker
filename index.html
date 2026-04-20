@@ -5866,8 +5866,10 @@ async function bsHandleFile(file) {
           const norm = bsNormalizeMerchant(t.description);
           const saved = merchantMap[norm];
           if (saved) return { ...t, type: saved.type, category: saved.category, remembered: true };
+          // Detect income/savings type but preserve AI's expense category
           const g = bsGuessTypeAndCat(t.description);
-          return { ...t, type: g.type, category: g.category, remembered: false };
+          const category = g.type === 'expense' ? (t.category || g.category) : g.category;
+          return { ...t, type: g.type, category, remembered: false };
         });
         status.style.display = 'none';
       }
@@ -5887,8 +5889,10 @@ async function bsHandleFile(file) {
         const norm = bsNormalizeMerchant(t.description);
         const saved = merchantMap[norm];
         if (saved) return { ...t, type: saved.type, category: saved.category, remembered: true };
+        // Detect income/savings type but preserve AI's expense category
         const g = bsGuessTypeAndCat(t.description);
-        return { ...t, type: g.type, category: g.category, remembered: false };
+        const category = g.type === 'expense' ? (t.category || g.category) : g.category;
+        return { ...t, type: g.type, category, remembered: false };
       });
       status.style.display = 'none';
     }
