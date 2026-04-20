@@ -5576,17 +5576,18 @@ function psApply() {
           <thead>
             <tr>
               <th style="width:36px;"></th>
-              <th style="width:98px;">Date</th>
+              <th style="width:90px;">Date</th>
               <th>Description</th>
-              <th style="width:88px;text-align:right;">Amount</th>
-              <th style="width:195px;">Category</th>
+              <th style="width:80px;text-align:right;">Amount</th>
+              <th style="width:110px;">Type</th>
+              <th style="width:180px;">Category</th>
             </tr>
           </thead>
           <tbody id="bs-tbody"></tbody>
         </table>
       </div>
       <div style="font-size:11px;color:var(--text-3);margin-top:8px;line-height:1.6;">
-        Uncheck any transaction you want to skip. Change categories using the dropdown. Click <strong style="color:var(--text-2);">Apply to Tracker</strong> when ready — each amount adds to the correct month &amp; category.
+        Set each transaction's <strong>Type</strong> — Expense, Savings, or Income — then pick the category. Capital One transfers → Savings, payroll deposits → Income. Uncheck anything to skip. <strong>★</strong> means auto-remembered from a previous import.
       </div>
       <div class="modal-actions">
         <button class="btn btn-ghost" onclick="bsShowUpload()">&#8592; Back</button>
@@ -5608,7 +5609,14 @@ const BS_MERCHANT_KEY     = 'sft_merchant_cats_v1';
 const BS_FINGERPRINT_KEY  = 'sft_imported_txns_v1';
 
 function bsLoadMerchantMap() {
-  try { return JSON.parse(localStorage.getItem(BS_MERCHANT_KEY) || '{}'); } catch { return {}; }
+  try {
+    const raw = JSON.parse(localStorage.getItem(BS_MERCHANT_KEY) || '{}');
+    const out = {};
+    for (const [k, v] of Object.entries(raw)) {
+      out[k] = typeof v === 'string' ? { type: 'expense', category: v } : v;
+    }
+    return out;
+  } catch { return {}; }
 }
 function bsSaveMerchantMap(map) {
   localStorage.setItem(BS_MERCHANT_KEY, JSON.stringify(map));
@@ -5651,6 +5659,16 @@ function bsGuessCat(desc) {
     if (kws.some(kw => d.includes(kw))) return cat;
   }
   return 'other';
+}
+function bsGuessTypeAndCat(desc) {
+  const d = (desc || '').toLowerCase();
+  if (['payroll','direct deposit','ach deposit','salary deposit','blockware'].some(kw => d.includes(kw)))
+    return { type: 'income', category: 'salary' };
+  if (['tomplin','emergency fund','emergency savings'].some(kw => d.includes(kw)))
+    return { type: 'savings', category: 'emergency' };
+  if (['capital one transfer','transfer to savings','savings transfer','transfer to cap one'].some(kw => d.includes(kw)))
+    return { type: 'savings', category: 'general' };
+  return { type: 'expense', category: bsGuessCat(desc) };
 }
 
 // ── Native CSV parsing for known bank formats ──
@@ -5792,7 +5810,9 @@ async function bsHandleFile(file) {
         transactions = native.map(t => {
           const norm = bsNormalizeMerchant(t.description);
           const saved = merchantMap[norm];
-          return { ...t, category: saved || bsGuessCat(t.description), remembered: !!saved };
+          if (saved) return { ...t, type: saved.type, category: saved.category, remembered: true };
+          const g = bsGuessTypeAndCat(t.description);
+          return { ...t, type: g.type, category: g.category, remembered: false };
         });
         status.style.display = 'none';
       } else {
@@ -5808,7 +5828,9 @@ async function bsHandleFile(file) {
         transactions = transactions.map(t => {
           const norm = bsNormalizeMerchant(t.description);
           const saved = merchantMap[norm];
-          return saved ? { ...t, category: saved, remembered: true } : { ...t, remembered: false };
+          if (saved) return { ...t, type: saved.type, category: saved.category, remembered: true };
+          const g = bsGuessTypeAndCat(t.description);
+          return { ...t, type: g.type, category: g.category, remembered: false };
         });
         status.style.display = 'none';
       }
@@ -5826,7 +5848,9 @@ async function bsHandleFile(file) {
       transactions = transactions.map(t => {
         const norm = bsNormalizeMerchant(t.description);
         const saved = merchantMap[norm];
-        return saved ? { ...t, category: saved, remembered: true } : { ...t, remembered: false };
+        if (saved) return { ...t, type: saved.type, category: saved.category, remembered: true };
+        const g = bsGuessTypeAndCat(t.description);
+        return { ...t, type: g.type, category: g.category, remembered: false };
       });
       status.style.display = 'none';
     }
@@ -5938,6 +5962,7 @@ function bsShowReview(transactions) {
     date: t.date || '',
     description: t.description || '',
     amount: Math.abs(parseFloat(t.amount) || 0),
+    type: t.type || 'expense',
     category: t.category || 'other',
     include: true,
     remembered: t.remembered || false,
@@ -5951,36 +5976,51 @@ function bsShowReview(transactions) {
 function bsRenderReview() {
   const txs      = _bsTransactions;
   const included = txs.filter(t => t.include);
-  const total    = included.reduce((a, t) => a + t.amount, 0);
   const dupes    = included.filter(t => t.isDuplicate).length;
+  const expTotal = included.filter(t => (t.type||'expense')==='expense').reduce((a,t)=>a+t.amount,0);
+  const savTotal = included.filter(t => t.type==='savings').reduce((a,t)=>a+t.amount,0);
+  const incTotal = included.filter(t => t.type==='income').reduce((a,t)=>a+t.amount,0);
 
-  let summaryHTML = `<strong>${included.length}</strong> of <strong>${txs.length}</strong> transactions selected &nbsp;&middot;&nbsp; Total: <strong style="color:var(--red)">${fmt$(total)}</strong>`;
-  if (dupes > 0) summaryHTML += ` &nbsp;&middot;&nbsp; <span style="color:var(--yellow);">⚠ ${dupes} possible duplicate${dupes > 1 ? 's' : ''} — uncheck to skip</span>`;
+  let summaryHTML = `<strong>${included.length}</strong> of <strong>${txs.length}</strong> selected`;
+  if (expTotal > 0) summaryHTML += ` &nbsp;&middot;&nbsp; <span style="color:var(--red);">Exp <strong>${fmt$(expTotal)}</strong></span>`;
+  if (savTotal > 0) summaryHTML += ` &nbsp;&middot;&nbsp; <span style="color:var(--green);">Sav <strong>${fmt$(savTotal)}</strong></span>`;
+  if (incTotal > 0) summaryHTML += ` &nbsp;&middot;&nbsp; <span style="color:var(--blue);">Inc <strong>${fmt$(incTotal)}</strong></span>`;
+  if (dupes > 0)    summaryHTML += ` &nbsp;&middot;&nbsp; <span style="color:var(--yellow);">⚠ ${dupes} dupe${dupes>1?'s':''}</span>`;
   document.getElementById('bs-summary').innerHTML = summaryHTML;
 
-  const allCats   = getCats('expenses');
-  const validKeys = new Set(allCats.map(c => c.key));
-  const catOpts   = allCats.map(c => `<option value="${esc(c.key)}">${esc(c.label)}</option>`).join('');
+  const expCats = getCats('expenses');
+  const savCats = getCats('savings');
+  const incCats = getCats('income');
+  function buildCatOpts(type, selectedKey) {
+    const cats = type === 'savings' ? savCats : type === 'income' ? incCats : expCats;
+    const keys = new Set(cats.map(c => c.key));
+    const key  = keys.has(selectedKey) ? selectedKey : cats[0]?.key || 'other';
+    return cats.map(c => `<option value="${esc(c.key)}"${c.key===key?' selected':''}>${esc(c.label)}</option>`).join('');
+  }
 
   let rows = '';
   txs.forEach(t => {
-    const catKey = validKeys.has(t.category) ? t.category : 'other';
-    const opts   = catOpts.replace(`value="${esc(catKey)}"`, `value="${esc(catKey)}" selected`);
-    const dupeBadge = t.isDuplicate
-      ? `<span style="font-size:9px;color:var(--yellow);font-weight:700;" title="Possible duplicate — may have already been imported">⚠ dupe</span>`
-      : '';
-    const memBadge = t.remembered && !t.isDuplicate
-      ? `<span style="font-size:9px;font-weight:700;color:var(--blue);background:var(--blue-dim);padding:1px 5px;border-radius:3px;margin-left:4px;">★ remembered</span>`
-      : '';
+    const type      = t.type || 'expense';
+    const amtColor  = type === 'savings' ? 'var(--green)' : type === 'income' ? 'var(--blue)' : 'var(--red)';
+    const dupeBadge = t.isDuplicate ? `<span style="font-size:9px;color:var(--yellow);font-weight:700;" title="Possible duplicate">⚠</span>` : '';
+    const memBadge  = t.remembered ? `<span style="font-size:9px;font-weight:700;color:var(--blue);background:var(--blue-dim);padding:1px 5px;border-radius:3px;margin-left:4px;">★</span>` : '';
+    const catOpts   = buildCatOpts(type, t.category);
     rows += `<tr class="${t.include ? '' : 'bs-row-excluded'}">
       <td style="text-align:center;">
-        <input type="checkbox" ${t.include ? 'checked' : ''} onchange="bsToggle(${t.id},this.checked)"
+        <input type="checkbox" ${t.include?'checked':''} onchange="bsToggle(${t.id},this.checked)"
           style="cursor:pointer;accent-color:var(--blue);width:15px;height:15px;">
       </td>
       <td style="white-space:nowrap;color:var(--text-2);font-size:11.5px;">${esc(t.date)} ${dupeBadge}</td>
-      <td style="max-width:230px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12.5px;" title="${esc(t.description)}">${esc(t.description)}</td>
-      <td style="text-align:right;color:var(--red);font-weight:600;">${fmt$(t.amount)}</td>
-      <td><select class="bs-cat-select" onchange="bsSetCat(${t.id},this.value)">${opts}</select>${memBadge}</td>
+      <td style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12.5px;" title="${esc(t.description)}">${esc(t.description)}</td>
+      <td style="text-align:right;color:${amtColor};font-weight:600;">${fmt$(t.amount)}</td>
+      <td style="white-space:nowrap;">
+        <select style="font-size:11px;padding:3px 4px;background:var(--elevated);border:1px solid var(--border);border-radius:6px;color:var(--text);cursor:pointer;" onchange="bsSetType(${t.id},this.value)">
+          <option value="expense"${type==='expense'?' selected':''}>Expense</option>
+          <option value="savings"${type==='savings'?' selected':''}>Savings</option>
+          <option value="income"${type==='income'?' selected':''}>Income</option>
+        </select>
+      </td>
+      <td><select class="bs-cat-select" onchange="bsSetCat(${t.id},this.value)">${catOpts}</select>${memBadge}</td>
     </tr>`;
   });
   document.getElementById('bs-tbody').innerHTML = rows;
@@ -5993,6 +6033,16 @@ function bsToggle(id, checked) {
 function bsSetCat(id, val) {
   const t = _bsTransactions.find(x => x.id === id);
   if (t) { t.category = val; t.remembered = false; }
+}
+function bsSetType(id, type) {
+  const t = _bsTransactions.find(x => x.id === id);
+  if (!t) return;
+  t.type = type;
+  t.remembered = false;
+  if (type === 'expense') t.category = bsGuessCat(t.description);
+  else if (type === 'savings') t.category = 'general';
+  else if (type === 'income') t.category = 'salary';
+  bsRenderReview();
 }
 function bsSelectAll(val) {
   _bsTransactions.forEach(t => t.include = val);
@@ -6037,11 +6087,11 @@ function bsApply() {
   const included = _bsTransactions.filter(t => t.include);
   if (!included.length) { alert('No transactions selected.'); return; }
 
-  // Save merchant→category memory
+  // Save merchant→{type,category} memory
   const merchantMap = bsLoadMerchantMap();
   included.forEach(t => {
     const norm = bsNormalizeMerchant(t.description);
-    if (norm) merchantMap[norm] = t.category;
+    if (norm) merchantMap[norm] = { type: t.type || 'expense', category: t.category };
   });
   bsSaveMerchantMap(merchantMap);
 
@@ -6050,16 +6100,27 @@ function bsApply() {
   included.forEach(t => fingerprints.add(bsFingerprint(t)));
   localStorage.setItem(BS_FINGERPRINT_KEY, JSON.stringify([...fingerprints].slice(-2000)));
 
-  // Apply to tracker
+  // Apply to tracker — route by type
   included.forEach(t => {
     const parts = (t.date || '').split('-');
     const mo    = parseInt(parts[1]);
     if (!mo || mo < 1 || mo > 12) return;
     const mk  = MK[mo - 1];
     const key = t.category || 'other';
-    if (!appData.expenses[mk]) appData.expenses[mk] = {...ZERO_EXP};
-    if (appData.expenses[mk][key] === undefined) appData.expenses[mk][key] = 0;
-    appData.expenses[mk][key] = +(appData.expenses[mk][key] + t.amount).toFixed(2);
+    const type = t.type || 'expense';
+    if (type === 'savings') {
+      if (!appData.savings[mk]) appData.savings[mk] = {...ZERO_SAV};
+      if (appData.savings[mk][key] === undefined) appData.savings[mk][key] = 0;
+      appData.savings[mk][key] = +(appData.savings[mk][key] + t.amount).toFixed(2);
+    } else if (type === 'income') {
+      if (!appData.income[mk]) appData.income[mk] = {...ZERO_INC};
+      if (appData.income[mk][key] === undefined) appData.income[mk][key] = 0;
+      appData.income[mk][key] = +(appData.income[mk][key] + t.amount).toFixed(2);
+    } else {
+      if (!appData.expenses[mk]) appData.expenses[mk] = {...ZERO_EXP};
+      if (appData.expenses[mk][key] === undefined) appData.expenses[mk][key] = 0;
+      appData.expenses[mk][key] = +(appData.expenses[mk][key] + t.amount).toFixed(2);
+    }
   });
 
   saveData();
@@ -6067,11 +6128,17 @@ function bsApply() {
   document.getElementById('bankstmt-modal').classList.remove('open');
   showTab('expenses');
 
-  const total = included.reduce((a, t) => a + t.amount, 0);
+  const expTotal = included.filter(t=>(t.type||'expense')==='expense').reduce((a,t)=>a+t.amount,0);
+  const savTotal = included.filter(t=>t.type==='savings').reduce((a,t)=>a+t.amount,0);
+  const incTotal = included.filter(t=>t.type==='income').reduce((a,t)=>a+t.amount,0);
   setTimeout(() => {
     const toast = document.createElement('div');
     toast.style.cssText = 'position:fixed;bottom:28px;left:50%;transform:translateX(-50%);background:var(--green);color:#fff;padding:11px 22px;border-radius:10px;font-size:13px;font-weight:600;z-index:9999;box-shadow:0 4px 20px rgba(0,0,0,.3);white-space:nowrap;';
-    toast.textContent = `✓ ${included.length} transactions imported — ${fmt$(total)} added to Expenses`;
+    let msg = `✓ ${included.length} transactions applied`;
+    if (expTotal > 0) msg += ` · ${fmt$(expTotal)} expenses`;
+    if (savTotal > 0) msg += ` · ${fmt$(savTotal)} savings`;
+    if (incTotal > 0) msg += ` · ${fmt$(incTotal)} income`;
+    toast.textContent = msg;
     document.body.appendChild(toast);
     setTimeout(() => toast.remove(), 3800);
   }, 150);
