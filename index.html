@@ -2173,6 +2173,11 @@ function _openApp() {
   // Migrate: round all stored numeric values to 2 decimal places
   function roundObjVals(obj) { if(obj&&typeof obj==='object') Object.keys(obj).forEach(k=>{ if(typeof obj[k]==='number') obj[k]=Math.round(obj[k]*100)/100; else if(typeof obj[k]==='object') roundObjVals(obj[k]); }); }
   ['income','expenses','savings','investments','deductions','balances','netWorth','paystubYtd'].forEach(s=>roundObjVals(appData[s]));
+  // Migrate: ensure salary category exists in income (must be first)
+  if(appData.customCats && appData.customCats.income && !appData.customCats.income.find(c=>c.key==='salary')){
+    appData.customCats.income.unshift({key:'salary',label:'Primary Salary'});
+    MK.forEach(m=>{ if(appData.income&&appData.income[m]&&appData.income[m].salary==null) appData.income[m].salary=0; });
+  }
   // Migrate: ensure commission category exists in income
   if(appData.customCats && appData.customCats.income && !appData.customCats.income.find(c=>c.key==='commission')){
     const salIdx = appData.customCats.income.findIndex(c=>c.key==='salary');
