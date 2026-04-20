@@ -4665,6 +4665,29 @@ async function psPdfToBase64(file) {
   return {base64: canvas.toDataURL('image/jpeg', 0.92).split(',')[1], mediaType: 'image/jpeg'};
 }
 
+// Bank statement version — renders ALL pages (up to 10) as separate images
+async function bsPdfToPages(file) {
+  if (typeof pdfjsLib === 'undefined') throw new Error('PDF.js not loaded');
+  if (!_psWorkerSet) {
+    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.worker.min.js';
+    _psWorkerSet = true;
+  }
+  const buf   = await file.arrayBuffer();
+  const pdf   = await pdfjsLib.getDocument({data: buf}).promise;
+  const total = Math.min(pdf.numPages, 10);
+  const pages = [];
+  for (let i = 1; i <= total; i++) {
+    const page     = await pdf.getPage(i);
+    const viewport = page.getViewport({scale: 1.8});
+    const canvas   = document.createElement('canvas');
+    canvas.width   = viewport.width;
+    canvas.height  = viewport.height;
+    await page.render({canvasContext: canvas.getContext('2d'), viewport}).promise;
+    pages.push({base64: canvas.toDataURL('image/jpeg', 0.88).split(',')[1], mediaType: 'image/jpeg'});
+  }
+  return pages;
+}
+
 function psImageToBase64(file) {
   return new Promise(resolve => {
     const r = new FileReader();
@@ -5856,8 +5879,9 @@ async function bsHandleFile(file) {
         return;
       }
       status.textContent = 'Analyzing statement with AI…';
-      const {base64, mediaType} = isPdf ? await psPdfToBase64(file) : await psImageToBase64(file);
-      transactions = await bsCallClaudeImage(base64, mediaType, apiKey);
+      const pages = isPdf ? await bsPdfToPages(file) : [await psImageToBase64(file)];
+      if (pages.length > 1) status.textContent = `Analyzing ${pages.length}-page statement with AI…`;
+      transactions = await bsCallClaudeImage(pages, apiKey);
       const merchantMap = bsLoadMerchantMap();
       transactions = transactions.map(t => {
         const norm = bsNormalizeMerchant(t.description);
@@ -5926,8 +5950,8 @@ ${csvText.slice(0, 12000)}`;
   return JSON.parse(m[0]);
 }
 
-async function bsCallClaudeImage(base64, mediaType, apiKey) {
-  const prompt = `You are a senior financial analyst and bookkeeper. This image shows a financial statement — it may be a bank statement or a credit card statement (Gemini, Chase, Amex, Citi, Capital One, Discover, Wells Fargo, Bank of America, etc.).
+async function bsCallClaudeImage(pages, apiKey) {
+  const prompt = `You are a senior financial analyst and bookkeeper. The images provided show a complete financial statement — it may be a bank statement or a credit card statement (Gemini, Chase, Amex, Citi, Capital One, Discover, Wells Fargo, Bank of America, etc.). There may be multiple pages — read ALL of them and extract every transaction across every page.
 
 First, determine whether this is a bank statement or credit card statement. Then extract every EXPENSE transaction — meaning charges, purchases, debits, and withdrawals. For credit cards, charges are the expenses. Skip payments TO the card, credits, refunds, rewards, deposits, incoming transfers, and payroll.
 
@@ -5949,17 +5973,20 @@ Rules:
 - "description" should be a clean, readable version of the merchant/payee name
 - For credit cards: skip the monthly payment/balance payment row — that is not an expense
 - Do NOT include income, deposits, balance entries, refunds, or credits
+- Extract transactions from ALL pages provided
 - Return ONLY the raw JSON array — no other text`;
+
+  const content = [
+    ...pages.map(p => ({type:'image', source:{type:'base64', media_type:p.mediaType, data:p.base64}})),
+    {type:'text', text:prompt}
+  ];
 
   const res = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
     headers: {'Content-Type':'application/json','x-api-key':apiKey,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
     body: JSON.stringify({
-      model: 'claude-haiku-4-5-20251001', max_tokens: 4096,
-      messages: [{role:'user', content:[
-        {type:'image', source:{type:'base64', media_type:mediaType, data:base64}},
-        {type:'text',  text:prompt}
-      ]}]
+      model: 'claude-haiku-4-5-20251001', max_tokens: 8192,
+      messages: [{role:'user', content}]
     })
   });
   if (!res.ok) { const e = await res.json().catch(()=>{}); throw new Error(`API error ${res.status}: ${e?.error?.message||''}`); }
