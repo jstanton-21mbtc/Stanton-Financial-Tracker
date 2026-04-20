@@ -5968,12 +5968,12 @@ ${bsBuildCatList()}
 
 Rules:
 - "amount" is always a positive number (absolute value of the charge or debit)
-- "date" must be YYYY-MM-DD; if no year present assume ${new Date().getFullYear()}
+- "date" MUST be in YYYY-MM-DD format — convert all date formats (01/15/2026, Jan 15, 1/15/26, etc.) to YYYY-MM-DD. If no year, assume ${new Date().getFullYear()}
 - "category" must be exactly one of the keys shown above; use "other" only when nothing else fits
 - "description" should be a clean, readable version of the merchant/payee name
 - For credit cards: skip the monthly payment/balance payment row — that is not an expense
 - Do NOT include income, deposits, balance entries, refunds, or credits
-- Extract transactions from ALL pages provided
+- Extract transactions from ALL pages provided — do not stop at the first page
 - Return ONLY the raw JSON array — no other text`;
 
   const content = [
@@ -5985,7 +5985,7 @@ Rules:
     method: 'POST',
     headers: {'Content-Type':'application/json','x-api-key':apiKey,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
     body: JSON.stringify({
-      model: 'claude-haiku-4-5-20251001', max_tokens: 8192,
+      model: 'claude-sonnet-4-6', max_tokens: 8192,
       messages: [{role:'user', content}]
     })
   });
@@ -6143,8 +6143,15 @@ function bsApply() {
 
   // Apply to tracker — route by type
   included.forEach(t => {
-    const parts = (t.date || '').split('-');
-    const mo    = parseInt(parts[1]);
+    // Robust date parsing — handle YYYY-MM-DD, MM/DD/YYYY, MM-DD-YYYY, M/D/YY, etc.
+    const ds = (t.date || '').trim();
+    let mo = null;
+    let ymMatch = ds.match(/^(\d{4})-(\d{1,2})/);        // YYYY-MM...
+    if (ymMatch) { mo = parseInt(ymMatch[2]); }
+    else {
+      let mdMatch = ds.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-]\d{2,4}/); // MM/DD/YY or MM-DD-YYYY
+      if (mdMatch) mo = parseInt(mdMatch[1]);
+    }
     if (!mo || mo < 1 || mo > 12) return;
     const mk  = MK[mo - 1];
     const key = t.category || 'other';
