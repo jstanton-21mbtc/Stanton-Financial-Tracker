@@ -4651,6 +4651,7 @@ Extract the following fields and return ONLY a valid JSON object with no explana
 
 - "salary": current period regular/base pay (look for: Regular, REG, Regular Earnings, Base Pay, Salary, Regular Hours pay, Base Salary — use the CURRENT PERIOD column only, not YTD)
 - "commission": current period commission pay (look for: Commission, Comm, Sales Commission, Variable Pay — current period only; null if not present)
+- "bonus": current period bonus pay (look for: Bonus, Annual Bonus, Performance Bonus, Sign-on Bonus, Holiday Bonus — current period only; null if not present)
 - "k401Period": 401(k) employee contribution this pay period (look for: 401(k), 401K, Employee 401(k), Ret 401K, DPSP, Retirement — current period column only, NOT YTD; null if not present)
 - "k401Ytd": 401(k) employee contributions year-to-date (same labels as above — YTD column)
 - "taxFedPeriod": federal income tax withheld this period (look for: Federal Income Tax, Fed Tax, FWT, Federal W/H, Fed Income Tax, FED TAX — current period column)
@@ -4691,7 +4692,7 @@ Rules:
 function psClaudeToFields(j) {
   const w = v => (v != null && !isNaN(v)) ? {value: parseFloat(v), confidence:'high'} : {value:null, confidence:'low'};
   return {
-    month: j.month||null, salary:w(j.salary), commission:w(j.commission),
+    month: j.month||null, salary:w(j.salary), commission:w(j.commission), bonus:w(j.bonus),
     k401Ytd:w(j.k401Ytd), taxFedYtd:w(j.taxFedYtd), taxStateYtd:w(j.taxStateYtd),
     taxFicaYtd:w(j.taxFicaYtd), taxMedYtd:w(j.taxMedYtd),
     taxFedPeriod:w(j.taxFedPeriod), taxStatePeriod:w(j.taxStatePeriod),
@@ -4868,6 +4869,7 @@ function psBulkRowHTML(r, i) {
     <td><select onchange="psBulkEdit(${i},'month',this.value)">${monthOpts}</select></td>
     <td>${numInput('salary',     r.salary)}</td>
     <td>${numInput('commission', r.commission)}</td>
+    <td>${numInput('bonus',      r.bonus)}</td>
     <td>${numInput('taxesPeriod', r.taxesPeriod)}</td>
     <td>${numInput('k401Period',  r.k401Period)}</td>
     <td>${numInput('k401Ytd',   r.k401Ytd)}</td>
@@ -4893,6 +4895,7 @@ function psBulkApply() {
     if (!appData.income[month]) appData.income[month] = {...ZERO_INC};
     if (r.salary     > 0) appData.income[month].salary     = r2((appData.income[month].salary || 0) + r.salary);
     if (r.commission > 0) appData.income[month].commission = r2((appData.income[month].commission || 0) + r.commission);
+    if (r.bonus      > 0) appData.income[month].bonus      = r2((appData.income[month].bonus || 0) + r.bonus);
     if (!appData.deductions) appData.deductions = {};
     if (!appData.deductions[month]) appData.deductions[month] = {...ZERO_DED};
     if (r.taxFedPeriod   > 0) appData.deductions[month].taxesFed   = r2((appData.deductions[month].taxesFed   || 0) + r.taxFedPeriod);
@@ -4944,9 +4947,9 @@ function psShowFields(parsed) {
   sel.value = MK[new Date().getMonth()];
 
   // Clear fields & badges
-  ['ps-salary','ps-commission','ps-k401ytd','ps-taxfed','ps-taxstate','ps-taxfica','ps-taxmed','ps-taxfed-period','ps-taxstate-period','ps-taxfica-period','ps-taxmed-period','ps-k401-period']
+  ['ps-salary','ps-commission','ps-bonus','ps-k401ytd','ps-taxfed','ps-taxstate','ps-taxfica','ps-taxmed','ps-taxfed-period','ps-taxstate-period','ps-taxfica-period','ps-taxmed-period','ps-k401-period']
     .forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
-  ['ps-salary-conf','ps-commission-conf','ps-k401-conf','ps-taxfed-conf','ps-taxstate-conf','ps-taxfica-conf','ps-taxmed-conf','ps-taxfed-period-conf','ps-taxstate-period-conf','ps-taxfica-period-conf','ps-taxmed-period-conf','ps-k401-period-conf']
+  ['ps-salary-conf','ps-commission-conf','ps-bonus-conf','ps-k401-conf','ps-taxfed-conf','ps-taxstate-conf','ps-taxfica-conf','ps-taxmed-conf','ps-taxfed-period-conf','ps-taxstate-period-conf','ps-taxfica-period-conf','ps-taxmed-period-conf','ps-k401-period-conf']
     .forEach(id => { const el = document.getElementById(id); if (el) el.innerHTML = ''; });
 
   if (parsed) psPopulateFields(parsed);
@@ -4964,6 +4967,7 @@ function psPopulateFields(parsed) {
   if (parsed.month) { const s = document.getElementById('ps-month'); if (s) s.value = parsed.month; }
   setField('ps-salary',    'ps-salary-conf',    parsed.salary);
   setField('ps-commission','ps-commission-conf', parsed.commission);
+  setField('ps-bonus',     'ps-bonus-conf',      parsed.bonus);
   setField('ps-k401ytd',   'ps-k401-conf',       parsed.k401Ytd);
   setField('ps-taxfed',    'ps-taxfed-conf',      parsed.taxFedYtd);
   setField('ps-taxstate',  'ps-taxstate-conf',    parsed.taxStateYtd);
@@ -5050,6 +5054,7 @@ function psApply() {
   const month      = document.getElementById('ps-month').value;
   const salary     = parseFloat(document.getElementById('ps-salary').value)     || 0;
   const commission = parseFloat(document.getElementById('ps-commission').value) || 0;
+  const bonus      = parseFloat(document.getElementById('ps-bonus').value)      || 0;
   const k401Ytd    = parseFloat(document.getElementById('ps-k401ytd').value)    || 0;
   const taxFed     = parseFloat(document.getElementById('ps-taxfed').value)     || 0;
   const taxState   = parseFloat(document.getElementById('ps-taxstate').value)   || 0;
@@ -5065,6 +5070,7 @@ function psApply() {
 
   if (salary > 0)     appData.income[month].salary     = (appData.income[month].salary || 0) + salary;
   if (commission > 0) appData.income[month].commission = (appData.income[month].commission || 0) + commission;
+  if (bonus > 0)      appData.income[month].bonus      = (appData.income[month].bonus || 0) + bonus;
 
   if (!appData.paystubYtd) appData.paystubYtd = {k401:0,taxesFed:0,taxesState:0,taxesFica:0,taxesMed:0};
   if (k401Ytd  > 0) appData.paystubYtd.k401       = k401Ytd;
@@ -5442,6 +5448,10 @@ function psApply() {
         <div class="modal-field">
           <label>Commission Earned <span id="ps-commission-conf"></span></label>
           <input type="number" id="ps-commission" placeholder="0.00" step="0.01" min="0">
+        </div>
+        <div class="modal-field">
+          <label>Bonus / Performance Pay <span id="ps-bonus-conf"></span></label>
+          <input type="number" id="ps-bonus" placeholder="0.00" step="0.01" min="0">
         </div>
 
         <div class="paystub-section-label">401(k) — Year To Date</div>
@@ -5839,7 +5849,7 @@ function bsApply() {
     if (!mo || mo < 1 || mo > 12) return;
     const mk  = MK[mo - 1];
     const key = t.category || 'other';
-    if (!appData.expenses[mk]) return;
+    if (!appData.expenses[mk]) appData.expenses[mk] = {...ZERO_EXP};
     if (appData.expenses[mk][key] === undefined) appData.expenses[mk][key] = 0;
     appData.expenses[mk][key] = +(appData.expenses[mk][key] + t.amount).toFixed(2);
   });
