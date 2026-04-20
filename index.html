@@ -5553,7 +5553,7 @@ function psApply() {
            ondrop="bsOnDrop(event)">
         <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="var(--text-3)" stroke-width="1.5"><rect x="2" y="5" width="20" height="14" rx="2"/><polyline points="2 10 12 16 22 10"/><line x1="12" y1="19" x2="12" y2="12"/><polyline points="9 15 12 12 15 15"/></svg>
         <div class="paystub-dropzone-title">Drop your bank or credit card statement here</div>
-        <div class="paystub-dropzone-sub">Supports CSV, PDF, JPG, PNG &mdash; works with any bank or credit card (Gemini, Chase, Amex, Citi, Capital One, Discover, and more)</div>
+        <div class="paystub-dropzone-sub">Supports CSV, PDF, JPG, PNG &mdash; Chase, Bank of America, Capital One &amp; Discover CSVs auto-parse instantly (no API key needed)</div>
       </div>
       <input type="file" id="bs-file-input" accept=".csv,.pdf,.jpg,.jpeg,.png" style="display:none" onchange="bsHandleFileInput(this)">
       <div style="margin-top:14px;padding:12px 16px;background:var(--elevated);border:1px solid var(--border-dim);border-radius:var(--radius-sm);font-size:12px;color:var(--text-3);line-height:1.75;">
@@ -5603,6 +5603,144 @@ function psApply() {
 // ══════════════════════════════════════════════════
 let _bsTransactions = [];
 
+// ── Merchant memory ──
+const BS_MERCHANT_KEY     = 'sft_merchant_cats_v1';
+const BS_FINGERPRINT_KEY  = 'sft_imported_txns_v1';
+
+function bsLoadMerchantMap() {
+  try { return JSON.parse(localStorage.getItem(BS_MERCHANT_KEY) || '{}'); } catch { return {}; }
+}
+function bsSaveMerchantMap(map) {
+  localStorage.setItem(BS_MERCHANT_KEY, JSON.stringify(map));
+}
+function bsNormalizeMerchant(desc) {
+  return (desc || '').toLowerCase()
+    .replace(/\d+/g, '').replace(/[*#@_\-\.]/g, ' ')
+    .replace(/\b(purchase|debit|card|pos|ach|pymt|payment|www|com|llc|inc|co)\b/g, '')
+    .replace(/\s+/g, ' ').trim().slice(0, 40);
+}
+
+// ── Duplicate fingerprinting ──
+function bsLoadFingerprints() {
+  try { return new Set(JSON.parse(localStorage.getItem(BS_FINGERPRINT_KEY) || '[]')); } catch { return new Set(); }
+}
+function bsFingerprint(t) {
+  return `${t.date}|${parseFloat(t.amount).toFixed(2)}|${bsNormalizeMerchant(t.description)}`;
+}
+
+// ── Keyword categorization fallback ──
+const BS_CAT_KEYWORDS = {
+  mortgage:      ['mortgage','quicken loans','rocket mortgage','mr cooper','nationstar','rent payment'],
+  vehicle:       ['honda financial','toyota financial','ford motor credit','gm financial','ally financial','auto loan'],
+  insurance:     ['state farm','geico','progressive','allstate','usaa','liberty mutual','farmers ins','nationwide ins','travelers ins'],
+  phone:         ['verizon','at&t','t-mobile','sprint','cricket wireless','boost mobile','xfinity mobile','metro by t-mobile'],
+  electric:      ['national grid','con edison','duke energy','dominion energy','xcel energy','ameren','entergy','nyseg','rge','electric bill'],
+  propane:       ['ferrellgas','suburban propane','amerigas','blossman gas','propane'],
+  water:         ['water bill','sewer','aqua water','american water','town water'],
+  tv:            ['netflix','hulu','disney+','hbo max',' max ','paramount+','peacock','youtube premium','xfinity','spectrum','directv','dish network','crunchyroll','apple tv+'],
+  groceries:     ['walmart','target','kroger','safeway','publix','whole foods','trader joe','aldi','costco','sams club','wegmans','stop shop','meijer','giant food','food lion','heb','market basket','price chopper'],
+  dining:        ['mcdonald','chick-fil-a','starbucks','subway','taco bell','burger king','wendy','dunkin','chipotle','panera','domino','pizza hut','olive garden','applebee','chilis','doordash','grubhub','uber eats','dine'],
+  gas:           ['shell oil','exxon','bp station','chevron','sunoco','mobil','speedway','wawa','kwik trip','caseys','circle k','pilot flying','loves travel','quiktrip','gas station'],
+  creditCard:    ['payment thank you','autopay payment','credit card payment','card payment','balance payment','minimum payment'],
+  subscriptions: ['spotify','apple.com/bill','google play','amazon prime','adobe','microsoft 365','dropbox','zoom','notion','canva','membership dues'],
+  health:        ['cvs pharmacy','walgreens','rite aid','urgent care','dental','vision care','pharmacy','hospital','medical center','planet fitness','anytime fitness','la fitness','ymca'],
+};
+function bsGuessCat(desc) {
+  const d = (desc || '').toLowerCase();
+  for (const [cat, kws] of Object.entries(BS_CAT_KEYWORDS)) {
+    if (kws.some(kw => d.includes(kw))) return cat;
+  }
+  return 'other';
+}
+
+// ── Native CSV parsing for known bank formats ──
+function bsParseCSVRaw(text) {
+  function parseRow(row) {
+    const result = []; let cur = ''; let inQ = false;
+    for (let i = 0; i < row.length; i++) {
+      const ch = row[i];
+      if (ch === '"') { if (inQ && row[i+1] === '"') { cur += '"'; i++; } else inQ = !inQ; }
+      else if (ch === ',' && !inQ) { result.push(cur.trim()); cur = ''; }
+      else cur += ch;
+    }
+    result.push(cur.trim()); return result;
+  }
+  const lines = text.split(/\r?\n/).map(l => l.trim()).filter(l => l.length > 0);
+  if (lines.length < 2) return null;
+  const header = parseRow(lines[0]).map(h => h.toLowerCase().replace(/[^a-z0-9 ]/g, '').trim());
+  const rows   = lines.slice(1).map(parseRow);
+  return { header, rows };
+}
+
+function bsParseDate(d) {
+  if (!d) return null;
+  let m = d.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})$/);
+  if (m) { const yr = m[3].length === 2 ? '20' + m[3] : m[3]; return `${yr}-${m[1].padStart(2,'0')}-${m[2].padStart(2,'0')}`; }
+  m = d.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (m) return d;
+  m = d.match(/^(\d{1,2})-(\d{1,2})-(\d{2,4})$/);
+  if (m) { const yr = m[3].length === 2 ? '20' + m[3] : m[3]; return `${yr}-${m[1].padStart(2,'0')}-${m[2].padStart(2,'0')}`; }
+  return null;
+}
+
+function bsDetectAndParseCSV(text) {
+  const parsed = bsParseCSVRaw(text);
+  if (!parsed) return null;
+  const { header, rows } = parsed;
+  const hi = name => header.findIndex(h => h.includes(name));
+
+  // Chase Checking: Details | Posting Date | Description | Amount | Type | Balance
+  if (hi('posting date') >= 0 && hi('details') >= 0) {
+    const dI = hi('posting date'), descI = hi('description'), amtI = hi('amount'), typeI = hi('details');
+    return rows.filter(r => r[typeI]==='DEBIT' || parseFloat(r[amtI])<0)
+      .map(r => ({ date: bsParseDate(r[dI]), description: r[descI]||'', amount: Math.abs(parseFloat(r[amtI])||0) }))
+      .filter(t => t.date && t.amount > 0);
+  }
+
+  // Chase Credit: Transaction Date | Post Date | Description | Category | Type | Amount | Memo
+  if (hi('transaction date') >= 0 && hi('type') >= 0 && hi('amount') >= 0) {
+    const dI = hi('transaction date'), descI = hi('description'), amtI = hi('amount'), typeI = hi('type');
+    return rows.filter(r => r[typeI]==='Sale' || parseFloat(r[amtI]) < 0)
+      .map(r => ({ date: bsParseDate(r[dI]), description: r[descI]||'', amount: Math.abs(parseFloat(r[amtI])||0) }))
+      .filter(t => t.date && t.amount > 0);
+  }
+
+  // Capital One: Transaction Date | Posted Date | Card No. | Details | Debit | Credit
+  if (hi('debit') >= 0 && hi('credit') >= 0 && hi('details') >= 0) {
+    const dI = hi('transaction date'), descI = hi('details'), debitI = hi('debit');
+    return rows.filter(r => r[debitI] && parseFloat(r[debitI]) > 0)
+      .map(r => ({ date: bsParseDate(r[dI]), description: r[descI]||'', amount: parseFloat(r[debitI])||0 }))
+      .filter(t => t.date && t.amount > 0);
+  }
+
+  // Discover: Trans. Date | Post Date | Description | Amount | Category
+  if (header.some(h => h.includes('trans') && h.includes('date')) && hi('category') >= 0) {
+    const dI = header.findIndex(h => h.includes('trans') && h.includes('date'));
+    const descI = hi('description'), amtI = hi('amount');
+    return rows.filter(r => parseFloat(r[amtI]) > 0)
+      .map(r => ({ date: bsParseDate(r[dI]), description: r[descI]||'', amount: parseFloat(r[amtI])||0 }))
+      .filter(t => t.date && t.amount > 0);
+  }
+
+  // Bank of America: Date | Description | Amount | Running Bal.
+  if (hi('running bal') >= 0 || (hi('date') >= 0 && hi('description') >= 0 && hi('amount') >= 0 && header.length <= 5)) {
+    const dI = hi('date'), descI = hi('description'), amtI = hi('amount');
+    return rows.filter(r => parseFloat(r[amtI]) < 0)
+      .map(r => ({ date: bsParseDate(r[dI]), description: r[descI]||'', amount: Math.abs(parseFloat(r[amtI])||0) }))
+      .filter(t => t.date && t.amount > 0);
+  }
+
+  // Generic: date + description + amount columns
+  if (hi('date') >= 0 && hi('description') >= 0 && hi('amount') >= 0) {
+    const dI = hi('date'), descI = hi('description'), amtI = hi('amount');
+    return rows.filter(r => parseFloat(r[amtI]) < 0)
+      .map(r => ({ date: bsParseDate(r[dI]), description: r[descI]||'', amount: Math.abs(parseFloat(r[amtI])||0) }))
+      .filter(t => t.date && t.amount > 0);
+  }
+
+  return null; // Unknown format — fall back to AI
+}
+
 function showBankStmtModal() {
   bsShowUpload();
   document.getElementById('bankstmt-modal').classList.add('open');
@@ -5634,36 +5772,67 @@ function bsHandleFileInput(input) {
 
 async function bsHandleFile(file) {
   const status  = document.getElementById('bs-status');
-  const apiKey  = localStorage.getItem('sft_anthropic_key_v1') || '';
   const isCsv   = file.name.toLowerCase().endsWith('.csv') || file.type === 'text/csv' || file.type === 'text/plain';
   const isPdf   = file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf');
   const isImage = file.type.startsWith('image/');
-
   status.style.display = ''; status.className = 'paystub-parse-status';
-
-  if (!apiKey) {
-    status.className = 'paystub-parse-status error';
-    status.textContent = 'No Anthropic API key found — add it in Settings → AI / API.';
-    return;
-  }
   if (!isCsv && !isPdf && !isImage) {
     status.className = 'paystub-parse-status error';
     status.textContent = 'Unsupported file type. Please upload a CSV, PDF, JPG, or PNG.';
     return;
   }
-
   try {
-    status.textContent = 'Analyzing bank statement with AI…';
     let transactions;
     if (isCsv) {
       const text = await file.text();
-      transactions = await bsCallClaudeText(text, apiKey);
+      status.textContent = 'Parsing statement…';
+      const native = bsDetectAndParseCSV(text);
+      if (native && native.length) {
+        const merchantMap = bsLoadMerchantMap();
+        transactions = native.map(t => {
+          const norm = bsNormalizeMerchant(t.description);
+          const saved = merchantMap[norm];
+          return { ...t, category: saved || bsGuessCat(t.description), remembered: !!saved };
+        });
+        status.style.display = 'none';
+      } else {
+        const apiKey = localStorage.getItem('sft_anthropic_key_v1') || '';
+        if (!apiKey) {
+          status.className = 'paystub-parse-status error';
+          status.textContent = 'Could not auto-detect this CSV format. Add an Anthropic API key in Settings to use AI parsing.';
+          return;
+        }
+        status.textContent = 'Unknown format — analyzing with AI…';
+        transactions = await bsCallClaudeText(text, apiKey);
+        const merchantMap = bsLoadMerchantMap();
+        transactions = transactions.map(t => {
+          const norm = bsNormalizeMerchant(t.description);
+          const saved = merchantMap[norm];
+          return saved ? { ...t, category: saved, remembered: true } : { ...t, remembered: false };
+        });
+        status.style.display = 'none';
+      }
     } else {
+      const apiKey = localStorage.getItem('sft_anthropic_key_v1') || '';
+      if (!apiKey) {
+        status.className = 'paystub-parse-status error';
+        status.textContent = 'No Anthropic API key found — add it in Settings → AI / API.';
+        return;
+      }
+      status.textContent = 'Analyzing statement with AI…';
       const {base64, mediaType} = isPdf ? await psPdfToBase64(file) : await psImageToBase64(file);
       transactions = await bsCallClaudeImage(base64, mediaType, apiKey);
+      const merchantMap = bsLoadMerchantMap();
+      transactions = transactions.map(t => {
+        const norm = bsNormalizeMerchant(t.description);
+        const saved = merchantMap[norm];
+        return saved ? { ...t, category: saved, remembered: true } : { ...t, remembered: false };
+      });
+      status.style.display = 'none';
     }
     if (!Array.isArray(transactions) || !transactions.length) throw new Error('No expense transactions found in this statement.');
-    status.style.display = 'none';
+    const fingerprints = bsLoadFingerprints();
+    transactions = transactions.map(t => ({ ...t, isDuplicate: fingerprints.has(bsFingerprint(t)) }));
     bsShowReview(transactions);
   } catch(err) {
     status.className = 'paystub-parse-status error';
@@ -5770,7 +5939,9 @@ function bsShowReview(transactions) {
     description: t.description || '',
     amount: Math.abs(parseFloat(t.amount) || 0),
     category: t.category || 'other',
-    include: true
+    include: true,
+    remembered: t.remembered || false,
+    isDuplicate: t.isDuplicate || false
   })).filter(t => t.amount > 0);
   document.getElementById('bs-upload-step').style.display = 'none';
   document.getElementById('bs-review-step').style.display = '';
@@ -5781,27 +5952,35 @@ function bsRenderReview() {
   const txs      = _bsTransactions;
   const included = txs.filter(t => t.include);
   const total    = included.reduce((a, t) => a + t.amount, 0);
+  const dupes    = included.filter(t => t.isDuplicate).length;
 
-  document.getElementById('bs-summary').innerHTML =
-    `<strong>${included.length}</strong> of <strong>${txs.length}</strong> transactions selected &nbsp;&middot;&nbsp; Total: <strong style="color:var(--red)">${fmt$(total)}</strong>`;
+  let summaryHTML = `<strong>${included.length}</strong> of <strong>${txs.length}</strong> transactions selected &nbsp;&middot;&nbsp; Total: <strong style="color:var(--red)">${fmt$(total)}</strong>`;
+  if (dupes > 0) summaryHTML += ` &nbsp;&middot;&nbsp; <span style="color:var(--yellow);">⚠ ${dupes} possible duplicate${dupes > 1 ? 's' : ''} — uncheck to skip</span>`;
+  document.getElementById('bs-summary').innerHTML = summaryHTML;
 
-  const allCats  = getCats('expenses');
+  const allCats   = getCats('expenses');
   const validKeys = new Set(allCats.map(c => c.key));
-  const catOpts  = allCats.map(c => `<option value="${esc(c.key)}">${esc(c.label)}</option>`).join('');
+  const catOpts   = allCats.map(c => `<option value="${esc(c.key)}">${esc(c.label)}</option>`).join('');
 
   let rows = '';
   txs.forEach(t => {
     const catKey = validKeys.has(t.category) ? t.category : 'other';
     const opts   = catOpts.replace(`value="${esc(catKey)}"`, `value="${esc(catKey)}" selected`);
+    const dupeBadge = t.isDuplicate
+      ? `<span style="font-size:9px;color:var(--yellow);font-weight:700;" title="Possible duplicate — may have already been imported">⚠ dupe</span>`
+      : '';
+    const memBadge = t.remembered && !t.isDuplicate
+      ? `<span style="font-size:9px;font-weight:700;color:var(--blue);background:var(--blue-dim);padding:1px 5px;border-radius:3px;margin-left:4px;">★ remembered</span>`
+      : '';
     rows += `<tr class="${t.include ? '' : 'bs-row-excluded'}">
       <td style="text-align:center;">
         <input type="checkbox" ${t.include ? 'checked' : ''} onchange="bsToggle(${t.id},this.checked)"
           style="cursor:pointer;accent-color:var(--blue);width:15px;height:15px;">
       </td>
-      <td style="white-space:nowrap;color:var(--text-2);font-size:11.5px;">${esc(t.date)}</td>
+      <td style="white-space:nowrap;color:var(--text-2);font-size:11.5px;">${esc(t.date)} ${dupeBadge}</td>
       <td style="max-width:230px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12.5px;" title="${esc(t.description)}">${esc(t.description)}</td>
       <td style="text-align:right;color:var(--red);font-weight:600;">${fmt$(t.amount)}</td>
-      <td><select class="bs-cat-select" onchange="bsSetCat(${t.id},this.value)">${opts}</select></td>
+      <td><select class="bs-cat-select" onchange="bsSetCat(${t.id},this.value)">${opts}</select>${memBadge}</td>
     </tr>`;
   });
   document.getElementById('bs-tbody').innerHTML = rows;
@@ -5813,7 +5992,7 @@ function bsToggle(id, checked) {
 }
 function bsSetCat(id, val) {
   const t = _bsTransactions.find(x => x.id === id);
-  if (t) t.category = val;
+  if (t) { t.category = val; t.remembered = false; }
 }
 function bsSelectAll(val) {
   _bsTransactions.forEach(t => t.include = val);
@@ -5858,6 +6037,20 @@ function bsApply() {
   const included = _bsTransactions.filter(t => t.include);
   if (!included.length) { alert('No transactions selected.'); return; }
 
+  // Save merchant→category memory
+  const merchantMap = bsLoadMerchantMap();
+  included.forEach(t => {
+    const norm = bsNormalizeMerchant(t.description);
+    if (norm) merchantMap[norm] = t.category;
+  });
+  bsSaveMerchantMap(merchantMap);
+
+  // Save fingerprints for future duplicate detection
+  const fingerprints = bsLoadFingerprints();
+  included.forEach(t => fingerprints.add(bsFingerprint(t)));
+  localStorage.setItem(BS_FINGERPRINT_KEY, JSON.stringify([...fingerprints].slice(-2000)));
+
+  // Apply to tracker
   included.forEach(t => {
     const parts = (t.date || '').split('-');
     const mo    = parseInt(parts[1]);
