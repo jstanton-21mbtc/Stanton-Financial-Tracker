@@ -1051,6 +1051,10 @@
         <div class="mob-section-header" style="display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;">
           <div class="section-title" style="margin-bottom:0;">P&amp;L — Income &amp; Profitability</div>
           <div style="display:flex;gap:8px;flex-wrap:wrap;">
+            <button class="btn btn-ghost" onclick="clearPLData()" style="font-size:12.5px;padding:8px 14px;gap:7px;flex-shrink:0;color:var(--red);border-color:var(--red);" title="Clear all income and expense data">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 011-1h4a1 1 0 011 1v2"/></svg>
+              Clear P&amp;L
+            </button>
             <button class="btn btn-ghost" onclick="resetPaystubData()" style="font-size:12.5px;padding:8px 14px;gap:7px;flex-shrink:0;color:var(--red);border-color:var(--red);" title="Clear all paystub tax data and YTD totals">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 102.13-9.36L1 10"/></svg>
               Reset Paystubs
@@ -2402,6 +2406,17 @@ function showTab(id) {
   }
   // Scroll content to top on mobile
   if (window.innerWidth <= 768) window.scrollTo(0, 0);
+}
+
+function clearPLData() {
+  if (!confirm('Clear all income and expense data for every month? This cannot be undone.')) return;
+  MK.forEach(m => {
+    appData.income[m]   = {...ZERO_INC};
+    appData.expenses[m] = {...ZERO_EXP};
+  });
+  saveData();
+  refreshAll();
+  showToast('P&L data cleared');
 }
 
 function resetPaystubData() {
