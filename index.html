@@ -4412,15 +4412,21 @@ let _reloadTicker;
   }
 
   async function fetchSilver(){
+    // Try Yahoo Finance SI=F (silver futures)
     for(const host of ['query1','query2']){
       try{
-        const r=await fetch(`https://${host}.finance.yahoo.com/v7/finance/quote?symbols=XAGUSD%3DX`);
+        const r=await fetch(`https://${host}.finance.yahoo.com/v7/finance/quote?symbols=SI%3DF`);
         if(!r.ok)continue;
         const j=await r.json();
         const q=(j?.quoteResponse?.result||[])[0];
         if(q&&q.regularMarketPrice){window._silverPrice=q.regularMarketPrice;return;}
       }catch(e){}
     }
+    // Fallback: metals.live free API
+    try{
+      const r=await fetch('https://api.metals.live/v1/spot/silver');
+      if(r.ok){const j=await r.json();if(j?.price){window._silverPrice=j.price;return;}}
+    }catch(e){}
   }
 
   async function load(){
