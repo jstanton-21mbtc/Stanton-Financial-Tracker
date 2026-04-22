@@ -3136,6 +3136,7 @@ const NW_ASSETS = [
   {key:'retirement401k',    label:'401(k)',                        group:'Retirement'},
   {key:'rothIRA',           label:'ROTH IRA',                      group:'Retirement'},
   {key:'brokerageAccount',  label:'Brokerage / Index Funds',       group:'Retirement'},
+  {key:'bitcoinIRAUnchained', label:'Unchained Roth IRA',         group:'Retirement'},
   {key:'bitcoin',           label:'Bitcoin',                       group:'Crypto'},
   {key:'cryptoOther',       label:'Bittensor',                     group:'Crypto'},
   {key:'primaryHome',       label:'Primary Home (Market Value)',   group:'Real Estate'},
@@ -3160,8 +3161,8 @@ function nwNet()              { return nwTotalAssets()-nwTotalLiabilities(); }
 
 function renderNetWorth() {
   if(!appData.netWorth) appData.netWorth={assets:{},liabilities:{},history:[]};
-  // hardset Bitcoin = 2.75 BTC × live price; Bittensor = 80 TAO × live price
-  try{const p=typeof _getLiveBtcPrice==='function'?_getLiveBtcPrice():null;if(p)appData.netWorth.assets.bitcoin=r2(2.75*p);}catch(e){}
+  // hardset Bitcoin = 2.75 BTC × live price; Unchained Roth IRA = 0.74 BTC × live price; Bittensor = 80 TAO × live price
+  try{const p=typeof _getLiveBtcPrice==='function'?_getLiveBtcPrice():null;if(p){appData.netWorth.assets.bitcoin=r2(2.75*p);appData.netWorth.assets.bitcoinIRAUnchained=r2(0.74*p);}}catch(e){}
   try{const p=typeof _getLiveTaoPrice==='function'?_getLiveTaoPrice():null;if(p)appData.netWorth.assets.cryptoOther=r2(80*p);}catch(e){}
   const totalA=nwTotalAssets(), totalL=nwTotalLiabilities(), net=nwNet();
   const debtRatio=totalA>0?(totalL/totalA):0;
@@ -3196,10 +3197,11 @@ function buildNwTable(cats, section, total, accentColor) {
     }
     const _isLiveBtc=(section==='assets'&&cat.key==='bitcoin');
     const _isLiveTao=(section==='assets'&&cat.key==='cryptoOther');
-    const _liveTag=_isLiveBtc?'LIVE · 2.75 BTC':_isLiveTao?'LIVE · 80 TAO':'';
+    const _isLiveUnchained=(section==='assets'&&cat.key==='bitcoinIRAUnchained');
+    const _liveTag=_isLiveBtc?'LIVE · 2.75 BTC':_isLiveTao?'LIVE · 80 TAO':_isLiveUnchained?'LIVE · 0.74 BTC':'';
     html+=`<tr>
       <td>${cat.label}${_liveTag?`<span style="margin-left:6px;font-size:10px;font-weight:700;color:var(--blue);background:var(--blue-dim);border-radius:4px;padding:1px 5px">${_liveTag}</span>`:''}</td>
-      <td>${(_isLiveBtc||_isLiveTao)?`<input type="number" step="0.01" min="0" value="${val>0?val:''}" placeholder="$0" readonly style="background:var(--elevated);cursor:default;color:var(--text-2)"/>`:`<input type="number" step="0.01" min="0" value="${val>0?val:''}" placeholder="$0" onchange="updateNW('${section}','${cat.key}',this.value)"/>`}</td>
+      <td>${(_isLiveBtc||_isLiveTao||_isLiveUnchained)?`<input type="number" step="0.01" min="0" value="${val>0?val:''}" placeholder="$0" readonly style="background:var(--elevated);cursor:default;color:var(--text-2)"/>`:`<input type="number" step="0.01" min="0" value="${val>0?val:''}" placeholder="$0" onchange="updateNW('${section}','${cat.key}',this.value)"/>`}</td>
       <td>${val>0?`<div style="display:flex;align-items:center;gap:8px;"><div style="flex:1;background:var(--border);border-radius:999px;height:4px;overflow:hidden;min-width:44px"><div style="width:${Math.min(pct,100).toFixed(1)}%;height:100%;background:${accentColor};border-radius:999px"></div></div><span style="font-size:11px;color:var(--text-3);white-space:nowrap">${pct.toFixed(1)}%</span></div>`:'<span class="val-neutral">—</span>'}</td>
     </tr>`;
   });
@@ -4417,7 +4419,7 @@ let _reloadTicker;
       const b=_d.find(d=>d.sym==='BTC');
       const t=_d.find(d=>d.sym==='TAO');
       if(typeof appData!=='undefined'&&appData?.netWorth){
-        if(b&&b._live){appData.netWorth.assets.bitcoin=r2(2.75*b.price);changed=true;}
+        if(b&&b._live){appData.netWorth.assets.bitcoin=r2(2.75*b.price);appData.netWorth.assets.bitcoinIRAUnchained=r2(0.74*b.price);changed=true;}
         if(t&&t._live){appData.netWorth.assets.cryptoOther=r2(80*t.price);changed=true;}
         if(changed&&typeof saveData==='function')saveData();
         if(changed&&typeof renderNetWorth==='function')renderNetWorth();
