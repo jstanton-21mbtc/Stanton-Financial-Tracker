@@ -201,6 +201,9 @@
     .chart-card h3 { font-size: 11px; font-weight: 600; color: var(--text-2); text-transform: uppercase; letter-spacing: .6px; margin-bottom: 12px; }
     .chart-wrap { position: relative; height: 160px; overflow: hidden; }
     .chart-wrap-lg { position: relative; height: 190px; overflow: hidden; }
+    .nw-range-btn { background: var(--elevated); border: 1px solid var(--border); color: var(--text-2); font-size: 11px; font-weight: 600; padding: 4px 11px; border-radius: 6px; cursor: pointer; transition: all .15s; font-family: 'Inter', sans-serif; }
+    .nw-range-btn:hover { background: var(--card-hover); color: var(--text); }
+    .nw-range-btn.active { background: var(--blue-dim); color: var(--blue); border-color: var(--blue); }
 
     /* ── TABLES ── */
     .table-wrap { overflow-x: auto; background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); }
@@ -1037,7 +1040,7 @@
         <div class="charts-grid">
           <div class="chart-card"><h3>Income vs Expenses</h3><div class="chart-wrap"><canvas id="chart-ie"></canvas></div></div>
           <div class="chart-card"><h3>Net P&amp;L by Month</h3><div class="chart-wrap"><canvas id="chart-pl"></canvas></div></div>
-          <div class="chart-card"><h3>Cumulative Savings YTD</h3><div class="chart-wrap"><canvas id="chart-sav"></canvas></div></div>
+          <div class="chart-card"><h3>Net Worth</h3><div class="chart-wrap"><canvas id="chart-nw-dash"></canvas></div></div>
           <div class="chart-card"><h3>Expense Breakdown</h3><div class="chart-wrap"><canvas id="chart-pie"></canvas></div></div>
         </div>
         <div class="subsection">
@@ -1181,8 +1184,16 @@
           <div class="subsection-title">Net Worth History</div>
           <div id="nw-history-empty" style="display:none;text-align:center;padding:32px;background:var(--card);border:1px solid var(--border);border-radius:var(--radius);color:var(--text-3);font-size:13px;">No snapshots yet. Click "Save Snapshot" to record your current net worth.</div>
           <div id="nw-chart-card" class="chart-card" style="display:none;margin-bottom:20px;">
-            <h3>Net Worth Over Time</h3>
-            <div class="chart-wrap-lg"><canvas id="chart-nw"></canvas></div>
+            <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:14px;">
+              <h3 style="margin-bottom:0">Net Worth Over Time</h3>
+              <div style="display:flex;gap:5px;">
+                <button class="nw-range-btn" id="nwbtn-1m" onclick="setNwRange('1m')">1M</button>
+                <button class="nw-range-btn" id="nwbtn-3m" onclick="setNwRange('3m')">3M</button>
+                <button class="nw-range-btn" id="nwbtn-ytd" onclick="setNwRange('ytd')">YTD</button>
+                <button class="nw-range-btn active" id="nwbtn-all" onclick="setNwRange('all')">All</button>
+              </div>
+            </div>
+            <div class="chart-wrap-lg" style="height:260px"><canvas id="chart-nw"></canvas></div>
           </div>
           <div class="table-wrap" id="nw-history-wrap" style="display:none"></div>
         </div>
@@ -3232,13 +3243,41 @@ function updateNW(section,key,val){
 function takeSnapshot(){
   if(!appData.netWorth) appData.netWorth={assets:{},liabilities:{},history:[]};
   if(!appData.netWorth.history) appData.netWorth.history=[];
-  const date=new Date().toLocaleDateString('en-US',{year:'numeric',month:'short',day:'numeric'});
-  appData.netWorth.history.push({date, assets:nwTotalAssets(), liabilities:nwTotalLiabilities(), net:nwNet()});
+  const now=new Date();
+  const date=now.toLocaleDateString('en-US',{year:'numeric',month:'short',day:'numeric'});
+  const isoDate=now.toISOString().slice(0,10);
+  const btcPrice=(typeof _getLiveBtcPrice==='function'?_getLiveBtcPrice():null)||null;
+  const taoPrice=(typeof _getLiveTaoPrice==='function'?_getLiveTaoPrice():null)||null;
+  appData.netWorth.history.push({date, isoDate, assets:nwTotalAssets(), liabilities:nwTotalLiabilities(), net:nwNet(), btcPrice, taoPrice});
   saveData(); renderNetWorth(); showToast('Snapshot saved!');
 }
 
 function deleteSnapshot(i){
   if(confirm('Delete this snapshot?')){ appData.netWorth.history.splice(i,1); saveData(); renderNetWorth(); }
+}
+
+let _nwRange='all';
+function setNwRange(range){
+  _nwRange=range;
+  document.querySelectorAll('.nw-range-btn').forEach(b=>b.classList.remove('active'));
+  const btn=document.getElementById('nwbtn-'+range);
+  if(btn) btn.classList.add('active');
+  renderNwHistory();
+}
+function _parseSnapshotDate(s){
+  if(s.isoDate) return new Date(s.isoDate+'T00:00:00');
+  // parse "May 6, 2026" style
+  const d=new Date(s.date);
+  return isNaN(d)?new Date(0):d;
+}
+function _filterHistByRange(hist,range){
+  if(range==='all'||!hist.length) return hist;
+  const now=new Date();
+  let cutoff;
+  if(range==='1m'){ cutoff=new Date(now); cutoff.setMonth(cutoff.getMonth()-1); }
+  else if(range==='3m'){ cutoff=new Date(now); cutoff.setMonth(cutoff.getMonth()-3); }
+  else if(range==='ytd'){ cutoff=new Date(now.getFullYear(),0,1); }
+  return hist.filter(s=>_parseSnapshotDate(s)>=cutoff);
 }
 
 function renderNwHistory(){
@@ -3253,32 +3292,62 @@ function renderNwHistory(){
   }
   emptyEl.style.display='none'; chartCard.style.display='block'; wrapEl.style.display='';
 
-  // Chart
-  const labels=hist.map(s=>s.date);
-  const netData=hist.map(s=>s.net);
-  const assetsData=hist.map(s=>s.assets);
-  const liabData=hist.map(s=>s.liabilities);
+  // Filtered data for chart
+  const filtered=_filterHistByRange(hist,_nwRange);
+  const chartHist=filtered.length?filtered:hist; // fallback to all if range yields nothing
+  const labels=chartHist.map(s=>s.date);
+  const netData=chartHist.map(s=>s.net);
+  const assetsData=chartHist.map(s=>s.assets);
+  const liabData=chartHist.map(s=>s.liabilities);
   if(charts.nw){ charts.nw.destroy(); }
   charts.nw=new Chart(document.getElementById('chart-nw'),{
     type:'line',
     data:{
       labels,
       datasets:[
-        {label:'Net Worth',   data:netData,   borderColor:CC.blue,  backgroundColor:'rgba(108,179,63,0.12)',  fill:true, tension:.4, pointRadius:5, pointBackgroundColor:CC.blue,  borderWidth:2.5},
-        {label:'Assets',      data:assetsData,borderColor:CC.green, backgroundColor:'transparent', fill:false,tension:.4, pointRadius:4, pointBackgroundColor:CC.green, borderWidth:2, borderDash:[5,4]},
-        {label:'Liabilities', data:liabData,  borderColor:CC.red,   backgroundColor:'transparent', fill:false,tension:.4, pointRadius:4, pointBackgroundColor:CC.red,   borderWidth:2, borderDash:[5,4]},
+        {label:'Net Worth',   data:netData,   borderColor:CC.blue,  backgroundColor:'rgba(57,255,20,0.08)',  fill:true, tension:.4, pointRadius:chartHist.length===1?6:4, pointHoverRadius:7, pointBackgroundColor:CC.blue,  borderWidth:2.5},
+        {label:'Assets',      data:assetsData,borderColor:CC.green, backgroundColor:'transparent', fill:false,tension:.4, pointRadius:chartHist.length===1?5:3, pointHoverRadius:6, pointBackgroundColor:CC.green, borderWidth:1.8, borderDash:[5,4]},
+        {label:'Liabilities', data:liabData,  borderColor:CC.red,   backgroundColor:'transparent', fill:false,tension:.4, pointRadius:chartHist.length===1?5:3, pointHoverRadius:6, pointBackgroundColor:CC.red,   borderWidth:1.8, borderDash:[5,4]},
       ]
     },
     options:{
       responsive:true, maintainAspectRatio:false,
       interaction:{mode:'index',intersect:false},
       plugins:{
-        legend:{labels:{color:'#8A919E',font:{size:11,family:'Inter'}}},
-        tooltip:{callbacks:{label:ctx=>' '+ctx.dataset.label+': '+(ctx.parsed.y<0?'-':'')+fmt$(ctx.parsed.y)}}
+        legend:{labels:{color:'#8A919E',font:{size:11,family:'Inter'},boxWidth:12,boxHeight:2}},
+        tooltip:{
+          mode:'index', intersect:false,
+          backgroundColor:'rgba(13,15,20,0.96)',
+          borderColor:'rgba(44,48,56,0.9)',
+          borderWidth:1,
+          titleColor:'#FFFFFF',
+          bodyColor:'#8A919E',
+          padding:{top:10,bottom:10,left:14,right:14},
+          titleFont:{size:12,weight:'700',family:'Inter'},
+          bodyFont:{size:12,family:'Inter'},
+          callbacks:{
+            title: items => items.length ? items[0].label : '',
+            label: ctx => {
+              const v=ctx.parsed.y;
+              const sign=v<0?'-':'';
+              return '  '+ctx.dataset.label+':  '+sign+fmt$(Math.abs(v));
+            },
+            afterBody: items => {
+              // show BTC/TAO prices if stored on this snapshot
+              const idx=items[0]?.dataIndex;
+              if(idx==null) return [];
+              const s=chartHist[idx];
+              const lines=[];
+              if(s?.btcPrice) lines.push('  BTC @ $'+s.btcPrice.toLocaleString(undefined,{maximumFractionDigits:0}));
+              if(s?.taoPrice) lines.push('  TAO @ $'+s.taoPrice.toLocaleString(undefined,{maximumFractionDigits:2}));
+              return lines;
+            }
+          }
+        }
       },
       scales:{
-        x:{ticks:{color:'#5B616E',font:{size:11}},grid:{color:'rgba(44,48,56,0.5)'}},
-        y:{ticks:{color:'#5B616E',font:{size:11},callback:v=>'$'+Math.abs(v/1000).toFixed(0)+'k'},grid:{color:'rgba(44,48,56,0.5)'}}
+        x:{ticks:{color:'#5B616E',font:{size:11},maxRotation:0,autoSkip:true,maxTicksLimit:8},grid:{color:'rgba(44,48,56,0.4)'}},
+        y:{ticks:{color:'#5B616E',font:{size:11},callback:v=>'$'+(Math.abs(v)>=1000?(Math.abs(v)/1000).toFixed(0)+'k':Math.abs(v))},grid:{color:'rgba(44,48,56,0.4)'}}
       }
     }
   });
@@ -3488,7 +3557,8 @@ const CB={responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{col
 function initCharts(){
   charts.ie=new Chart(document.getElementById('chart-ie'),{type:'bar',data:{labels:MONTH_SHORT,datasets:[{label:'Income',data:MK.map(monthIncome),backgroundColor:CC.blueFade,borderColor:CC.blue,borderWidth:2,borderRadius:4},{label:'Expenses',data:MK.map(monthExpense),backgroundColor:CC.redFade,borderColor:CC.red,borderWidth:2,borderRadius:4}]},options:{...CB}});
   charts.pl=new Chart(document.getElementById('chart-pl'),{type:'bar',data:{labels:MONTH_SHORT,datasets:[{label:'Net P&L',data:MK.map(monthPL),backgroundColor:MK.map(m=>monthPL(m)>=0?CC.greenFade:CC.redFade),borderColor:MK.map(m=>monthPL(m)>=0?CC.green:CC.red),borderWidth:2,borderRadius:4}]},options:{...CB}});
-  charts.sav=new Chart(document.getElementById('chart-sav'),{type:'line',data:{labels:MONTH_SHORT,datasets:[{label:'Cumulative Savings',data:ytdSavings(),borderColor:CC.green,backgroundColor:CC.greenFade,fill:true,tension:.4,pointRadius:4,pointBackgroundColor:CC.green}]},options:{...CB}});
+  const _nwH=appData.netWorth?.history||[];
+  charts.nwDash=new Chart(document.getElementById('chart-nw-dash'),{type:'line',data:{labels:_nwH.map(s=>s.date),datasets:[{label:'Net Worth',data:_nwH.map(s=>s.net),borderColor:CC.blue,backgroundColor:'rgba(57,255,20,0.08)',fill:true,tension:.4,pointRadius:3,pointHoverRadius:5,pointBackgroundColor:CC.blue,borderWidth:2}]},options:{...CB,interaction:{mode:'index',intersect:false},plugins:{legend:{display:false},tooltip:{backgroundColor:'rgba(13,15,20,0.96)',borderColor:'rgba(44,48,56,0.9)',borderWidth:1,titleColor:'#fff',bodyColor:'#8A919E',titleFont:{size:11,weight:'700',family:'Inter'},bodyFont:{size:11,family:'Inter'},padding:10,callbacks:{title:i=>i[0]?.label||'',label:c=>' Net Worth: '+(c.parsed.y<0?'-':'')+fmt$(Math.abs(c.parsed.y))}}}}});
   const eb=expenseBreakdown(),el=Object.keys(eb).filter(k=>eb[k]>0);
   charts.pie=new Chart(document.getElementById('chart-pie'),{type:'doughnut',data:{labels:el.length?el:['No data'],datasets:[{data:el.length?el.map(k=>eb[k]):[1],backgroundColor:el.length?CC.palette:['#2C3038'],borderWidth:0}]},options:{responsive:true,maintainAspectRatio:false,plugins:{tooltip:{callbacks:{label:function(ctx){const total=ctx.dataset.data.reduce((a,b)=>a+b,0);const pct=total>0?((ctx.parsed/total)*100).toFixed(1):0;return` ${ctx.label}: $${ctx.parsed.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})} (${pct}%)`}}},legend:{position:'right',labels:{color:'#5B616E',font:{size:10,family:'Inter'},padding:8}}}}});
 }
@@ -3496,7 +3566,7 @@ function updateCharts(){
   if(!charts.ie)return;
   charts.ie.data.datasets[0].data=MK.map(monthIncome);charts.ie.data.datasets[1].data=MK.map(monthExpense);charts.ie.update();
   charts.pl.data.datasets[0].data=MK.map(monthPL);charts.pl.data.datasets[0].backgroundColor=MK.map(m=>monthPL(m)>=0?CC.greenFade:CC.redFade);charts.pl.data.datasets[0].borderColor=MK.map(m=>monthPL(m)>=0?CC.green:CC.red);charts.pl.update();
-  charts.sav.data.datasets[0].data=ytdSavings();charts.sav.update();
+  if(charts.nwDash){const _h=appData.netWorth?.history||[];charts.nwDash.data.labels=_h.map(s=>s.date);charts.nwDash.data.datasets[0].data=_h.map(s=>s.net);charts.nwDash.update();}
   const eb=expenseBreakdown(),el=Object.keys(eb).filter(k=>eb[k]>0);
   charts.pie.data.labels=el.length?el:['No data'];charts.pie.data.datasets[0].data=el.length?el.map(k=>eb[k]):[1];charts.pie.data.datasets[0].backgroundColor=el.length?CC.palette:['#2C3038'];charts.pie.update();
 }
