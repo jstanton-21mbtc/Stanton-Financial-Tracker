@@ -3257,7 +3257,7 @@ function _autoSnapshotIfDue(){
   try{
     if(typeof appData==='undefined'||!appData?.netWorth) return;
     const estNow=new Date(new Date().toLocaleString('en-US',{timeZone:'America/New_York'}));
-    if(estNow.getHours()<16) return; // not yet 4pm EST
+    if(estNow.getHours()<8) return; // not yet 8am EST
     const todayEst=_estIsoDate();
     const hist=appData.netWorth.history||[];
     if(hist.some(s=>s.isoDate===todayEst)) return; // already have today
@@ -3279,7 +3279,7 @@ function _scheduleDailySnapshot(){
   function scheduleNext(){
     try{
       const estNow=new Date(new Date().toLocaleString('en-US',{timeZone:'America/New_York'}));
-      const est4pm=new Date(estNow); est4pm.setHours(16,0,5,0);
+      const est4pm=new Date(estNow); est4pm.setHours(8,0,5,0);
       let ms=est4pm-estNow;
       if(ms<=0) ms+=86400000; // already past 4pm, aim for tomorrow
       setTimeout(function tick(){ _autoSnapshotIfDue(); setTimeout(tick,86400000); },ms);
