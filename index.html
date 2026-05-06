@@ -2238,6 +2238,7 @@ function _openApp() {
   if(!localStorage.getItem(TICKER_SEL_KEY)){ setTimeout(()=>showTickerPicker(true), 900); }
   setTimeout(checkDataFreshness, 1200);
   setTimeout(checkMonthlyBackup, 1500);
+  _scheduleDailySnapshot();
 }
 
 // ── AUTH ──
@@ -3245,7 +3246,7 @@ function takeSnapshot(){
   if(!appData.netWorth.history) appData.netWorth.history=[];
   const now=new Date();
   const date=now.toLocaleDateString('en-US',{year:'numeric',month:'short',day:'numeric'});
-  const isoDate=now.toISOString().slice(0,10);
+  const isoDate=_estIsoDate();
   const btcPrice=(typeof _getLiveBtcPrice==='function'?_getLiveBtcPrice():null)||null;
   const taoPrice=(typeof _getLiveTaoPrice==='function'?_getLiveTaoPrice():null)||null;
   appData.netWorth.history.push({date, isoDate, assets:nwTotalAssets(), liabilities:nwTotalLiabilities(), net:nwNet(), btcPrice, taoPrice});
@@ -3254,6 +3255,45 @@ function takeSnapshot(){
 
 function deleteSnapshot(i){
   if(confirm('Delete this snapshot?')){ appData.netWorth.history.splice(i,1); saveData(); renderNetWorth(); }
+}
+
+// ── AUTO DAILY SNAPSHOT AT 4PM EST ──
+function _estIsoDate(){
+  return new Date().toLocaleDateString('en-CA',{timeZone:'America/New_York'});
+}
+function _autoSnapshotIfDue(){
+  try{
+    if(typeof appData==='undefined'||!appData?.netWorth) return;
+    const estNow=new Date(new Date().toLocaleString('en-US',{timeZone:'America/New_York'}));
+    if(estNow.getHours()<16) return; // not yet 4pm EST
+    const todayEst=_estIsoDate();
+    const hist=appData.netWorth.history||[];
+    if(hist.some(s=>s.isoDate===todayEst)) return; // already have today
+    const btcPrice=(typeof _getLiveBtcPrice==='function'?_getLiveBtcPrice():null)||null;
+    const taoPrice=(typeof _getLiveTaoPrice==='function'?_getLiveTaoPrice():null)||null;
+    if(!btcPrice&&!taoPrice) return; // skip if no live prices yet
+    const date=new Date().toLocaleDateString('en-US',{year:'numeric',month:'short',day:'numeric'});
+    if(!appData.netWorth.history) appData.netWorth.history=[];
+    appData.netWorth.history.push({date,isoDate:todayEst,assets:nwTotalAssets(),liabilities:nwTotalLiabilities(),net:nwNet(),btcPrice,taoPrice});
+    saveData();
+    if(typeof renderNetWorth==='function') renderNetWorth();
+    if(typeof updateCharts==='function') updateCharts();
+  }catch(e){}
+}
+let _dailySnapshotScheduled=false;
+function _scheduleDailySnapshot(){
+  if(_dailySnapshotScheduled) return;
+  _dailySnapshotScheduled=true;
+  function scheduleNext(){
+    try{
+      const estNow=new Date(new Date().toLocaleString('en-US',{timeZone:'America/New_York'}));
+      const est4pm=new Date(estNow); est4pm.setHours(16,0,5,0);
+      let ms=est4pm-estNow;
+      if(ms<=0) ms+=86400000; // already past 4pm, aim for tomorrow
+      setTimeout(function tick(){ _autoSnapshotIfDue(); setTimeout(tick,86400000); },ms);
+    }catch(e){}
+  }
+  scheduleNext();
 }
 
 let _nwRange='all';
@@ -4592,6 +4632,7 @@ let _reloadTicker;
         if(changed&&typeof renderNetWorth==='function')renderNetWorth();
       }
     }catch(e){}
+    if(typeof _autoSnapshotIfDue==='function') _autoSnapshotIfDue();
   }
 
   _reloadTicker = function(){ init(); load(); };
