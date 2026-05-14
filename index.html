@@ -1184,7 +1184,7 @@
           <div class="subsection-title">Net Worth History</div>
           <div id="nw-history-empty" style="display:none;text-align:center;padding:32px;background:var(--card);border:1px solid var(--border);border-radius:var(--radius);color:var(--text-3);font-size:13px;">No snapshots yet. Click "Save Snapshot" to record your current net worth.</div>
           <div id="nw-chart-card" class="chart-card" style="display:none;margin-bottom:20px;">
-            <h3>Net Worth Over Time <span style="font-weight:400;color:var(--text-3);text-transform:none;letter-spacing:0;font-size:10px">— last 30 days</span></h3>
+            <h3>Net Worth Over Time <span style="font-weight:400;color:var(--text-3);text-transform:none;letter-spacing:0;font-size:10px">— all snapshots</span></h3>
             <div class="chart-wrap-lg" style="height:260px"><canvas id="chart-nw"></canvas></div>
           </div>
           <div class="table-wrap" id="nw-history-wrap" style="display:none"></div>
@@ -3320,9 +3320,9 @@ function renderNwHistory(){
     data:{
       labels:win.labels,
       datasets:[
-        {label:'Net Worth',   data:win.netData,   borderColor:CC.blue,  backgroundColor:'rgba(57,255,20,0.08)', fill:true, tension:.4, spanGaps:false, pointRadius:4, pointHoverRadius:7, pointBackgroundColor:CC.blue,  borderWidth:2.5},
-        {label:'Assets',      data:win.assetsData,borderColor:CC.green, backgroundColor:'transparent',          fill:false,tension:.4, spanGaps:false, pointRadius:3, pointHoverRadius:6, pointBackgroundColor:CC.green, borderWidth:1.8, borderDash:[5,4]},
-        {label:'Liabilities', data:win.liabData,  borderColor:CC.red,   backgroundColor:'transparent',          fill:false,tension:.4, spanGaps:false, pointRadius:3, pointHoverRadius:6, pointBackgroundColor:CC.red,   borderWidth:1.8, borderDash:[5,4]},
+        {label:'Net Worth',   data:win.netData,   borderColor:CC.blue,  backgroundColor:'rgba(57,255,20,0.08)', fill:true, tension:.4, spanGaps:true, pointRadius:4, pointHoverRadius:7, pointBackgroundColor:CC.blue,  borderWidth:2.5},
+        {label:'Assets',      data:win.assetsData,borderColor:CC.green, backgroundColor:'transparent',          fill:false,tension:.4, spanGaps:true, pointRadius:3, pointHoverRadius:6, pointBackgroundColor:CC.green, borderWidth:1.8, borderDash:[5,4]},
+        {label:'Liabilities', data:win.liabData,  borderColor:CC.red,   backgroundColor:'transparent',          fill:false,tension:.4, spanGaps:true, pointRadius:3, pointHoverRadius:6, pointBackgroundColor:CC.red,   borderWidth:1.8, borderDash:[5,4]},
       ]
     },
     options:{
@@ -3565,21 +3565,25 @@ function toggleAnthropicKeyVisibility(){
 
 // ── NW WINDOW HELPER: 30 days back · today · 15 days ahead ──
 function _buildNwWin(hist){
-  const t=new Date(); t.setHours(0,0,0,0);
-  const dates=[];
-  for(let i=-30;i<=0;i++){const d=new Date(t);d.setDate(d.getDate()+i);dates.push(d);}
+  // Index all snapshots by ISO date (last one wins per day)
   const byIso={};
   hist.forEach(s=>{
-    if(s.isoDate){byIso[s.isoDate]=s;}
-    else{const p=new Date(s.date);if(!isNaN(p))byIso[p.toLocaleDateString('en-CA')]=s;}
+    const iso=s.isoDate||(()=>{const p=new Date(s.date);return isNaN(p)?null:p.toLocaleDateString('en-CA')})();
+    if(iso) byIso[iso]=s;
   });
+  // Sort entries chronologically
+  const entries=Object.entries(byIso).sort((a,b)=>a[0].localeCompare(b[0]));
+  const dates=entries.map(([iso])=>new Date(iso+'T00:00:00'));
+  const snaps=entries.map(([,s])=>s);
   const snap=d=>byIso[d.toLocaleDateString('en-CA')]||null;
+  const todayISO=new Date().toLocaleDateString('en-CA');
+  const todayIdx=entries.findIndex(([iso])=>iso===todayISO);
   return {
     labels:dates.map(d=>d.toLocaleDateString('en-US',{month:'short',day:'numeric'})),
-    netData:dates.map(d=>{const s=snap(d);return s?s.net:null;}),
-    assetsData:dates.map(d=>{const s=snap(d);return s?s.assets:null;}),
-    liabData:dates.map(d=>{const s=snap(d);return s?s.liabilities:null;}),
-    dates, snap, todayIdx:dates.length-1
+    netData:snaps.map(s=>s.net),
+    assetsData:snaps.map(s=>s.assets),
+    liabData:snaps.map(s=>s.liabilities),
+    dates, snap, todayIdx
   };
 }
 
