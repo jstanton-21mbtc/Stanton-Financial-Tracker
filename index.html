@@ -4938,8 +4938,8 @@ async function psCallClaude(base64, mediaType, apiKey) {
 
 Extract the following fields and return ONLY a valid JSON object with no explanation or extra text:
 
-- "salary": current period regular/base pay (look for: Regular, REG, Regular Earnings, Base Pay, Salary, Regular Hours pay, Base Salary — use the CURRENT PERIOD column only, not YTD)
-- "commission": current period commission pay (look for: Commission, Comm, Sales Commission, Variable Pay — current period only; null if not present)
+- "salary": current period regular/base pay (look for: Regular, REG, Regular Earnings, Base Pay, Salary, Regular Hours pay, Base Salary — use the CURRENT PERIOD column only, not YTD; do NOT put Commission or Variable Pay here even if it is the only earnings line)
+- "commission": current period commission pay (look for: Commission, Comm, Sales Commission, Variable Pay, Commissions — current period only; if this is the ONLY earnings line item, still return it as commission, not salary; null only if truly not present)
 - "bonus": current period bonus pay (look for: Bonus, Annual Bonus, Performance Bonus, Sign-on Bonus, Holiday Bonus — current period only; null if not present)
 - "k401Period": 401(k) employee contribution this pay period (look for: 401(k), 401K, Employee 401(k), Ret 401K, DPSP, Retirement — current period column only, NOT YTD; null if not present)
 - "k401Ytd": 401(k) employee contributions year-to-date (same labels as above — YTD column)
