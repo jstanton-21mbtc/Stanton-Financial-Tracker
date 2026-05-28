@@ -220,6 +220,23 @@
     input[type=number] { background: transparent; border: none; color: var(--text); font-size: 13px; text-align: right; width: 100%; min-width: 72px; padding: 3px 4px; border-radius: 6px; outline: none; font-family: 'Inter', system-ui, sans-serif; -moz-appearance: textfield; }
     input[type=number]::-webkit-inner-spin-button, input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; }
     input[type=number]:focus { background: var(--bg); outline: 1.5px solid var(--blue); }
+    /* ── Cell Notes (Excel-style) ── */
+    .data-cell { position: relative; }
+    .note-dot { position: absolute; top: 3px; right: 3px; width: 7px; height: 7px; border-radius: 50%; background: var(--blue); pointer-events: none; flex-shrink: 0; }
+    .note-tooltip { display: none; position: absolute; top: -6px; right: 0; transform: translateY(-100%); background: var(--elevated); border: 1px solid var(--border); border-radius: 8px; padding: 8px 10px; font-size: 11.5px; color: var(--text); white-space: pre-wrap; max-width: 230px; text-align: left; z-index: 200; box-shadow: 0 6px 20px rgba(0,0,0,.4); line-height: 1.5; pointer-events: none; min-width: 120px; word-break: break-word; }
+    .data-cell.has-note:hover .note-tooltip { display: block; }
+    .note-btn { display: none; position: absolute; bottom: 2px; right: 3px; background: none; border: none; cursor: pointer; padding: 0; line-height: 1; color: var(--text-3); font-size: 11px; opacity: .5; z-index: 2; }
+    .note-btn:hover { opacity: 1 !important; color: var(--blue) !important; }
+    .data-cell:hover .note-btn { display: block; }
+    .data-cell.has-note .note-btn { display: block; color: var(--blue); opacity: .85; }
+    #note-editor-popup { display: none; position: fixed; background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 14px; z-index: 2000; box-shadow: 0 10px 40px rgba(0,0,0,.5); width: 260px; }
+    #note-editor-popup .nep-header { font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .6px; color: var(--text-3); margin-bottom: 8px; }
+    #note-editor-popup .nep-label { font-size: 11.5px; color: var(--text-2); margin-bottom: 6px; }
+    #note-editor-popup textarea { width: 100%; box-sizing: border-box; background: var(--elevated); border: 1px solid var(--border-dim); color: var(--text); font-family: 'Inter',sans-serif; font-size: 12.5px; border-radius: 7px; padding: 8px 10px; resize: vertical; min-height: 80px; outline: none; line-height: 1.5; }
+    #note-editor-popup textarea:focus { border-color: var(--blue); }
+    #note-editor-popup .nep-actions { display: flex; gap: 6px; margin-top: 10px; justify-content: flex-end; }
+    #note-editor-popup .nep-del { margin-right: auto; background: none; border: none; color: var(--red); font-size: 11.5px; cursor: pointer; padding: 5px 0; opacity: .7; }
+    #note-editor-popup .nep-del:hover { opacity: 1; }
     input[type=text] { background: transparent; border: none; color: var(--text); font-size: 13px; width: 100%; padding: 3px 4px; border-radius: 6px; outline: none; font-family: 'Inter', system-ui, sans-serif; }
     input[type=text]:focus { background: var(--bg); outline: 1.5px solid var(--blue); }
     select { background: var(--elevated); border: 1px solid var(--border); color: var(--text); border-radius: 6px; padding: 4px 8px; font-size: 12px; font-family: 'Inter', system-ui, sans-serif; outline: none; cursor: pointer; }
@@ -2184,6 +2201,7 @@ function _openApp() {
   if (needsRestore) { localStorage.setItem(STORAGE_KEY, JSON.stringify(appData)); }
   if(!appData.meta) appData.meta={name:'',year:new Date().getFullYear().toString(),currency:'$'};
   if(!appData.notes) appData.notes=Object.fromEntries(MK.map(m=>[m,{wins:'',challenges:'',actions:'',notes:''}]));
+  if(!appData.lineNotes) appData.lineNotes={};
   if(!appData.balances) appData.balances={savings:{},investments:{}};
   if(!appData.debts)    appData.debts=[];
   if(!appData.budget||!appData.budget.expenses) appData.budget={income:{},expenses:{}};
@@ -2545,13 +2563,55 @@ function renderDashboard() {
 }
 
 // ── DATA TABLE ──
+// ── LINE ITEM NOTES ──
+function getLineNote(sk,mk,ck){ return (appData.lineNotes&&appData.lineNotes[sk]&&appData.lineNotes[sk][mk]&&appData.lineNotes[sk][mk][ck])||''; }
+function saveLineNote(sk,mk,ck,val){
+  if(!appData.lineNotes) appData.lineNotes={};
+  if(!appData.lineNotes[sk]) appData.lineNotes[sk]={};
+  if(!appData.lineNotes[sk][mk]) appData.lineNotes[sk][mk]={};
+  if(val&&val.trim()) appData.lineNotes[sk][mk][ck]=val.trim();
+  else delete appData.lineNotes[sk][mk][ck];
+  saveData(); refreshAll();
+}
+let _nepCtx=null;
+function openNoteEditor(btn,sk,mk,ck){
+  _nepCtx={sk,mk,ck};
+  const pop=document.getElementById('note-editor-popup');
+  const cats=getCats(sk); const cat=cats.find(c=>c.key===ck);
+  pop.querySelector('.nep-label').textContent=(cat?cat.label:ck)+' — '+mk.charAt(0).toUpperCase()+mk.slice(1);
+  document.getElementById('nep-textarea').value=getLineNote(sk,mk,ck);
+  pop.style.display='block';
+  const r=btn.getBoundingClientRect();
+  let top=r.bottom+6, left=r.left-220;
+  if(left<8) left=8;
+  if(top+200>window.innerHeight) top=r.top-206;
+  pop.style.top=top+'px'; pop.style.left=left+'px';
+  document.getElementById('nep-textarea').focus();
+}
+function closeNoteEditor(){ document.getElementById('note-editor-popup').style.display='none'; _nepCtx=null; }
+function saveNoteEditor(){
+  if(!_nepCtx) return;
+  saveLineNote(_nepCtx.sk,_nepCtx.mk,_nepCtx.ck,document.getElementById('nep-textarea').value);
+  closeNoteEditor();
+}
+function deleteNoteEditor(){
+  if(!_nepCtx) return;
+  saveLineNote(_nepCtx.sk,_nepCtx.mk,_nepCtx.ck,'');
+  closeNoteEditor();
+}
+document.addEventListener('keydown',e=>{ if(e.key==='Escape') closeNoteEditor(); });
+document.addEventListener('click',e=>{
+  const pop=document.getElementById('note-editor-popup');
+  if(pop&&pop.style.display!=='none'&&!pop.contains(e.target)&&!e.target.classList.contains('note-btn')) closeNoteEditor();
+});
+
 function renderDataTable(containerId,cats,sectionKey){
   let html=`<table><thead><tr><th>Category</th>${MONTH_SHORT.map(m=>`<th>${m}</th>`).join('')}<th>Total</th><th>Avg</th><th class="cat-action-col"></th></tr></thead><tbody>`;
   cats.forEach(cat=>{
     const ct=MK.reduce((a,m)=>a+(parseFloat(appData[sectionKey][m][cat.key])||0),0);
     const nz=MK.filter(m=>(parseFloat(appData[sectionKey][m][cat.key])||0)>0).length||1;
     html+=`<tr><td><span class="cat-label" ondblclick="startRenameCat(this,'${sectionKey}','${esc(cat.key)}')" title="Double-click to rename">${esc(cat.label)}</span></td>`;
-    MK.forEach(mk=>{const v=r2(appData[sectionKey][mk][cat.key]||0);html+=`<td><input type="number" step="0.01" value="${v>0?v:''}" placeholder="0" onchange="updateValue('${sectionKey}','${mk}','${cat.key}',this.value)"/></td>`;});
+    MK.forEach(mk=>{const v=r2(appData[sectionKey][mk][cat.key]||0);const _n=getLineNote(sectionKey,mk,cat.key);html+=`<td class="data-cell${_n?' has-note':''}"><input type="number" step="0.01" value="${v>0?v:''}" placeholder="0" onchange="updateValue('${sectionKey}','${mk}','${cat.key}',this.value)"/>${_n?`<div class="note-dot"></div><div class="note-tooltip">${esc(_n)}</div>`:''}<button class="note-btn" onclick="openNoteEditor(this,'${sectionKey}','${mk}','${esc(cat.key)}')" title="${_n?'Edit note':'Add note'}">✎</button></td>`;});
     html+=`<td><strong>${fmt$(ct)}</strong></td><td class="val-neutral">${ct>0?fmt$(ct/nz):'—'}</td><td class="cat-action-col"><button class="cat-delete-btn" onclick="deleteCat('${sectionKey}','${esc(cat.key)}')" title="Delete row">×</button></td></tr>`;
   });
   html+=`<tr class="total-row"><td>Total</td>`;
@@ -6427,6 +6487,18 @@ function bsApply() {
     });
   }
 </script>
+
+<!-- Note Editor Popup -->
+<div id="note-editor-popup">
+  <div class="nep-header">Cell Note</div>
+  <div class="nep-label" style="font-size:11.5px;color:var(--text-2);margin-bottom:8px;font-weight:600;"></div>
+  <textarea id="nep-textarea" placeholder="Type your note here…" rows="4"></textarea>
+  <div class="nep-actions">
+    <button class="nep-del" onclick="deleteNoteEditor()">Remove note</button>
+    <button class="btn" style="font-size:11.5px;padding:5px 12px;" onclick="closeNoteEditor()">Cancel</button>
+    <button class="btn btn-primary" style="font-size:11.5px;padding:5px 12px;" onclick="saveNoteEditor()">Save</button>
+  </div>
+</div>
 
 </body>
 </html>
