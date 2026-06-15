@@ -3237,9 +3237,9 @@ function nwNet()              { return nwTotalAssets()-nwTotalLiabilities(); }
 
 function renderNetWorth() {
   if(!appData.netWorth) appData.netWorth={assets:{},liabilities:{},history:[]};
-  // hardset Bitcoin = 2.75 BTC × live price; Unchained Roth IRA = 0.74 BTC × live price; Bittensor = 80 TAO × live price; Silver = 34 oz × live spot
-  try{const p=typeof _getLiveBtcPrice==='function'?_getLiveBtcPrice():null;if(p){appData.netWorth.assets.bitcoin=r2(2.75*p);appData.netWorth.assets.bitcoinIRAUnchained=r2(0.74*p);}}catch(e){}
-  try{const p=typeof _getLiveTaoPrice==='function'?_getLiveTaoPrice():null;if(p)appData.netWorth.assets.cryptoOther=r2(80*p);}catch(e){}
+  // hardset Bitcoin = 2.7 BTC × live price; Unchained Roth IRA = 0.74 BTC × live price; Bittensor = 97 TAO × live price; Silver = 34 oz × live spot
+  try{const p=typeof _getLiveBtcPrice==='function'?_getLiveBtcPrice():null;if(p){appData.netWorth.assets.bitcoin=r2(2.7*p);appData.netWorth.assets.bitcoinIRAUnchained=r2(0.74*p);}}catch(e){}
+  try{const p=typeof _getLiveTaoPrice==='function'?_getLiveTaoPrice():null;if(p)appData.netWorth.assets.cryptoOther=r2(97*p);}catch(e){}
   try{const p=typeof _getLiveSilverPrice==='function'?_getLiveSilverPrice():null;if(p)appData.netWorth.assets.otherAssets=r2(34*p);}catch(e){}
   const totalA=nwTotalAssets(), totalL=nwTotalLiabilities(), net=nwNet();
   const debtRatio=totalA>0?(totalL/totalA):0;
@@ -4691,8 +4691,8 @@ let _reloadTicker;
       const b=_d.find(d=>d.sym==='BTC');
       const t=_d.find(d=>d.sym==='TAO');
       if(typeof appData!=='undefined'&&appData?.netWorth){
-        if(b&&b._live){appData.netWorth.assets.bitcoin=r2(2.75*b.price);appData.netWorth.assets.bitcoinIRAUnchained=r2(0.74*b.price);changed=true;}
-        if(t&&t._live){appData.netWorth.assets.cryptoOther=r2(80*t.price);changed=true;}
+        if(b&&b._live){appData.netWorth.assets.bitcoin=r2(2.7*b.price);appData.netWorth.assets.bitcoinIRAUnchained=r2(0.74*b.price);changed=true;}
+        if(t&&t._live){appData.netWorth.assets.cryptoOther=r2(97*t.price);changed=true;}
         if(window._silverPrice){appData.netWorth.assets.otherAssets=r2(34*window._silverPrice);changed=true;}
         if(changed&&typeof saveData==='function')saveData();
         if(changed&&typeof renderNetWorth==='function')renderNetWorth();
