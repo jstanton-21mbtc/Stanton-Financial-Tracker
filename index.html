@@ -2697,8 +2697,18 @@ function renderDashboard() {
   document.getElementById('kpi-grid').innerHTML=kpis.map(k=>`<div class="kpi-card ${k.cls}"><div class="kpi-label">${k.label}</div><div class="kpi-value">${k.value}</div><div class="kpi-sub">${k.sub}</div></div>`).join('');
   // Flag expense donut if any category > 40% of total expenses
   const _eb=expenseBreakdown();const _etot=Object.values(_eb).reduce((a,v)=>a+v,0);
-  const _hasFlag=_etot>0&&Object.values(_eb).some(v=>v/_etot>0.4);
-  const _dfEl=document.getElementById('donut-flag');if(_dfEl)_dfEl.style.display=_hasFlag?'':'none';
+  const _dfEl=document.getElementById('donut-flag');
+  if(_dfEl){
+    const _topEntry=_etot>0&&Object.entries(_eb).find(([,v])=>v/_etot>0.4);
+    if(_topEntry){
+      const _pct=Math.round(_topEntry[1]/_etot*100);
+      _dfEl.textContent='\u25b2 '+_topEntry[0]+' '+_pct+'%';
+      _dfEl.title=_topEntry[0]+' makes up '+_pct+'% of your expenses this month';
+      _dfEl.style.display='';
+    } else {
+      _dfEl.style.display='none';
+    }
+  }
 
   // As-of timestamp
   const now=new Date();
