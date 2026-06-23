@@ -144,6 +144,28 @@
     [data-theme="light"] .demo-mode-banner strong { color:#3d1a6e; }
     [data-theme="light"] .demo-exit-btn { background:#c9a0ff; color:#3d1a6e; }
     [data-theme="light"] .demo-exit-btn:hover { background:#b080ef; }
+    /* ── EXPORT NAG BANNER ── */
+    .export-nag-banner { display:none; align-items:center; gap:10px; padding:8px 18px; background:#0d1f0d; border-bottom:1px solid #2a5a2a; color:#7ad87a; font-size:12.5px; flex-shrink:0; }
+    .export-nag-banner.show { display:flex; }
+    .export-nag-banner strong { color:#a0f0a0; }
+    .export-nag-btn { background:#2a5a2a; border:none; color:#7ad87a; padding:5px 14px; border-radius:999px; font-size:12px; font-weight:700; cursor:pointer; white-space:nowrap; transition:background .15s; }
+    .export-nag-btn:hover { background:#3a7a3a; }
+    .export-nag-close { background:none; border:none; color:#7ad87a; opacity:.7; cursor:pointer; font-size:18px; line-height:1; padding:0 4px; margin-left:4px; }
+    .export-nag-close:hover { opacity:1; }
+    [data-theme="light"] .export-nag-banner { background:#f0fff0; border-bottom-color:#7ad87a; color:#2a5a2a; }
+    [data-theme="light"] .export-nag-banner strong { color:#1a4a1a; }
+    [data-theme="light"] .export-nag-btn { background:#7ad87a; color:#1a4a1a; }
+    /* ── STORAGE PERSIST BANNER ── */
+    .storage-persist-banner { display:none; align-items:center; gap:10px; padding:8px 18px; background:#1a1000; border-bottom:1px solid #7a5200; color:#ffb84d; font-size:12.5px; flex-shrink:0; }
+    .storage-persist-banner.show { display:flex; }
+    .storage-persist-banner strong { color:#ffd480; }
+    .storage-persist-btn { background:#7a5200; border:none; color:#ffb84d; padding:5px 14px; border-radius:999px; font-size:12px; font-weight:700; cursor:pointer; white-space:nowrap; transition:background .15s; }
+    .storage-persist-btn:hover { background:#a06c00; }
+    .storage-persist-close { background:none; border:none; color:#ffb84d; opacity:.7; cursor:pointer; font-size:18px; line-height:1; padding:0 4px; margin-left:4px; }
+    .storage-persist-close:hover { opacity:1; }
+    [data-theme="light"] .storage-persist-banner { background:#fff8e1; border-bottom-color:#ffe082; color:#7a5200; }
+    [data-theme="light"] .storage-persist-banner strong { color:#5a3a00; }
+    [data-theme="light"] .storage-persist-btn { background:#ffe082; color:#5a3a00; }
     /* ── TICKER PICKER ── */
     .ticker-picker-overlay { position:fixed; inset:0; background:rgba(0,0,0,.65); z-index:660; display:flex; align-items:center; justify-content:center; padding:20px; }
     .ticker-picker-card { background:var(--card); border:1px solid var(--border); border-radius:20px; width:100%; max-width:620px; max-height:82vh; display:flex; flex-direction:column; animation:fadeUp .3s ease; }
@@ -350,6 +372,13 @@
     .login-btn { width: 100%; padding: 13px; background: var(--blue); border: none; border-radius: 10px; color: #fff; font-size: 14px; font-weight: 600; font-family: 'Inter', system-ui, sans-serif; cursor: pointer; transition: background .15s; margin-top: 4px; }
     .login-btn:hover { background: var(--blue-hover); }
     .login-hint { font-size: 11.5px; color: var(--text-3); text-align: center; margin-top: 20px; line-height: 1.6; }
+    /* ── LOCAL 2-STEP LOGIN ── */
+    .local-step2-header { display:none; align-items:center; gap:12px; background:var(--blue-dim); border:1px solid rgba(57,255,20,0.2); border-radius:10px; padding:12px 14px; margin-bottom:18px; }
+    .local-step2-header.show { display:flex; }
+    .local-step2-avatar { width:36px; height:36px; border-radius:999px; background:var(--blue); color:#000; font-weight:800; font-size:15px; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+    .local-step2-name { font-size:14px; font-weight:700; color:var(--text); line-height:1.2; }
+    .local-step2-change { background:none; border:none; color:var(--text-3); font-size:11px; cursor:pointer; padding:2px 0 0; font-family:inherit; text-decoration:underline; text-underline-offset:2px; display:block; transition:color .15s; }
+    .local-step2-change:hover { color:var(--text-2); }
 
     /* ── NET WORTH ── */
     .nw-split { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 8px; }
@@ -708,6 +737,9 @@
       /* Demo banner */
       .demo-mode-banner { font-size: 12px; padding: 8px 14px; flex-wrap: wrap; gap: 8px; }
       .demo-exit-btn { font-size: 11px; padding: 5px 10px; }
+      /* Export nag + storage banner */
+      .export-nag-banner, .storage-persist-banner { font-size: 12px; padding: 8px 14px; flex-wrap: wrap; gap: 6px; }
+      .export-nag-btn, .storage-persist-btn { font-size: 11px; padding: 5px 10px; }
 
       /* ── OVERFLOW PREVENTION ── */
       /* Clamp every child of main to viewport width */
@@ -813,20 +845,39 @@
     <div class="login-logo"><svg width="26" height="22" viewBox="0 0 26 22" fill="none"><rect x="0" y="0"  width="26" height="3.2" rx="1.6" fill="white"/><rect x="0" y="4.7" width="26" height="3.2" rx="1.6" fill="white"/><rect x="0" y="9.4" width="26" height="3.2" rx="1.6" fill="white"/><rect x="0" y="14.1" width="26" height="3.2" rx="1.6" fill="white"/><rect x="0" y="18.8" width="26" height="3.2" rx="1.6" fill="white"/></svg></div>
     <h1 id="login-title">5Stack.ai</h1>
     <p id="login-subtitle">Sign in to access your tracker.</p>
+    <!-- Local 2-step: Step 1 — Username -->
+    <div id="local-step1" style="display:none">
+      <div class="login-field">
+        <label>Username</label>
+        <input type="text" id="login-username-local" placeholder="Choose a username"
+               onkeydown="if(event.key==='Enter')localStep1Continue()"
+               autocomplete="username" />
+      </div>
+      <div class="login-error" id="login-username-error"></div>
+      <button class="login-btn" onclick="localStep1Continue()">Continue &rarr;</button>
+    </div>
+    <!-- Local 2-step: Step 2 header — user badge -->
+    <div class="local-step2-header" id="local-step2-header">
+      <div class="local-step2-avatar" id="local-step2-avatar">?</div>
+      <div>
+        <div class="local-step2-name" id="local-step2-name"></div>
+        <button class="local-step2-change" onclick="localBackToStep1()">&larr; Change</button>
+      </div>
+    </div>
     <div class="login-field" id="login-email-field" style="display:none">
       <label>Username</label>
       <input type="text" id="login-email" placeholder="Choose a username" onkeydown="if(event.key==='Enter')submitLogin()" autocomplete="username" />
     </div>
-    <div class="login-field">
-      <label id="login-pw-label">Password</label>
-      <input type="password" id="login-input" placeholder="Enter password" onkeydown="if(event.key==='Enter')submitLogin()" />
+    <div class="login-field" id="login-pw-field">
+      <label id="login-pw-label">Access Code</label>
+      <input type="password" id="login-input" placeholder="Enter access code" onkeydown="if(event.key==='Enter')submitLogin()" />
       <button class="login-eye" onclick="toggleLoginEye()" tabindex="-1">
         <svg id="login-eye-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
       </button>
     </div>
     <div class="login-field" id="login-confirm-field" style="display:none">
-      <label>Confirm Password</label>
-      <input type="password" id="login-confirm" placeholder="Confirm password" onkeydown="if(event.key==='Enter')submitLogin()" />
+      <label>Confirm Access Code</label>
+      <input type="password" id="login-confirm" placeholder="Confirm access code" onkeydown="if(event.key==='Enter')submitLogin()" />
     </div>
     <div class="login-error" id="login-error"></div>
     <button class="login-btn" id="login-btn" onclick="submitLogin()">Sign In</button>
@@ -839,7 +890,7 @@
     </div>
     <div class="login-hint" id="login-hint" style="display:none">
       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-2px;margin-right:4px;opacity:.7"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
-      <strong>Your data stays private.</strong> Everything you enter is stored only in <em>your</em> browser — never uploaded, never shared, never seen by anyone else. You can update your password anytime in Settings.
+      <strong>Your data stays in this browser.</strong> Nothing is uploaded or shared. Your access code locks the app — if you forget it, reset it via the browser console. Export a backup regularly so your data is never lost.
     </div>
   </div>
 </div>
@@ -1047,6 +1098,20 @@
       <span><strong>Demo Mode</strong> — You're viewing sample data (Alex Rivera). Changes are not saved to your account.</span>
       <button class="demo-exit-btn" onclick="exitDemoMode()">Exit Demo &rarr; Sign In</button>
     </div>
+    <!-- ── EXPORT NAG BANNER ── -->
+    <div class="export-nag-banner" id="export-nag-banner">
+      <svg style="flex-shrink:0" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v14a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+      <span class="stale-alert-msg" id="export-nag-msg"></span>
+      <button class="export-nag-btn" onclick="exportData();dismissExportNag()">Export Now</button>
+      <button class="export-nag-close" onclick="dismissExportNag()" title="Dismiss">&#215;</button>
+    </div>
+    <!-- ── STORAGE PERSISTENCE WARNING ── -->
+    <div class="storage-persist-banner" id="storage-persist-banner">
+      <svg style="flex-shrink:0" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+      <span class="stale-alert-msg"><strong>Storage not persistent</strong> — your browser may clear this data if disk space runs low. <a onclick="requestStoragePersist()" style="color:inherit;font-weight:700;cursor:pointer;text-decoration:underline">Grant persistent storage</a> or export a backup.</span>
+      <button class="export-nag-btn" onclick="exportData();dismissStorageBanner()" style="background:#7a5200;color:#ffb84d;">Export Backup</button>
+      <button class="storage-persist-close" onclick="dismissStorageBanner()" title="Dismiss">&#215;</button>
+    </div>
 
     <main>
 
@@ -1058,7 +1123,7 @@
           <div class="chart-card"><h3>Income vs Expenses</h3><div class="chart-wrap"><canvas id="chart-ie"></canvas></div></div>
           <div class="chart-card"><h3>Net P&amp;L by Month</h3><div class="chart-wrap"><canvas id="chart-pl"></canvas></div></div>
           <div class="chart-card"><h3>Net Worth</h3><div class="chart-wrap"><canvas id="chart-nw-dash"></canvas></div></div>
-          <div class="chart-card"><h3>Expense Breakdown</h3><div class="chart-wrap"><canvas id="chart-pie"></canvas></div></div>
+          <div class="chart-card"><h3 style="display:flex;align-items:center;justify-content:space-between;">Expense Breakdown <span id="donut-flag" style="display:none;background:var(--red-dim);color:var(--red);font-size:10px;font-weight:700;padding:2px 8px;border-radius:999px;letter-spacing:.3px;text-transform:uppercase;">&#9650; &gt;40% Category</span></h3><div class="chart-wrap"><canvas id="chart-pie"></canvas></div></div>
         </div>
         <div class="subsection">
           <div class="subsection-title">Monthly Summary</div>
@@ -1407,7 +1472,7 @@
           <div class="settings-card">
             <div class="settings-card-header">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
-              <div><div class="settings-card-title">Security</div><div class="settings-card-sub">Update your password</div></div>
+              <div><div class="settings-card-title">Security</div><div class="settings-card-sub">Update your access code</div></div>
             </div>
             <div class="settings-card-body">
               <div class="settings-field" id="sec-username-wrap">
@@ -1416,20 +1481,31 @@
                 <div class="field-hint">Leave blank to keep your current username.</div>
               </div>
               <div class="settings-field">
-                <label>New Password</label>
-                <input type="password" id="sec-new" placeholder="Choose a new password" />
-                <div class="field-hint">Leave blank to keep your current password.</div>
+                <label>New Access Code</label>
+                <input type="password" id="sec-new" placeholder="Choose a new access code" />
+                <div class="field-hint">Leave blank to keep your current access code.</div>
               </div>
               <div class="settings-field">
-                <label>Confirm New Password</label>
-                <input type="password" id="sec-confirm" placeholder="Repeat new password" />
+                <label>Confirm New Access Code</label>
+                <input type="password" id="sec-confirm" placeholder="Repeat access code" />
               </div>
               <div class="sec-error" id="sec-error"></div>
               <div class="settings-save-row">
-                <button class="btn btn-primary" style="border-radius:8px" onclick="savePassword()">Update Credentials</button>
+                <button class="btn btn-primary" style="border-radius:8px" onclick="savePassword()">Update Access Code</button>
                 <div class="settings-success" id="sec-success">
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> Updated
                 </div>
+              </div>
+              <div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--border-dim);">
+                <label style="display:flex;align-items:center;gap:10px;cursor:pointer;font-size:13px;color:var(--text-2);">
+                  <input type="checkbox" id="clear-key-logout" onchange="saveClearKeyPref()" style="width:15px;height:15px;accent-color:var(--blue);cursor:pointer;" />
+                  Clear API key when I log out
+                </label>
+                <div class="field-hint" style="margin-top:5px;padding-left:25px;">Anyone with access to this browser profile can read your API key from localStorage — enable this to clear it on logout.</div>
+              </div>
+              <div style="margin-top:12px;padding:10px 12px;background:var(--elevated);border-radius:8px;border-left:3px solid var(--text-3);">
+                <div style="font-size:11px;font-weight:700;color:var(--text-3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;">How login works</div>
+                <div style="font-size:12px;color:var(--text-2);line-height:1.55;">Your access code is a <strong style="color:var(--text)">UI lock only</strong> — data is stored in plain text in your browser. It prevents casual access but won't protect against someone who can inspect localStorage directly. Never share this device with untrusted users.</div>
               </div>
             </div>
           </div>
@@ -2248,11 +2324,13 @@ function _openApp() {
   if(!localStorage.getItem(TICKER_SEL_KEY)){ setTimeout(()=>showTickerPicker(true), 900); }
   setTimeout(checkDataFreshness, 1200);
   setTimeout(checkMonthlyBackup, 1500);
+  setTimeout(checkStorageHealth, 2000);
   _scheduleDailySnapshot();
 }
 
 // ── AUTH ──
 let _authMode = 'signin';
+let _localLoginUsername = '';
 
 function initLoginScreen() {
   document.getElementById('login-email').value  = '';
@@ -2262,17 +2340,22 @@ function initLoginScreen() {
   document.getElementById('login-input').classList.remove('error');
 
   if (!SUPABASE_CONFIGURED) {
-    // Local mode — password only
+    // Local mode — 2-step: Username → Access Code
     document.getElementById('login-email-field').style.display = 'none';
     document.getElementById('login-toggle').style.display = 'none';
     document.getElementById('login-title').textContent = '5Stack.ai';
+    document.getElementById('local-step1').style.display = '';
+    document.getElementById('local-step2-header').classList.remove('show');
+    document.getElementById('login-pw-field').style.display = 'none';
+    document.getElementById('login-confirm-field').style.display = 'none';
+    document.getElementById('login-btn').style.display = 'none';
+    document.getElementById('login-hint').style.display = 'none';
+    _localLoginUsername = '';
+    document.getElementById('login-username-local').value = '';
+    document.getElementById('login-username-error').classList.remove('show');
+    document.getElementById('login-username-error').textContent = '';
     if (isFirstTime()) {
-      document.getElementById('login-subtitle').textContent = 'Welcome! Create a password to get started.';
-      document.getElementById('login-pw-label').textContent = 'New Password';
-      document.getElementById('login-input').placeholder    = 'Choose a password';
-      document.getElementById('login-confirm-field').style.display = '';
-      document.getElementById('login-btn').textContent      = 'Create Password';
-      document.getElementById('login-hint').style.display   = '';
+      document.getElementById('login-subtitle').textContent = 'Create a username and access code to get started.';
       setTimeout(() => {
         const btn = document.getElementById('demo-btn');
         if (btn) {
@@ -2281,27 +2364,94 @@ function initLoginScreen() {
         }
       }, 900);
     } else {
-      document.getElementById('login-subtitle').textContent = 'Enter your password to continue.';
-      document.getElementById('login-pw-label').textContent = 'Password';
-      document.getElementById('login-input').placeholder    = 'Enter password';
-      document.getElementById('login-confirm-field').style.display = 'none';
-      document.getElementById('login-btn').textContent      = 'Sign In';
-      document.getElementById('login-hint').style.display   = 'none';
+      document.getElementById('login-subtitle').textContent = 'Enter your username to continue.';
     }
+    setTimeout(() => document.getElementById('login-username-local').focus(), 80);
+    return;
   } else {
     // Supabase mode — username + password
     _authMode = 'signin';
+    document.getElementById('local-step1').style.display = 'none';
+    document.getElementById('local-step2-header').classList.remove('show');
     document.getElementById('login-email-field').style.display = '';
     document.getElementById('login-toggle').style.display = '';
+    document.getElementById('login-pw-field').style.display = '';
     document.getElementById('login-title').textContent    = '5Stack.ai';
     document.getElementById('login-subtitle').textContent = 'Enter your username and password to continue.';
     document.getElementById('login-pw-label').textContent = 'Password';
     document.getElementById('login-input').placeholder    = 'Enter password';
     document.getElementById('login-confirm-field').style.display = 'none';
+    document.getElementById('login-btn').style.display    = '';
     document.getElementById('login-btn').textContent      = 'Sign In';
     document.getElementById('login-hint').style.display   = 'none';
     document.getElementById('login-toggle-link').textContent = 'Create one';
   }
+}
+
+function localStep1Continue() {
+  const input = document.getElementById('login-username-local');
+  const errEl = document.getElementById('login-username-error');
+  const username = input.value.trim();
+  errEl.classList.remove('show');
+  errEl.textContent = '';
+  if (!username) {
+    errEl.textContent = 'Please enter a username.';
+    errEl.classList.add('show');
+    return;
+  }
+  if (!isFirstTime()) {
+    const stored = localStorage.getItem(USERNAME_KEY);
+    if (stored && stored !== username) {
+      errEl.textContent = 'Username not recognised. Try again.';
+      errEl.classList.add('show');
+      return;
+    }
+  }
+  _localLoginUsername = username;
+  // Show step-2 badge
+  const initials = username.slice(0,1).toUpperCase();
+  document.getElementById('local-step2-avatar').textContent = initials;
+  document.getElementById('local-step2-name').textContent = username;
+  document.getElementById('local-step2-header').classList.add('show');
+  document.getElementById('local-step1').style.display = 'none';
+  // Show access code field + submit button
+  document.getElementById('login-pw-field').style.display = '';
+  document.getElementById('login-btn').style.display = '';
+  if (isFirstTime()) {
+    document.getElementById('login-subtitle').textContent = 'Choose an access code to lock your tracker.';
+    document.getElementById('login-pw-label').textContent = 'Access Code';
+    document.getElementById('login-input').placeholder    = 'Choose an access code';
+    document.getElementById('login-confirm-field').style.display = '';
+    document.getElementById('login-btn').textContent      = 'Create Access Code';
+    document.getElementById('login-hint').style.display   = '';
+  } else {
+    document.getElementById('login-subtitle').textContent = 'Welcome back, ' + username + '.';
+    document.getElementById('login-pw-label').textContent = 'Access Code';
+    document.getElementById('login-input').placeholder    = 'Enter access code';
+    document.getElementById('login-confirm-field').style.display = 'none';
+    document.getElementById('login-btn').textContent      = 'Unlock';
+    document.getElementById('login-hint').style.display   = 'none';
+  }
+  setTimeout(() => document.getElementById('login-input').focus(), 80);
+}
+
+function localBackToStep1() {
+  _localLoginUsername = '';
+  document.getElementById('local-step2-header').classList.remove('show');
+  document.getElementById('local-step1').style.display = '';
+  document.getElementById('login-pw-field').style.display = 'none';
+  document.getElementById('login-confirm-field').style.display = 'none';
+  document.getElementById('login-btn').style.display = 'none';
+  document.getElementById('login-hint').style.display = 'none';
+  document.getElementById('login-error').classList.remove('show');
+  document.getElementById('login-input').value = '';
+  document.getElementById('login-confirm').value = '';
+  if (isFirstTime()) {
+    document.getElementById('login-subtitle').textContent = 'Create a username and access code to get started.';
+  } else {
+    document.getElementById('login-subtitle').textContent = 'Enter your username to continue.';
+  }
+  setTimeout(() => document.getElementById('login-username-local').focus(), 80);
 }
 
 function toggleAuthMode() {
@@ -2326,20 +2476,21 @@ async function submitLogin() {
   error.classList.remove('show');
   error.style.color = '';
   document.getElementById('login-input').classList.remove('error');
-  if (!password) { error.textContent='Please enter your password.'; error.classList.add('show'); return; }
+  if (!password) { error.textContent='Please enter your access code.'; error.classList.add('show'); return; }
 
   if (!SUPABASE_CONFIGURED) {
-    // Local auth — password only
+    // Local auth — access code only
     if (isFirstTime()) {
-      if (password.length < 4) { error.textContent='Password must be at least 4 characters.'; error.classList.add('show'); return; }
-      if (password !== confirm) { error.textContent='Passwords do not match.'; error.classList.add('show'); return; }
+      if (password.length < 4) { error.textContent='Access code must be at least 4 characters.'; error.classList.add('show'); return; }
+      if (password !== confirm) { error.textContent='Access codes do not match.'; error.classList.add('show'); return; }
       localStorage.setItem(PW_KEY, hashPw(password));
+      if (_localLoginUsername) localStorage.setItem(USERNAME_KEY, _localLoginUsername);
       _openApp();
     } else {
       if (hashPw(password) === getStoredHash()) {
         _openApp();
       } else {
-        error.textContent='Incorrect password. Please try again.';
+        error.textContent='Incorrect access code. Please try again.';
         document.getElementById('login-input').classList.add('error');
         error.classList.add('show');
       }
@@ -2391,6 +2542,9 @@ async function submitLogin() {
 }
 
 function logOut() {
+  if(localStorage.getItem('sft_clear_key_on_logout_v1')==='1'){
+    localStorage.removeItem('sft_anthropic_key_v1');
+  }
   if (!SUPABASE_CONFIGURED) {
     document.getElementById('login-overlay').style.display = 'flex';
     initLoginScreen();
@@ -2418,7 +2572,7 @@ const TAB_META = {
   goals:       ['Goals',             '2026 financial goals'],
   scorecard:   ['Monthly Scorecard', 'Goal tracking & performance review'],
   notes:       ['Monthly Notes',     'Wins, challenges, and action items'],
-  settings:    ['Settings',          'Profile, password & data management'],
+  settings:    ['Settings',          'Profile, access code & data management'],
   learn:       ['Resources & Learning','Guides, tips & financial education'],
 };
 
@@ -2541,6 +2695,10 @@ function renderDashboard() {
     {label:'Total Savings YTD',value:fmt$(as),             sub:ytdLabel,                 cls:as>0?'positive':'white'},
   ];
   document.getElementById('kpi-grid').innerHTML=kpis.map(k=>`<div class="kpi-card ${k.cls}"><div class="kpi-label">${k.label}</div><div class="kpi-value">${k.value}</div><div class="kpi-sub">${k.sub}</div></div>`).join('');
+  // Flag expense donut if any category > 40% of total expenses
+  const _eb=expenseBreakdown();const _etot=Object.values(_eb).reduce((a,v)=>a+v,0);
+  const _hasFlag=_etot>0&&Object.values(_eb).some(v=>v/_etot>0.4);
+  const _dfEl=document.getElementById('donut-flag');if(_dfEl)_dfEl.style.display=_hasFlag?'':'none';
 
   // As-of timestamp
   const now=new Date();
@@ -3564,6 +3722,12 @@ function renderSettings(){
   if(se)se.classList.remove('show');if(so)so.classList.remove('show');
   const ak=document.getElementById('settings-anthropic-key');
   if(ak)ak.value=localStorage.getItem('sft_anthropic_key_v1')||'';
+  const ckl=document.getElementById('clear-key-logout');
+  if(ckl)ckl.checked=localStorage.getItem('sft_clear_key_on_logout_v1')==='1';
+}
+function saveClearKeyPref(){
+  const ckl=document.getElementById('clear-key-logout');
+  if(ckl) localStorage.setItem('sft_clear_key_on_logout_v1', ckl.checked?'1':'0');
 }
 function saveProfile(){
   const name=document.getElementById('settings-name').value.trim();
@@ -3585,11 +3749,11 @@ async function savePassword(){
     const changed=[];
     if(newUser){localStorage.setItem(USERNAME_KEY,newUser);changed.push('username');}
     if(np){
-      if(np.length<4){err.textContent='New password must be at least 4 characters.';err.classList.add('show');return;}
-      if(np!==cf){err.textContent='Passwords do not match.';err.classList.add('show');return;}
-      localStorage.setItem(PW_KEY,hashPw(np));changed.push('password');
+      if(np.length<4){err.textContent='Access code must be at least 4 characters.';err.classList.add('show');return;}
+      if(np!==cf){err.textContent='Access codes do not match.';err.classList.add('show');return;}
+      localStorage.setItem(PW_KEY,hashPw(np));changed.push('access code');
     }
-    if(!changed.length){err.textContent='Enter a new username or password to update.';err.classList.add('show');return;}
+    if(!changed.length){err.textContent='Enter a new username or access code to update.';err.classList.add('show');return;}
     ['sec-new','sec-confirm'].forEach(id=>document.getElementById(id).value='');
     const unEl=document.getElementById('sec-username');if(unEl)unEl.value='';
     ok.classList.add('show');setTimeout(()=>ok.classList.remove('show'),2500);
@@ -3692,9 +3856,66 @@ function refreshAll(){
 }
 
 // ── IMPORT / EXPORT / RESET ──
+const EXPORT_TS_KEY = 'sft_last_export_v1';
+const EXPORT_NAG_SESSION_KEY = 'sft_export_nag_dismissed_v1';
+const STORAGE_NAG_SESSION_KEY = 'sft_storage_nag_dismissed_v1';
+
 function exportData(){
+  localStorage.setItem(EXPORT_TS_KEY, new Date().toISOString());
+  dismissExportNag();
+  const yr = appData?.meta?.year || '2026';
   const blob=new Blob([JSON.stringify(appData,null,2)],{type:'application/json'});
-  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='5stack-financial-2026.json';a.click();
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`5stack-financial-${yr}.json`;a.click();
+}
+
+function dismissExportNag(){
+  sessionStorage.setItem(EXPORT_NAG_SESSION_KEY,'1');
+  document.getElementById('export-nag-banner')?.classList.remove('show');
+}
+function dismissStorageBanner(){
+  sessionStorage.setItem(STORAGE_NAG_SESSION_KEY,'1');
+  document.getElementById('storage-persist-banner')?.classList.remove('show');
+}
+async function requestStoragePersist(){
+  if(!navigator.storage?.persist){showToast('Not supported in this browser');return;}
+  try{
+    const granted=await navigator.storage.persist();
+    if(granted){dismissStorageBanner();showToast('Persistent storage granted!');}
+    else{showToast('Not granted — export a backup to stay safe.');}
+  }catch(e){}
+}
+
+async function checkStorageHealth(){
+  if(isDemoMode)return;
+  // 1. Export nag
+  if(!sessionStorage.getItem(EXPORT_NAG_SESSION_KEY)){
+    const lastExport=localStorage.getItem(EXPORT_TS_KEY);
+    const hasData=!_dataIsBlank(appData);
+    let shouldNag=false,daysSince=null;
+    if(!lastExport&&hasData){ shouldNag=true; }
+    else if(lastExport){
+      daysSince=Math.floor((Date.now()-new Date(lastExport).getTime())/86400000);
+      if(daysSince>30) shouldNag=true;
+    }
+    if(shouldNag){
+      const msg=document.getElementById('export-nag-msg');
+      const banner=document.getElementById('export-nag-banner');
+      if(msg&&banner){
+        msg.innerHTML=lastExport
+          ?`<strong>Back up your data!</strong> Last export was <strong>${daysSince} days ago</strong> — a cache clear could erase everything.`
+          :`<strong>Export your first backup!</strong> Your data only exists in this browser. One cache clear and it's gone.`;
+        banner.classList.add('show');
+      }
+    }
+  }
+  // 2. Storage persistence
+  if(!navigator.storage?.persisted||sessionStorage.getItem(STORAGE_NAG_SESSION_KEY))return;
+  try{
+    const isPersisted=await navigator.storage.persisted();
+    if(!isPersisted&&!_dataIsBlank(appData)){
+      document.getElementById('storage-persist-banner')?.classList.add('show');
+    }
+  }catch(e){}
 }
 
 // ── MONTHLY BACKUPS ──
@@ -3891,7 +4112,7 @@ const TUTORIAL_STEPS = [
     icon: `<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>`,
     color: '#F5A623', bg: 'rgba(245,166,35,.15)',
     title: 'Analyst Tips & Settings',
-    body: 'Click <strong>Analyst Tips</strong> in the top bar anytime to get personalized recommendations from 10 top financial analysts — based on your actual data.\n\nIn <strong>Settings</strong> you can update your profile, change your password, export/import your data as a backup, and re-launch this tour anytime from the <strong>Help</strong> card.\n\nYou\'re all set — let\'s build some wealth! 🚀'
+    body: 'Click <strong>Analyst Tips</strong> in the top bar anytime to get personalized recommendations from 10 top financial analysts — based on your actual data.\n\nIn <strong>Settings</strong> you can update your profile, change your access code, export/import your data as a backup, and re-launch this tour anytime from the <strong>Help</strong> card.\n\nYou\'re all set — let\'s build some wealth! 🚀'
   },
 ];
 
