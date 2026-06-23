@@ -379,6 +379,15 @@
     .local-step2-name { font-size:14px; font-weight:700; color:var(--text); line-height:1.2; }
     .local-step2-change { background:none; border:none; color:var(--text-3); font-size:11px; cursor:pointer; padding:2px 0 0; font-family:inherit; text-decoration:underline; text-underline-offset:2px; display:block; transition:color .15s; }
     .local-step2-change:hover { color:var(--text-2); }
+    .local-saved-user { display:none; flex-direction:column; align-items:center; gap:10px; margin-bottom:20px; }
+    .local-saved-user.show { display:flex; }
+    .local-saved-user-tile { display:flex; flex-direction:column; align-items:center; gap:8px; cursor:pointer; padding:14px 28px; border-radius:14px; border:1px solid var(--border); background:var(--bg-2); transition:border-color .15s, background .15s; }
+    .local-saved-user-tile:hover { border-color:var(--blue); background:var(--blue-dim); }
+    .local-saved-user-avatar { width:52px; height:52px; border-radius:999px; background:var(--blue); color:#000; font-weight:800; font-size:22px; display:flex; align-items:center; justify-content:center; }
+    .local-saved-user-name { font-size:13px; font-weight:700; color:var(--text); }
+    .local-saved-user-hint { font-size:11px; color:var(--text-3); margin-top:2px; }
+    .local-not-you { background:none; border:none; color:var(--text-3); font-size:11px; cursor:pointer; font-family:inherit; text-decoration:underline; text-underline-offset:2px; transition:color .15s; }
+    .local-not-you:hover { color:var(--text-2); }
 
     /* ── NET WORTH ── */
     .nw-split { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 8px; }
@@ -847,14 +856,26 @@
     <p id="login-subtitle">Sign in to access your tracker.</p>
     <!-- Local 2-step: Step 1 — Username -->
     <div id="local-step1" style="display:none">
-      <div class="login-field">
-        <label>Username</label>
-        <input type="text" id="login-username-local" placeholder="Choose a username"
-               onkeydown="if(event.key==='Enter')localStep1Continue()"
-               autocomplete="username" />
+      <!-- Returning user: saved account tile -->
+      <div class="local-saved-user" id="local-saved-user">
+        <div class="local-saved-user-tile" onclick="localSelectSavedUser()">
+          <div class="local-saved-user-avatar" id="local-saved-user-avatar">?</div>
+          <div class="local-saved-user-name" id="local-saved-user-name"></div>
+          <div class="local-saved-user-hint">Tap to continue</div>
+        </div>
+        <button class="local-not-you" onclick="localShowUsernameInput()">Not you?</button>
       </div>
-      <div class="login-error" id="login-username-error"></div>
-      <button class="login-btn" onclick="localStep1Continue()">Continue &rarr;</button>
+      <!-- New user or manual username entry -->
+      <div id="local-username-input-wrap">
+        <div class="login-field">
+          <label>Username</label>
+          <input type="text" id="login-username-local" placeholder="Choose a username"
+                 onkeydown="if(event.key==='Enter')localStep1Continue()"
+                 autocomplete="username" />
+        </div>
+        <div class="login-error" id="login-username-error"></div>
+        <button class="login-btn" onclick="localStep1Continue()">Continue &rarr;</button>
+      </div>
     </div>
     <!-- Local 2-step: Step 2 header — user badge -->
     <div class="local-step2-header" id="local-step2-header">
@@ -2354,8 +2375,12 @@ function initLoginScreen() {
     document.getElementById('login-username-local').value = '';
     document.getElementById('login-username-error').classList.remove('show');
     document.getElementById('login-username-error').textContent = '';
+    const _savedUser = localStorage.getItem(USERNAME_KEY);
     if (isFirstTime()) {
       document.getElementById('login-subtitle').textContent = 'Create a username and access code to get started.';
+      document.getElementById('local-saved-user').classList.remove('show');
+      document.getElementById('local-username-input-wrap').style.display = '';
+      document.getElementById('login-username-local').placeholder = 'Choose a username';
       setTimeout(() => {
         const btn = document.getElementById('demo-btn');
         if (btn) {
@@ -2363,10 +2388,20 @@ function initLoginScreen() {
           btn.addEventListener('animationend', () => btn.classList.remove('demo-pulse'), {once: true});
         }
       }, 900);
+      setTimeout(() => document.getElementById('login-username-local').focus(), 80);
+    } else if (_savedUser) {
+      document.getElementById('login-subtitle').textContent = 'Welcome back.';
+      document.getElementById('local-saved-user-avatar').textContent = _savedUser.slice(0,1).toUpperCase();
+      document.getElementById('local-saved-user-name').textContent = _savedUser;
+      document.getElementById('local-saved-user').classList.add('show');
+      document.getElementById('local-username-input-wrap').style.display = 'none';
     } else {
       document.getElementById('login-subtitle').textContent = 'Enter your username to continue.';
+      document.getElementById('local-saved-user').classList.remove('show');
+      document.getElementById('local-username-input-wrap').style.display = '';
+      document.getElementById('login-username-local').placeholder = 'Enter your username';
+      setTimeout(() => document.getElementById('login-username-local').focus(), 80);
     }
-    setTimeout(() => document.getElementById('login-username-local').focus(), 80);
     return;
   } else {
     // Supabase mode — username + password
@@ -2386,6 +2421,33 @@ function initLoginScreen() {
     document.getElementById('login-hint').style.display   = 'none';
     document.getElementById('login-toggle-link').textContent = 'Create one';
   }
+}
+
+function localSelectSavedUser() {
+  const username = localStorage.getItem(USERNAME_KEY);
+  if (!username) return;
+  _localLoginUsername = username;
+  document.getElementById('local-step2-avatar').textContent = username.slice(0,1).toUpperCase();
+  document.getElementById('local-step2-name').textContent = username;
+  document.getElementById('local-step2-header').classList.add('show');
+  document.getElementById('local-step1').style.display = 'none';
+  document.getElementById('login-subtitle').textContent = 'Welcome back, ' + username + '.';
+  document.getElementById('login-pw-label').textContent = 'Access Code';
+  document.getElementById('login-input').placeholder    = 'Enter access code';
+  document.getElementById('login-pw-field').style.display = '';
+  document.getElementById('login-confirm-field').style.display = 'none';
+  document.getElementById('login-btn').style.display = '';
+  document.getElementById('login-btn').textContent = 'Unlock';
+  document.getElementById('login-hint').style.display = 'none';
+  setTimeout(() => document.getElementById('login-input').focus(), 80);
+}
+
+function localShowUsernameInput() {
+  document.getElementById('local-saved-user').classList.remove('show');
+  document.getElementById('local-username-input-wrap').style.display = '';
+  document.getElementById('login-username-local').placeholder = 'Enter your username';
+  document.getElementById('login-subtitle').textContent = 'Enter your username to continue.';
+  setTimeout(() => document.getElementById('login-username-local').focus(), 80);
 }
 
 function localStep1Continue() {
@@ -2446,12 +2508,17 @@ function localBackToStep1() {
   document.getElementById('login-error').classList.remove('show');
   document.getElementById('login-input').value = '';
   document.getElementById('login-confirm').value = '';
-  if (isFirstTime()) {
-    document.getElementById('login-subtitle').textContent = 'Create a username and access code to get started.';
+  const _savedUser = localStorage.getItem(USERNAME_KEY);
+  if (_savedUser) {
+    document.getElementById('login-subtitle').textContent = 'Welcome back.';
+    document.getElementById('local-saved-user').classList.add('show');
+    document.getElementById('local-username-input-wrap').style.display = 'none';
   } else {
-    document.getElementById('login-subtitle').textContent = 'Enter your username to continue.';
+    document.getElementById('login-subtitle').textContent = isFirstTime() ? 'Create a username and access code to get started.' : 'Enter your username to continue.';
+    document.getElementById('local-saved-user').classList.remove('show');
+    document.getElementById('local-username-input-wrap').style.display = '';
+    setTimeout(() => document.getElementById('login-username-local').focus(), 80);
   }
-  setTimeout(() => document.getElementById('login-username-local').focus(), 80);
 }
 
 function toggleAuthMode() {
