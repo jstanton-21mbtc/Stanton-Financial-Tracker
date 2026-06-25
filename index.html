@@ -4000,18 +4000,25 @@ const BACKUP_PFX='sft_monthly_backup_';
 function _isLastDayOfMonth(){
   const n=new Date(),t=new Date(n.getFullYear(),n.getMonth(),n.getDate()+1);return t.getDate()===1;
 }
-function checkMonthlyBackup(){
-  if(!_isLastDayOfMonth())return;
-  const n=new Date();
-  const mk=n.getFullYear()+'_'+String(n.getMonth()+1).padStart(2,'0');
-  const bk=BACKUP_PFX+mk;
-  if(localStorage.getItem(bk))return; // already backed up this month
-  const entry={date:n.toLocaleDateString('en-US',{year:'numeric',month:'long',day:'numeric'}),ts:n.toISOString(),data:JSON.parse(JSON.stringify(appData))};
-  localStorage.setItem(bk,JSON.stringify(entry));
-  // prune — keep last 6 months
+function _saveMonthlyEntry(key,dateObj){
+  const entry={date:dateObj.toLocaleDateString('en-US',{year:'numeric',month:'long',day:'numeric'}),ts:dateObj.toISOString(),data:JSON.parse(JSON.stringify(appData))};
+  localStorage.setItem(key,JSON.stringify(entry));
   Object.keys(localStorage).filter(k=>k.startsWith(BACKUP_PFX)).sort().slice(0,-6).forEach(k=>localStorage.removeItem(k));
-  showToast('Monthly backup saved!');
   renderMonthlyBackups();
+}
+function checkMonthlyBackup(){
+  const n=new Date();
+  // Save backup if today is the last day of the month
+  if(_isLastDayOfMonth()){
+    const mk=n.getFullYear()+'_'+String(n.getMonth()+1).padStart(2,'0');
+    const bk=BACKUP_PFX+mk;
+    if(!localStorage.getItem(bk)){_saveMonthlyEntry(bk,n);showToast('Monthly backup saved!');}
+  }
+  // Catch-up: if last month's backup is missing, save it now
+  const lastDayPrevMonth=new Date(n.getFullYear(),n.getMonth(),0);
+  const pmk=lastDayPrevMonth.getFullYear()+'_'+String(lastDayPrevMonth.getMonth()+1).padStart(2,'0');
+  const pbk=BACKUP_PFX+pmk;
+  if(!localStorage.getItem(pbk)){_saveMonthlyEntry(pbk,lastDayPrevMonth);showToast('Catch-up backup saved for '+lastDayPrevMonth.toLocaleDateString('en-US',{month:'long',year:'numeric'})+'!');}
 }
 function getMonthlyBackups(){
   return Object.keys(localStorage).filter(k=>k.startsWith(BACKUP_PFX)).sort().reverse()
