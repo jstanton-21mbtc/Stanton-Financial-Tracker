@@ -7540,7 +7540,7 @@ function btBuildIntUrl(integration, path) {
 function btBuildIntHeaders(integration) {
   const apiKey   = localStorage.getItem(btIntApiKeyLS(integration.id)) || '';
   const clientId = localStorage.getItem(btIntClientLS(integration.id)) || '';
-  const headers  = { 'Content-Type': 'application/json' };
+  const headers  = { 'Content-Type': 'application/json', 'Accept': 'application/json' };
   if (integration.authType === 'basic') {
     headers['Authorization'] = 'Basic ' + btoa(apiKey + ':');
   } else if (integration.authType === 'bearer') {
