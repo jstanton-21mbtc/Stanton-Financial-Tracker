@@ -7731,13 +7731,28 @@ async function btSyncIntegration(intId) {
   const btn = document.getElementById('int-sync-' + intId);
   if (btn) { btn.textContent = 'Syncing…'; btn.disabled = true; }
   try {
-    const url     = btBuildIntUrl(int, int.endpoint || '/');
-    const headers = btBuildIntHeaders(int);
-    console.log('[BizTracker] Fetching:', url, 'Auth type:', int.authType);
-    const res = await fetch(url, { headers });
+    let res;
+    if (btIsForeman(int)) {
+      // Use serverless function — Netlify proxy strips Authorization header on rewrites
+      const apiKey   = localStorage.getItem(btIntApiKeyLS(intId)) || '';
+      const clientId = localStorage.getItem(btIntClientLS(intId)) || '';
+      const path     = (int.endpoint || '/').replace('{clientId}', clientId);
+      console.log('[BizTracker] Foreman serverless proxy:', path);
+      res = await fetch('/.netlify/functions/foreman-proxy', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ path, apiKey })
+      });
+    } else {
+      const url     = btBuildIntUrl(int, int.endpoint || '/');
+      const headers = btBuildIntHeaders(int);
+      console.log('[BizTracker] Fetching:', url, 'Auth type:', int.authType);
+      res = await fetch(url, { headers });
+    }
     if (!res.ok) {
       const errBody = await res.text().catch(() => '');
-      throw new Error(`API error ${res.status} at ${url}\n${errBody ? errBody.slice(0,200) : 'No response body'}`);
+      const displayUrl = btIsForeman(int) ? '/.netlify/functions/foreman-proxy' : btBuildIntUrl(int, int.endpoint || '/');
+      throw new Error(`API error ${res.status} at ${displayUrl}\n${errBody ? errBody.slice(0,300) : 'No response body'}`);
     }
     const data = await res.json();
     const now  = new Date().toLocaleString();
