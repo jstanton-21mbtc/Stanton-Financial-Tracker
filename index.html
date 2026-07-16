@@ -7761,14 +7761,21 @@ async function btSyncIntegration(intId) {
 
     // Foreman special handling: miner fleet display + selector
     if (btIsForeman(int)) {
-      const allMiners = Array.isArray(data) ? data : (data.miners || []);
-      const fleetData = { miners: allMiners };
+      // Handle bare array, DRF pagination {count,results}, or {miners:[]}
+      const allMiners = Array.isArray(data) ? data : (data.results || data.miners || []);
+      console.log('[BizTracker] Foreman raw response keys:', Object.keys(data), '| miners count:', allMiners.length);
+      if (allMiners.length === 0) {
+        console.warn('[BizTracker] Empty miners — raw response:', JSON.stringify(data).slice(0, 500));
+      }
+      const fleetData = { miners: allMiners, _raw: data };
       localStorage.setItem(btIntCacheLS(intId), JSON.stringify(fleetData));
       _btActiveIntId = intId;
       btRenderIntegrations();
       const hasSaved = btGetSavedMinerIds(intId);
       if (!hasSaved && allMiners.length > 0) {
         btShowMinerSelector(allMiners, false);
+      } else if (allMiners.length === 0) {
+        alert('Foreman returned 0 miners for client ID "' + (localStorage.getItem(btIntClientLS(intId))||'?') + '".\n\nRaw response (first 300 chars):\n' + JSON.stringify(data).slice(0,300));
       } else {
         await btAnalyzeForemanData(fleetData, intId);
       }
