@@ -7544,7 +7544,7 @@ function btBuildIntHeaders(integration) {
   if (integration.authType === 'basic') {
     headers['Authorization'] = 'Basic ' + btoa(apiKey + ':');
   } else if (integration.authType === 'bearer') {
-    headers['Authorization'] = 'Bearer ' + apiKey;
+    headers['Authorization'] = 'Token ' + apiKey;
   } else if (integration.authType === 'apikey_header') {
     headers['X-API-Key'] = apiKey;
   }
@@ -7644,7 +7644,7 @@ function btCancelAddIntegration() {
 
 function btFillTemplate(name) {
   const templates = {
-    foreman:    { name: 'Foreman',     url: 'https://api.foreman.mn',      auth: 'bearer',  endpoint: '/api/v1/miners' },
+    foreman:    { name: 'Foreman',     url: 'https://api.foreman.mn',      auth: 'bearer',  endpoint: '/api/v2/miners' },
     stripe:     { name: 'Stripe',      url: 'https://api.stripe.com',      auth: 'bearer',  endpoint: '/v1/balance/history' },
     quickbooks: { name: 'QuickBooks',  url: 'https://quickbooks.api.intuit.com', auth: 'bearer', endpoint: '/v3/company/{clientId}/query' },
     custom:     { name: '',            url: '',                             auth: 'apikey_header', endpoint: '' },
