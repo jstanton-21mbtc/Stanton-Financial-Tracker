@@ -7917,6 +7917,17 @@ function btCloseMinerSelector() {
   document.getElementById('foreman-selector-overlay').style.display = 'none';
 }
 
+async function btForemanProbeEndpoint(apiKey, path) {
+  const res = await fetch('/.netlify/functions/foreman-proxy', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ path, apiKey })
+  });
+  const text = await res.text();
+  try { return { ok: res.ok, status: res.status, data: JSON.parse(text) }; }
+  catch(e) { return { ok: false, status: res.status, data: null, raw: text.slice(0,200) }; }
+}
+
 async function btForemanDiscoverClients(intId) {
   const int = btGetIntegrations().find(i => i.id === intId);
   if (!int) return;
@@ -7927,34 +7938,75 @@ async function btForemanDiscoverClients(intId) {
   if (btn) { btn.textContent = 'Searching…'; btn.disabled = true; }
 
   try {
-    const res = await fetch('/.netlify/functions/foreman-proxy', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ path: '/api/v2/clients/', apiKey })
-    });
-    const data = await res.json();
-    const clients = Array.isArray(data) ? data : (data.results || data.clients || []);
+    // Probe candidate endpoints to find where miners/account info lives
+    const probes = [
+      '/api/v2/profile/',
+      '/api/v2/user/',
+      '/api/v2/me/',
+      '/api/v2/miners/',
+      '/api/v2/workers/',
+    ];
 
-    if (!clients.length) {
-      alert('No clients found.\n\nRaw response:\n' + JSON.stringify(data).slice(0, 400));
+    let report = 'Foreman API probe results:\n\n';
+    let minersFound = null;
+    let profileFound = null;
+
+    for (const path of probes) {
+      const r = await btForemanProbeEndpoint(apiKey, path);
+      if (r.ok && r.data !== null) {
+        const preview = JSON.stringify(r.data).slice(0, 120);
+        report += `✓ ${path}\n  ${preview}\n\n`;
+        if ((path.includes('miner') || path.includes('worker')) && !minersFound) {
+          const arr = Array.isArray(r.data) ? r.data : (r.data.results || r.data.miners || r.data.workers || []);
+          if (arr.length) minersFound = { path, arr };
+        }
+        if ((path.includes('profile') || path.includes('user') || path.includes('me')) && !profileFound) {
+          profileFound = { path, data: r.data };
+        }
+      } else {
+        report += `✗ ${path}  [${r.status}]${r.raw ? ' — '+r.raw.slice(0,60) : ''}\n\n`;
+      }
+    }
+
+    // If we found miners directly, use them
+    if (minersFound) {
+      const fleetData = { miners: minersFound.arr };
+      localStorage.setItem(btIntCacheLS(intId), JSON.stringify(fleetData));
+      // Store the working endpoint
+      const biz = appData.businesses.find(b => b.id === btActiveId);
+      if (biz) {
+        const iObj = biz.integrations.find(i => i.id === intId);
+        if (iObj) { iObj.endpoint = minersFound.path; saveData(); }
+      }
+      _btActiveIntId = intId;
+      btRenderIntegrations();
+      const hasSaved = btGetSavedMinerIds(intId);
+      if (!hasSaved && minersFound.arr.length > 0) {
+        btShowMinerSelector(minersFound.arr, false);
+      } else {
+        await btAnalyzeForemanData(fleetData, intId);
+      }
       return;
     }
 
-    // Build a readable list for the user to pick from
-    let msg = 'Clients on your Foreman account:\n\n';
-    clients.forEach((c, i) => {
-      const id   = c.id   || c.clientId || '?';
-      const name = c.name || c.username || c.email || JSON.stringify(c).slice(0,60);
-      msg += `[${id}]  ${name}\n`;
-    });
-    msg += '\nEnter the Client ID you want to use:';
-    const chosen = prompt(msg);
-    if (!chosen) return;
-    localStorage.setItem(btIntClientLS(intId), chosen.trim());
-    alert('Client ID set to ' + chosen.trim() + '. Syncing now…');
-    btSyncIntegration(intId);
+    // If we found a profile with a clientId, extract it
+    if (profileFound) {
+      const d = profileFound.data;
+      const clientId = d.id || d.clientId || d.client_id || d.userId || d.user_id;
+      if (clientId) {
+        const use = confirm(`Found account ID: ${clientId}\n\nUse this as your Client ID and sync?`);
+        if (use) {
+          localStorage.setItem(btIntClientLS(intId), String(clientId));
+          btSyncIntegration(intId);
+          return;
+        }
+      }
+    }
+
+    // Show full probe report so user/dev can act on it
+    alert(report + '\nNo miners or client ID auto-detected. Share this with support.');
   } catch (e) {
-    alert('Discovery failed: ' + e.message);
+    alert('Discovery error: ' + e.message);
   } finally {
     if (btn) { btn.textContent = 'Find Client ID'; btn.disabled = false; }
   }
