@@ -7645,7 +7645,7 @@ function btCancelAddIntegration() {
 
 function btFillTemplate(name) {
   const templates = {
-    foreman:    { name: 'Foreman',     url: 'https://api.foreman.mn',      auth: 'bearer',  endpoint: '/api/v2/clients/{clientId}/miners' },
+    foreman:    { name: 'Foreman',     url: 'https://api.foreman.mn',      auth: 'bearer',  endpoint: '/api/v2/clients/{clientId}/miners?limit=500&offset=0' },
     stripe:     { name: 'Stripe',      url: 'https://api.stripe.com',      auth: 'bearer',  endpoint: '/v1/balance/history' },
     quickbooks: { name: 'QuickBooks',  url: 'https://quickbooks.api.intuit.com', auth: 'bearer', endpoint: '/v3/company/{clientId}/query' },
     custom:     { name: '',            url: '',                             auth: 'apikey_header', endpoint: '' },
@@ -7737,7 +7737,9 @@ async function btSyncIntegration(intId) {
       // Use serverless function — Netlify proxy strips Authorization header on rewrites
       const apiKey   = localStorage.getItem(btIntApiKeyLS(intId)) || '';
       const clientId = localStorage.getItem(btIntClientLS(intId)) || '';
-      const path     = (int.endpoint || '/').replace('{clientId}', clientId);
+      let path = (int.endpoint || '/').replace('{clientId}', clientId);
+      // Foreman miners endpoint requires limit & offset query params
+      if (path.includes('/miners') && !path.includes('limit=')) path += '?limit=500&offset=0';
       console.log('[BizTracker] Foreman serverless proxy:', path);
       res = await fetch('/.netlify/functions/foreman-proxy', {
         method: 'POST',
@@ -7924,42 +7926,57 @@ async function btForemanDiscoverClients(intId) {
   if (!apiKey) { alert('No API key found. Please reconnect the integration.'); return; }
 
   const btn = event && event.target;
+  if (btn) { btn.textContent = 'Searching…'; btn.disabled = true; }
 
-  // Open the Foreman profile page so the user can grab their Client ID
-  window.open('https://dashboard.foreman.mn/dashboard/profile/', '_blank');
-
-  const clientId = prompt(
-    'Your Foreman Client ID is shown on your profile page (just opened in a new tab).\n\n' +
-    'Look for "Client ID" or "API" section, then paste the number below:'
-  );
-  if (!clientId || !clientId.trim()) return;
-
-  // Validate the client ID with /ping/{clientId}
-  if (btn) { btn.textContent = 'Validating…'; btn.disabled = true; }
   try {
+    // GET /clients returns all clients the API key has access to (no trailing slash)
     const res = await fetch('/.netlify/functions/foreman-proxy', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ path: '/ping/' + clientId.trim(), apiKey })
+      body: JSON.stringify({ path: '/api/v2/clients', apiKey })
     });
-    if (res.ok) {
-      localStorage.setItem(btIntClientLS(intId), clientId.trim());
-      alert('Client ID ' + clientId.trim() + ' validated! Syncing your miners now…');
-      btSyncIntegration(intId);
-    } else {
-      const errText = await res.text().catch(() => '');
-      const use = confirm(
-        'Ping returned status ' + res.status + ' for Client ID "' + clientId.trim() + '".\n\n' +
-        (errText ? errText.slice(0,200) + '\n\n' : '') +
-        'Use this Client ID anyway and try syncing?'
-      );
-      if (use) {
-        localStorage.setItem(btIntClientLS(intId), clientId.trim());
-        btSyncIntegration(intId);
+
+    if (!res.ok) {
+      const txt = await res.text().catch(() => '');
+      alert('Could not list clients (status ' + res.status + ').\n' + txt.slice(0,300) +
+        '\n\nGet your Client ID from:\nhttps://dashboard.foreman.mn/dashboard/profile/');
+      window.open('https://dashboard.foreman.mn/dashboard/profile/', '_blank');
+      return;
+    }
+
+    const clients = await res.json(); // array of {id, name, type, owner, hashRate, miners, ...}
+    if (!Array.isArray(clients) || !clients.length) {
+      alert('No clients returned. Raw:\n' + JSON.stringify(clients).slice(0,300));
+      return;
+    }
+
+    let msg = 'Select your account — Foreman clients on this API key:\n\n';
+    clients.forEach(c => {
+      const hr = c.hashRate ? ' | ' + (c.hashRate / 1e12).toFixed(1) + ' TH/s' : '';
+      const miners = c.miners ? ' | ' + (c.miners.total || 0) + ' miners' : '';
+      msg += `[${c.id}]  ${c.name}  (${c.type})${hr}${miners}\n`;
+    });
+    msg += '\nEnter the Client ID for YOUR account:';
+
+    const chosen = prompt(msg);
+    if (!chosen || !chosen.trim()) return;
+
+    localStorage.setItem(btIntClientLS(intId), chosen.trim());
+
+    // Also update the stored endpoint to include required query params
+    const biz = appData.businesses.find(b => b.id === btActiveId);
+    if (biz) {
+      const iObj = biz.integrations.find(i => i.id === intId);
+      if (iObj && !iObj.endpoint.includes('limit=')) {
+        iObj.endpoint = '/api/v2/clients/{clientId}/miners?limit=500&offset=0';
+        saveData();
       }
     }
+
+    alert('Client ID set to ' + chosen.trim() + '. Syncing miners now…');
+    btSyncIntegration(intId);
   } catch(e) {
-    alert('Validation error: ' + e.message);
+    alert('Discovery error: ' + e.message);
   } finally {
     if (btn) { btn.textContent = 'Find Client ID'; btn.disabled = false; }
   }
