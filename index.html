@@ -7607,7 +7607,7 @@ function btRenderIntegrations() {
         <div class="biz-int-sync-row">
           <button class="btn btn-primary" onclick="btSyncIntegration('${int.id}')" id="int-sync-${int.id}">Sync Now</button>
           <div class="biz-int-last-sync">${lastSync ? 'Last synced: ' + lastSync : 'Never synced'}</div>
-          ${btIsForeman(int) ? `<button class="btn" onclick="btForemanDiscoverClients('${int.id}')" style="font-size:12px;" title="List all clients on this account to find your Client ID">Find Client ID</button>` : ''}
+          ${btIsForeman(int) ? `<button class="btn" onclick="btForemanOpenClientBrowser('${int.id}')" style="font-size:12px;">Browse Clients</button>` : ''}
           <button class="btn" onclick="btDisconnectIntegration('${int.id}')" style="margin-left:auto;font-size:12px;">Disconnect</button>
           <button class="btn" onclick="btDeleteIntegration('${int.id}')" style="font-size:12px;color:var(--red);">Remove</button>
         </div>
@@ -7919,17 +7919,25 @@ function btCloseMinerSelector() {
   document.getElementById('foreman-selector-overlay').style.display = 'none';
 }
 
-async function btForemanDiscoverClients(intId) {
-  const int = btGetIntegrations().find(i => i.id === intId);
-  if (!int) return;
-  const apiKey = localStorage.getItem(btIntApiKeyLS(intId)) || '';
-  if (!apiKey) { alert('No API key found. Please reconnect the integration.'); return; }
+let _fcbIntId = null;
+let _fcbAllClients = [];
 
-  const btn = event && event.target;
-  if (btn) { btn.textContent = 'Searching…'; btn.disabled = true; }
+async function btForemanOpenClientBrowser(intId) {
+  _fcbIntId = intId;
+  _fcbAllClients = [];
+
+  const apiKey = localStorage.getItem(btIntApiKeyLS(intId)) || '';
+  if (!apiKey) { alert('No API key found. Please reconnect the integration first.'); return; }
+
+  const browser = document.getElementById('foreman-client-browser');
+  const status  = document.getElementById('fcb-status');
+  const list    = document.getElementById('fcb-list');
+  document.getElementById('fcb-search').value = '';
+  status.textContent = 'Loading clients…';
+  list.innerHTML = '';
+  browser.style.display = 'flex';
 
   try {
-    // GET /clients returns all clients the API key has access to (no trailing slash)
     const res = await fetch('/.netlify/functions/foreman-proxy', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -7938,48 +7946,82 @@ async function btForemanDiscoverClients(intId) {
 
     if (!res.ok) {
       const txt = await res.text().catch(() => '');
-      alert('Could not list clients (status ' + res.status + ').\n' + txt.slice(0,300) +
-        '\n\nGet your Client ID from:\nhttps://dashboard.foreman.mn/dashboard/profile/');
-      window.open('https://dashboard.foreman.mn/dashboard/profile/', '_blank');
+      status.textContent = 'Error ' + res.status + ': ' + txt.slice(0,200);
       return;
     }
 
-    const clients = await res.json(); // array of {id, name, type, owner, hashRate, miners, ...}
-    if (!Array.isArray(clients) || !clients.length) {
-      alert('No clients returned. Raw:\n' + JSON.stringify(clients).slice(0,300));
-      return;
-    }
-
-    let msg = 'Select your account — Foreman clients on this API key:\n\n';
-    clients.forEach(c => {
-      const hr = c.hashRate ? ' | ' + (c.hashRate / 1e12).toFixed(1) + ' TH/s' : '';
-      const miners = c.miners ? ' | ' + (c.miners.total || 0) + ' miners' : '';
-      msg += `[${c.id}]  ${c.name}  (${c.type})${hr}${miners}\n`;
-    });
-    msg += '\nEnter the Client ID for YOUR account:';
-
-    const chosen = prompt(msg);
-    if (!chosen || !chosen.trim()) return;
-
-    localStorage.setItem(btIntClientLS(intId), chosen.trim());
-
-    // Also update the stored endpoint to include required query params
-    const biz = appData.businesses.find(b => b.id === btActiveId);
-    if (biz) {
-      const iObj = biz.integrations.find(i => i.id === intId);
-      if (iObj && !iObj.endpoint.includes('limit=')) {
-        iObj.endpoint = '/api/v2/clients/{clientId}/miners?limit=500&offset=0';
-        saveData();
-      }
-    }
-
-    alert('Client ID set to ' + chosen.trim() + '. Syncing miners now…');
-    btSyncIntegration(intId);
+    const data = await res.json();
+    _fcbAllClients = Array.isArray(data) ? data : (data.results || []);
+    status.textContent = _fcbAllClients.length + ' client' + (_fcbAllClients.length !== 1 ? 's' : '') + ' found';
+    btFcbRender(_fcbAllClients);
   } catch(e) {
-    alert('Discovery error: ' + e.message);
-  } finally {
-    if (btn) { btn.textContent = 'Find Client ID'; btn.disabled = false; }
+    status.textContent = 'Error: ' + e.message;
   }
+}
+
+function btFcbFilter(query) {
+  const q = query.toLowerCase();
+  const filtered = q
+    ? _fcbAllClients.filter(c =>
+        String(c.id).includes(q) ||
+        (c.name  || '').toLowerCase().includes(q) ||
+        (c.owner || '').toLowerCase().includes(q) ||
+        (c.type  || '').toLowerCase().includes(q)
+      )
+    : _fcbAllClients;
+  document.getElementById('fcb-status').textContent = filtered.length + ' client' + (filtered.length !== 1 ? 's' : '');
+  btFcbRender(filtered);
+}
+
+function btFcbRender(clients) {
+  const list = document.getElementById('fcb-list');
+  if (!clients.length) {
+    list.innerHTML = '<div style="padding:20px;text-align:center;color:var(--text-3);font-size:13px;">No clients match</div>';
+    return;
+  }
+  list.innerHTML = clients.map(c => {
+    const hr      = c.hashRate ? (c.hashRate / 1e12).toFixed(2) + ' TH/s' : '—';
+    const total   = c.miners   ? (c.miners.total || 0) + ' miners' : '';
+    const online  = c.miners   ? (c.miners.online || 0) + ' online' : '';
+    return `<div onclick="btFcbSelectClient(${c.id}, ${JSON.stringify(btEsc(c.name || ''))})"
+      style="display:flex;align-items:center;gap:14px;padding:12px 14px;border-radius:var(--radius-sm);
+             background:var(--elevated);cursor:pointer;border:1.5px solid transparent;transition:border-color .15s;"
+      onmouseover="this.style.borderColor='var(--blue)'" onmouseout="this.style.borderColor='transparent'">
+      <div style="font-size:22px;flex-shrink:0;">⛏️</div>
+      <div style="flex:1;min-width:0;">
+        <div style="font-weight:700;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${btEsc(c.name || 'Client ' + c.id)}</div>
+        <div style="font-size:11px;color:var(--text-2);margin-top:2px;">${c.owner || ''} &nbsp;·&nbsp; ${c.type || ''}</div>
+      </div>
+      <div style="text-align:right;flex-shrink:0;">
+        <div style="font-size:13px;font-weight:700;color:var(--blue);">${hr}</div>
+        <div style="font-size:11px;color:var(--text-2);">${total}${total && online ? ' · ' : ''}${online}</div>
+      </div>
+      <div style="font-size:11px;color:var(--text-3);flex-shrink:0;">ID ${c.id} ›</div>
+    </div>`;
+  }).join('');
+}
+
+async function btFcbSelectClient(clientId, clientName) {
+  const intId = _fcbIntId;
+  btFcbClose();
+
+  localStorage.setItem(btIntClientLS(intId), String(clientId));
+
+  // Ensure endpoint has required query params
+  const biz = appData.businesses.find(b => b.id === btActiveId);
+  if (biz) {
+    const iObj = biz.integrations.find(i => i.id === intId);
+    if (iObj && !iObj.endpoint.includes('limit=')) {
+      iObj.endpoint = '/api/v2/clients/{clientId}/miners?limit=500&offset=0';
+      saveData();
+    }
+  }
+
+  btSyncIntegration(intId);
+}
+
+function btFcbClose() {
+  document.getElementById('foreman-client-browser').style.display = 'none';
 }
 
 function btBuildForemanFleetHtml(data, intId) {
@@ -8085,6 +8127,22 @@ async function btAnalyzeForemanData(fleetData, intId) {
     <div style="display:flex;gap:10px;margin-top:18px;justify-content:flex-end;">
       <button class="btn" id="foreman-selector-cancel" style="display:none;" onclick="btCloseMinerSelector()">Cancel</button>
       <button class="btn btn-primary" onclick="btSaveMinerSelection()">Save My Miners</button>
+    </div>
+  </div>
+</div>
+
+<!-- Foreman Client Browser -->
+<div id="foreman-client-browser" style="display:none;" class="biz-selector-overlay">
+  <div class="biz-selector-card" style="max-width:540px;">
+    <div style="font-size:17px;font-weight:800;margin-bottom:4px;">Browse Clients</div>
+    <div style="font-size:13px;color:var(--text-2);margin-bottom:14px;">Search for a client to view their miners.</div>
+    <div class="biz-filter-bar" style="margin-bottom:12px;">
+      <input id="fcb-search" class="biz-input" placeholder="Search by name, owner, or ID…" style="flex:1;padding:7px 12px;font-size:13px;" oninput="btFcbFilter(this.value)" />
+    </div>
+    <div id="fcb-status" style="font-size:12px;color:var(--text-2);margin-bottom:8px;"></div>
+    <div id="fcb-list" style="max-height:360px;overflow-y:auto;display:flex;flex-direction:column;gap:6px;"></div>
+    <div style="display:flex;gap:10px;margin-top:16px;justify-content:flex-end;">
+      <button class="btn" onclick="btFcbClose()">Close</button>
     </div>
   </div>
 </div>
