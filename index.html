@@ -900,6 +900,36 @@
     .biz-active-meta { font-size: 13px; color: var(--text-2); }
     .biz-delete-btn { font-size: 11px; color: var(--red); background: none; border: none; cursor: pointer; font-family: inherit; padding: 4px 8px; border-radius: 6px; transition: background .15s; margin-left: 8px; }
     .biz-delete-btn:hover { background: var(--red-dim); }
+    /* Biz tab bar */
+    .biz-tab-bar { display: flex; gap: 4px; background: var(--elevated); border-radius: 10px; padding: 4px; margin-bottom: 24px; width: fit-content; }
+    .biz-tab { padding: 7px 16px; border-radius: 8px; border: none; background: none; color: var(--text-2); font-size: 13px; font-weight: 600; cursor: pointer; font-family: inherit; display: flex; align-items: center; gap: 7px; transition: all .15s; }
+    .biz-tab svg { width: 14px; height: 14px; stroke: currentColor; }
+    .biz-tab.active { background: var(--card); color: var(--text); box-shadow: 0 1px 4px rgba(0,0,0,.15); }
+    /* Integration cards */
+    .biz-int-card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 22px; margin-bottom: 14px; }
+    .biz-int-card.connected { border-color: var(--blue); }
+    .biz-int-header { display: flex; align-items: center; gap: 14px; margin-bottom: 18px; }
+    .biz-int-logo { width: 42px; height: 42px; background: var(--elevated); border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 20px; flex-shrink: 0; }
+    .biz-int-name { font-size: 15px; font-weight: 800; }
+    .biz-int-desc { font-size: 12px; color: var(--text-2); margin-top: 2px; }
+    .biz-int-badge { margin-left: auto; font-size: 11px; font-weight: 700; padding: 3px 10px; border-radius: 20px; }
+    .biz-int-badge.connected { background: var(--green-dim); color: var(--green); }
+    .biz-int-badge.disconnected { background: var(--elevated); color: var(--text-3); }
+    .biz-int-sync-row { display: flex; align-items: center; gap: 10px; margin-top: 14px; flex-wrap: wrap; }
+    .biz-int-last-sync { font-size: 11px; color: var(--text-3); }
+    .biz-fleet-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 10px; margin-top: 16px; }
+    .biz-fleet-card { background: var(--elevated); border-radius: var(--radius-sm); padding: 12px; text-align: center; }
+    .biz-fleet-val { font-size: 18px; font-weight: 800; color: var(--text); }
+    .biz-fleet-lbl { font-size: 10px; font-weight: 600; color: var(--text-3); text-transform: uppercase; letter-spacing: .6px; margin-top: 4px; }
+    .biz-fleet-sub { font-size: 11px; color: var(--text-2); margin-top: 2px; }
+    .biz-miner-table { width: 100%; border-collapse: collapse; font-size: 12px; margin-top: 16px; }
+    .biz-miner-table th { text-align: left; padding: 8px 10px; font-size: 10px; font-weight: 700; color: var(--text-3); text-transform: uppercase; letter-spacing: .7px; border-bottom: 1px solid var(--border); }
+    .biz-miner-table td { padding: 9px 10px; border-bottom: 1px solid var(--border-dim); color: var(--text-2); }
+    .biz-miner-table tr:last-child td { border-bottom: none; }
+    .biz-miner-status { display: inline-block; width: 7px; height: 7px; border-radius: 50%; margin-right: 6px; }
+    .biz-miner-status.online { background: var(--green); }
+    .biz-miner-status.offline { background: var(--red); }
+    .biz-miner-status.warning { background: var(--yellow); }
   </style>
 </head>
 <body>
@@ -2133,6 +2163,19 @@
               <div class="biz-active-name" id="biz-active-name"></div>
               <div class="biz-active-meta" id="biz-active-meta"></div>
             </div>
+            <!-- Tab bar -->
+            <div class="biz-tab-bar">
+              <button class="biz-tab active" id="biz-tab-docs" onclick="btSwitchTab('docs')">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                Documents
+              </button>
+              <button class="biz-tab" id="biz-tab-integrations" onclick="btSwitchTab('integrations')">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>
+                Integrations
+              </button>
+            </div>
+            <!-- Documents panel -->
+            <div id="biz-panel-docs">
             <!-- Upload zone -->
             <div class="biz-upload-zone" id="biz-upload-zone"
                  onclick="document.getElementById('biz-file-input').click()"
@@ -2183,7 +2226,81 @@
             </div>
             <!-- Upload history -->
             <div class="biz-upload-history" id="biz-upload-history"></div>
-          </div>
+            </div><!-- end biz-panel-docs -->
+
+            <!-- Integrations panel -->
+            <div id="biz-panel-integrations" style="display:none;">
+              <!-- Foreman -->
+              <div class="biz-int-card" id="foreman-card">
+                <div class="biz-int-header">
+                  <div class="biz-int-logo">⚒</div>
+                  <div>
+                    <div class="biz-int-name">Foreman</div>
+                    <div class="biz-int-desc">Mining fleet performance, hashrate &amp; miner monitoring</div>
+                  </div>
+                  <div class="biz-int-badge disconnected" id="foreman-badge">Not connected</div>
+                </div>
+                <!-- Setup fields (shown when not connected) -->
+                <div id="foreman-setup">
+                  <div class="biz-form-row" style="margin-bottom:12px;">
+                    <div>
+                      <label class="biz-field-label">Client ID</label>
+                      <input id="foreman-client-id" class="biz-input" placeholder="e.g. 12345" />
+                    </div>
+                    <div>
+                      <label class="biz-field-label">API Key</label>
+                      <input id="foreman-api-key" class="biz-input" type="password" placeholder="Your Foreman API key" />
+                    </div>
+                  </div>
+                  <div style="font-size:11px;color:var(--text-3);margin-bottom:14px;">Find your Client ID and API key in Foreman → Account Settings → API Keys</div>
+                  <button class="btn btn-primary" onclick="btForemanConnect()">Connect Foreman</button>
+                </div>
+                <!-- Connected state -->
+                <div id="foreman-connected" style="display:none;">
+                  <div class="biz-int-sync-row">
+                    <button class="btn btn-primary" onclick="btForemanSync()" id="foreman-sync-btn">Sync Now</button>
+                    <div class="biz-int-last-sync" id="foreman-last-sync"></div>
+                    <button class="btn" onclick="btForemanDisconnect()" style="margin-left:auto;font-size:12px;">Disconnect</button>
+                  </div>
+                  <!-- Fleet summary -->
+                  <div id="foreman-fleet" style="display:none;margin-top:20px;">
+                    <div class="subsection-title" style="margin-bottom:12px;">Fleet Overview</div>
+                    <div class="biz-fleet-grid" id="foreman-fleet-grid"></div>
+                    <div style="margin-top:20px;">
+                      <div class="subsection-title" style="margin-bottom:12px;">Miners</div>
+                      <div style="overflow-x:auto;">
+                        <table class="biz-miner-table" id="foreman-miner-table">
+                          <thead><tr><th>Miner</th><th>Status</th><th>Hashrate</th><th>Temp</th><th>Efficiency</th><th>Pool</th></tr></thead>
+                          <tbody id="foreman-miner-tbody"></tbody>
+                        </table>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <!-- Placeholder for future integrations -->
+              <div class="biz-int-card" style="opacity:.5;pointer-events:none;">
+                <div class="biz-int-header">
+                  <div class="biz-int-logo">📊</div>
+                  <div>
+                    <div class="biz-int-name">QuickBooks</div>
+                    <div class="biz-int-desc">Accounting &amp; P&L — coming soon</div>
+                  </div>
+                  <div class="biz-int-badge disconnected">Coming Soon</div>
+                </div>
+              </div>
+              <div class="biz-int-card" style="opacity:.5;pointer-events:none;">
+                <div class="biz-int-header">
+                  <div class="biz-int-logo">💳</div>
+                  <div>
+                    <div class="biz-int-name">Stripe</div>
+                    <div class="biz-int-desc">Revenue &amp; payments — coming soon</div>
+                  </div>
+                  <div class="biz-int-badge disconnected">Coming Soon</div>
+                </div>
+              </div>
+            </div><!-- end biz-panel-integrations -->
+          </div><!-- end biz-active-content -->
         </div>
       </div><!-- end tab-biztracker -->
 
@@ -7371,6 +7488,197 @@ function btDeleteUpload(bizId, uploadId) {
   saveData();
   btRenderHistory(biz);
   if (biz.uploads.length === 0) document.getElementById('biz-dashboard').style.display = 'none';
+}
+
+// ── BIZ TAB SWITCHER ──
+let btCurrentTab = 'docs';
+function btSwitchTab(tab) {
+  btCurrentTab = tab;
+  document.getElementById('biz-tab-docs').classList.toggle('active', tab === 'docs');
+  document.getElementById('biz-tab-integrations').classList.toggle('active', tab === 'integrations');
+  document.getElementById('biz-panel-docs').style.display = tab === 'docs' ? '' : 'none';
+  document.getElementById('biz-panel-integrations').style.display = tab === 'integrations' ? '' : 'none';
+  if (tab === 'integrations') btRenderIntegrations();
+}
+
+// ── FOREMAN INTEGRATION ──
+const FOREMAN_KEY_PREFIX = 'sft_foreman_';
+
+function btRenderIntegrations() {
+  const biz = appData.businesses.find(b => b.id === btActiveId);
+  if (!biz) return;
+  const clientId = localStorage.getItem(FOREMAN_KEY_PREFIX + btActiveId + '_client') || '';
+  const apiKey   = localStorage.getItem(FOREMAN_KEY_PREFIX + btActiveId + '_key') || '';
+  const isConnected = !!(clientId && apiKey);
+
+  document.getElementById('foreman-card').classList.toggle('connected', isConnected);
+  document.getElementById('foreman-badge').textContent = isConnected ? 'Connected' : 'Not connected';
+  document.getElementById('foreman-badge').className = 'biz-int-badge ' + (isConnected ? 'connected' : 'disconnected');
+  document.getElementById('foreman-setup').style.display = isConnected ? 'none' : '';
+  document.getElementById('foreman-connected').style.display = isConnected ? '' : 'none';
+
+  if (isConnected) {
+    document.getElementById('foreman-client-id').value = clientId;
+    document.getElementById('foreman-api-key').value = apiKey;
+    const lastSync = localStorage.getItem(FOREMAN_KEY_PREFIX + btActiveId + '_synced') || '';
+    document.getElementById('foreman-last-sync').textContent = lastSync ? 'Last synced: ' + lastSync : 'Never synced';
+    // Restore cached fleet data if available
+    const cached = localStorage.getItem(FOREMAN_KEY_PREFIX + btActiveId + '_data');
+    if (cached) {
+      try { btRenderForemanFleet(JSON.parse(cached)); } catch(e) {}
+    }
+  }
+}
+
+function btForemanConnect() {
+  const clientId = document.getElementById('foreman-client-id').value.trim();
+  const apiKey   = document.getElementById('foreman-api-key').value.trim();
+  if (!clientId || !apiKey) { alert('Please enter both Client ID and API Key.'); return; }
+  localStorage.setItem(FOREMAN_KEY_PREFIX + btActiveId + '_client', clientId);
+  localStorage.setItem(FOREMAN_KEY_PREFIX + btActiveId + '_key', apiKey);
+  btRenderIntegrations();
+  btForemanSync();
+}
+
+function btForemanDisconnect() {
+  if (!confirm('Disconnect Foreman and remove stored keys?')) return;
+  localStorage.removeItem(FOREMAN_KEY_PREFIX + btActiveId + '_client');
+  localStorage.removeItem(FOREMAN_KEY_PREFIX + btActiveId + '_key');
+  localStorage.removeItem(FOREMAN_KEY_PREFIX + btActiveId + '_synced');
+  localStorage.removeItem(FOREMAN_KEY_PREFIX + btActiveId + '_data');
+  document.getElementById('foreman-fleet').style.display = 'none';
+  btRenderIntegrations();
+}
+
+async function btForemanSync() {
+  const clientId = localStorage.getItem(FOREMAN_KEY_PREFIX + btActiveId + '_client') || '';
+  const apiKey   = localStorage.getItem(FOREMAN_KEY_PREFIX + btActiveId + '_key') || '';
+  if (!clientId || !apiKey) return;
+
+  const btn = document.getElementById('foreman-sync-btn');
+  btn.textContent = 'Syncing…';
+  btn.disabled = true;
+
+  try {
+    const auth = btoa(apiKey + ':');
+    const headers = { 'Authorization': 'Basic ' + auth, 'Content-Type': 'application/json' };
+
+    // Fetch miners list
+    const minersRes = await fetch(`/api/foreman/api/v1/clients/${clientId}/miners`, { headers });
+    if (!minersRes.ok) throw new Error(`Foreman API ${minersRes.status}: Check your Client ID and API Key.`);
+    const miners = await minersRes.json();
+
+    // Also try to fetch summary if available
+    let summary = null;
+    try {
+      const sumRes = await fetch(`/api/foreman/api/v1/clients/${clientId}/summary`, { headers });
+      if (sumRes.ok) summary = await sumRes.json();
+    } catch(e) {}
+
+    const fleetData = { miners: Array.isArray(miners) ? miners : (miners.miners || []), summary };
+    localStorage.setItem(FOREMAN_KEY_PREFIX + btActiveId + '_data', JSON.stringify(fleetData));
+    const now = new Date().toLocaleString();
+    localStorage.setItem(FOREMAN_KEY_PREFIX + btActiveId + '_synced', now);
+    document.getElementById('foreman-last-sync').textContent = 'Last synced: ' + now;
+
+    btRenderForemanFleet(fleetData);
+
+    // Also analyze with AI and push to main dashboard
+    await btAnalyzeForemanData(fleetData);
+
+  } catch(e) {
+    console.error('Foreman sync error:', e);
+    alert('Sync failed: ' + (e.message || 'Check your Client ID and API Key in Foreman.'));
+  } finally {
+    btn.textContent = 'Sync Now';
+    btn.disabled = false;
+  }
+}
+
+function btRenderForemanFleet(data) {
+  const miners = data.miners || [];
+  if (!miners.length) return;
+
+  document.getElementById('foreman-fleet').style.display = '';
+
+  // Fleet summary stats
+  const online  = miners.filter(m => m.status === 'ONLINE'  || m.diagState === 'ONLINE'  || m.online === true).length;
+  const offline = miners.filter(m => m.status === 'OFFLINE' || m.diagState === 'OFFLINE' || m.online === false).length;
+  const warning = miners.length - online - offline;
+  const totalHashrate = miners.reduce((s, m) => {
+    const hr = m.hashRate || m.hashrateAvg || m.mhs5s || m.ghs5s || 0;
+    return s + (parseFloat(hr) || 0);
+  }, 0);
+  const avgTemp = miners.reduce((s, m) => {
+    const t = m.temperature || m.avgTemp || m.temp || 0;
+    return s + (parseFloat(t) || 0);
+  }, 0) / (miners.length || 1);
+
+  document.getElementById('foreman-fleet-grid').innerHTML = [
+    { val: miners.length, lbl: 'Total Miners', sub: '' },
+    { val: online,  lbl: 'Online',  sub: `${Math.round(online/miners.length*100)}% uptime` },
+    { val: offline + warning, lbl: 'Offline/Warn', sub: '' },
+    { val: totalHashrate > 1000 ? (totalHashrate/1000).toFixed(2) + ' PH/s' : totalHashrate.toFixed(2) + ' TH/s', lbl: 'Total Hashrate', sub: '' },
+    { val: avgTemp > 0 ? avgTemp.toFixed(1) + '°C' : '—', lbl: 'Avg Temp', sub: '' },
+  ].map(c => `<div class="biz-fleet-card">
+    <div class="biz-fleet-val">${c.val}</div>
+    <div class="biz-fleet-lbl">${c.lbl}</div>
+    ${c.sub ? `<div class="biz-fleet-sub">${c.sub}</div>` : ''}
+  </div>`).join('');
+
+  // Miner table
+  const tbody = document.getElementById('foreman-miner-tbody');
+  tbody.innerHTML = miners.slice(0, 50).map(m => {
+    const status = m.status || m.diagState || (m.online ? 'ONLINE' : 'OFFLINE');
+    const statusClass = status === 'ONLINE' ? 'online' : status === 'OFFLINE' ? 'offline' : 'warning';
+    const hr = m.hashRate || m.hashrateAvg || m.mhs5s || m.ghs5s || 0;
+    const hrLabel = hr ? (parseFloat(hr)/1000 > 0.5 ? (parseFloat(hr)/1000).toFixed(2)+' TH/s' : parseFloat(hr).toFixed(0)+' GH/s') : '—';
+    const temp = m.temperature || m.avgTemp || m.temp || '—';
+    const eff = m.efficiency || m.powerEfficiency || '—';
+    const pool = m.poolUrl || m.pool || m.poolName || '—';
+    const name = m.name || m.hostname || m.ip || m.id || 'Miner';
+    return `<tr>
+      <td style="color:var(--text);font-weight:600;">${name}</td>
+      <td><span class="biz-miner-status ${statusClass}"></span>${status}</td>
+      <td>${hrLabel}</td>
+      <td>${temp !== '—' ? temp + '°C' : '—'}</td>
+      <td>${eff !== '—' ? eff + ' J/TH' : '—'}</td>
+      <td style="max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${pool}</td>
+    </tr>`;
+  }).join('');
+}
+
+async function btAnalyzeForemanData(fleetData) {
+  const biz = appData.businesses.find(b => b.id === btActiveId);
+  if (!biz) return;
+  const apiKey = localStorage.getItem('sft_anthropic_key_v1') || '';
+  if (!apiKey) return;
+
+  document.getElementById('biz-analyzing').style.display = '';
+  document.getElementById('biz-analyzing-sub').textContent = 'AI is analyzing your Foreman fleet data…';
+
+  try {
+    const analysis = await btAnalyzeWithAI(biz, 'Foreman Fleet Sync', 'text', {
+      type: 'text',
+      data: JSON.stringify(fleetData, null, 2)
+    });
+    const upload = {
+      id: 'up_' + Date.now(),
+      date: new Date().toISOString().split('T')[0],
+      filename: 'Foreman Sync — ' + new Date().toLocaleDateString(),
+      analysis
+    };
+    biz.uploads.push(upload);
+    saveData();
+    // Switch to Documents tab to show the dashboard
+    btSwitchTab('docs');
+    btRenderDashboard(analysis);
+    btRenderHistory(biz);
+  } catch(e) {
+    console.error('AI analysis of Foreman data failed:', e);
+  } finally {
+    document.getElementById('biz-analyzing').style.display = 'none';
+  }
 }
 </script>
 

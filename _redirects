@@ -1,1 +1,2 @@
 /api/anthropic/*  https://api.anthropic.com/:splat  200
+/api/foreman/*    https://api.foreman.mn/:splat     200
