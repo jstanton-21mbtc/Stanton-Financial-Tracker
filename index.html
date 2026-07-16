@@ -7644,7 +7644,7 @@ function btCancelAddIntegration() {
 
 function btFillTemplate(name) {
   const templates = {
-    foreman:    { name: 'Foreman',     url: 'https://api.foreman.mn',      auth: 'basic',   endpoint: '/api/v1/clients/{clientId}/miners' },
+    foreman:    { name: 'Foreman',     url: 'https://api.foreman.mn',      auth: 'bearer',  endpoint: '/api/v1/miners' },
     stripe:     { name: 'Stripe',      url: 'https://api.stripe.com',      auth: 'bearer',  endpoint: '/v1/balance/history' },
     quickbooks: { name: 'QuickBooks',  url: 'https://quickbooks.api.intuit.com', auth: 'bearer', endpoint: '/v3/company/{clientId}/query' },
     custom:     { name: '',            url: '',                             auth: 'apikey_header', endpoint: '' },
@@ -7733,8 +7733,12 @@ async function btSyncIntegration(intId) {
   try {
     const url     = btBuildIntUrl(int, int.endpoint || '/');
     const headers = btBuildIntHeaders(int);
+    console.log('[BizTracker] Fetching:', url, 'Auth type:', int.authType);
     const res = await fetch(url, { headers });
-    if (!res.ok) throw new Error(`API error ${res.status}: Check your credentials.`);
+    if (!res.ok) {
+      const errBody = await res.text().catch(() => '');
+      throw new Error(`API error ${res.status} at ${url}\n${errBody ? errBody.slice(0,200) : 'No response body'}`);
+    }
     const data = await res.json();
     const now  = new Date().toLocaleString();
     localStorage.setItem(btIntCacheLS(intId), JSON.stringify(data));
