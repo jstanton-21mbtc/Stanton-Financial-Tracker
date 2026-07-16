@@ -2240,81 +2240,63 @@
 
             <!-- Integrations panel -->
             <div id="biz-panel-integrations" style="display:none;">
-              <!-- Foreman -->
-              <div class="biz-int-card" id="foreman-card">
-                <div class="biz-int-header">
-                  <div class="biz-int-logo">⚒</div>
-                  <div>
-                    <div class="biz-int-name">Foreman</div>
-                    <div class="biz-int-desc">Mining fleet performance, hashrate &amp; miner monitoring</div>
+              <!-- Dynamic list rendered by JS -->
+              <div id="biz-int-list"></div>
+              <!-- Add Integration form -->
+              <div id="biz-add-int-form" style="display:none;margin-top:4px;">
+                <div class="biz-create-card">
+                  <div class="biz-create-title">Add Integration</div>
+                  <div class="biz-create-sub">Connect any external API. Credentials are stored locally on your device only.</div>
+                  <!-- Quick templates -->
+                  <div style="margin-bottom:16px;">
+                    <label class="biz-field-label">Quick Select</label>
+                    <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                      <button class="biz-chip" onclick="btFillTemplate('foreman')">Foreman</button>
+                      <button class="biz-chip" onclick="btFillTemplate('stripe')">Stripe</button>
+                      <button class="biz-chip" onclick="btFillTemplate('quickbooks')">QuickBooks</button>
+                      <button class="biz-chip" onclick="btFillTemplate('custom')">Custom API</button>
+                    </div>
                   </div>
-                  <div class="biz-int-badge disconnected" id="foreman-badge">Not connected</div>
-                </div>
-                <!-- Setup fields (shown when not connected) -->
-                <div id="foreman-setup">
+                  <div style="margin-bottom:12px;">
+                    <label class="biz-field-label">Integration Name</label>
+                    <input id="int-name" class="biz-input" placeholder="e.g. Foreman, Stripe, QuickBooks" />
+                  </div>
+                  <div style="margin-bottom:12px;">
+                    <label class="biz-field-label">API Base URL</label>
+                    <input id="int-url" class="biz-input" placeholder="https://api.example.com" />
+                  </div>
                   <div class="biz-form-row" style="margin-bottom:12px;">
                     <div>
-                      <label class="biz-field-label">Client ID</label>
-                      <input id="foreman-client-id" class="biz-input" placeholder="e.g. 12345" />
+                      <label class="biz-field-label">Auth Type</label>
+                      <select id="int-auth-type" class="biz-input" onchange="btUpdateAuthFields()">
+                        <option value="basic">Basic Auth (Client ID + Key)</option>
+                        <option value="bearer">Bearer Token</option>
+                        <option value="apikey_header">API Key Header</option>
+                        <option value="none">No Auth</option>
+                      </select>
                     </div>
-                    <div>
-                      <label class="biz-field-label">API Key</label>
-                      <input id="foreman-api-key" class="biz-input" type="password" placeholder="Your Foreman API key" />
+                    <div id="int-client-id-wrap">
+                      <label class="biz-field-label">Client ID / Username</label>
+                      <input id="int-client-id" class="biz-input" placeholder="Client ID" />
                     </div>
                   </div>
-                  <div style="font-size:11px;color:var(--text-3);margin-bottom:14px;">Find your Client ID and API key in Foreman → Account Settings → API Keys</div>
-                  <button class="btn btn-primary" onclick="btForemanConnect()">Connect Foreman</button>
-                </div>
-                <!-- Connected state -->
-                <div id="foreman-connected" style="display:none;">
-                  <div class="biz-int-sync-row">
-                    <button class="btn btn-primary" onclick="btForemanSync()" id="foreman-sync-btn">Sync Now</button>
-                    <div class="biz-int-last-sync" id="foreman-last-sync"></div>
-                    <button class="btn" onclick="btForemanDisconnect()" style="margin-left:auto;font-size:12px;">Disconnect</button>
+                  <div style="margin-bottom:12px;" id="int-apikey-wrap">
+                    <label class="biz-field-label" id="int-apikey-label">API Key / Password</label>
+                    <input id="int-api-key" class="biz-input" type="password" placeholder="Your API key" />
                   </div>
-                  <!-- Fleet summary -->
-                  <div id="foreman-fleet" style="display:none;margin-top:20px;">
-                    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px;">
-                      <div class="subsection-title" style="margin-bottom:0;">Fleet Overview</div>
-                      <div style="display:flex;align-items:center;gap:8px;">
-                        <span class="biz-filter-count" id="foreman-filter-count"></span>
-                        <button class="btn" style="font-size:12px;padding:5px 12px;" onclick="btShowMinerSelector(null, true)">Edit My Miners</button>
-                      </div>
-                    </div>
-                    <div class="biz-fleet-grid" id="foreman-fleet-grid"></div>
-                    <div style="margin-top:20px;">
-                      <div class="subsection-title" style="margin-bottom:12px;">Miners</div>
-                      <div style="overflow-x:auto;">
-                        <table class="biz-miner-table" id="foreman-miner-table">
-                          <thead><tr><th>Miner</th><th>Status</th><th>Hashrate</th><th>Temp</th><th>Efficiency</th><th>Pool</th></tr></thead>
-                          <tbody id="foreman-miner-tbody"></tbody>
-                        </table>
-                      </div>
-                    </div>
+                  <div style="margin-bottom:16px;">
+                    <label class="biz-field-label">Data Endpoint</label>
+                    <input id="int-endpoint" class="biz-input" placeholder="/api/v1/data" />
+                    <div style="font-size:11px;color:var(--text-3);margin-top:4px;">Use <code style="background:var(--elevated);padding:1px 5px;border-radius:4px;">{clientId}</code> as a placeholder for your Client ID in the path</div>
+                  </div>
+                  <div style="display:flex;gap:10px;">
+                    <button class="btn btn-primary" onclick="btSaveIntegration()">Add Integration</button>
+                    <button class="btn" onclick="btCancelAddIntegration()">Cancel</button>
                   </div>
                 </div>
               </div>
-              <!-- Placeholder for future integrations -->
-              <div class="biz-int-card" style="opacity:.5;pointer-events:none;">
-                <div class="biz-int-header">
-                  <div class="biz-int-logo">📊</div>
-                  <div>
-                    <div class="biz-int-name">QuickBooks</div>
-                    <div class="biz-int-desc">Accounting &amp; P&L — coming soon</div>
-                  </div>
-                  <div class="biz-int-badge disconnected">Coming Soon</div>
-                </div>
-              </div>
-              <div class="biz-int-card" style="opacity:.5;pointer-events:none;">
-                <div class="biz-int-header">
-                  <div class="biz-int-logo">💳</div>
-                  <div>
-                    <div class="biz-int-name">Stripe</div>
-                    <div class="biz-int-desc">Revenue &amp; payments — coming soon</div>
-                  </div>
-                  <div class="biz-int-badge disconnected">Coming Soon</div>
-                </div>
-              </div>
+              <!-- Add button (shown when form is hidden) -->
+              <button class="btn" id="biz-add-int-btn" onclick="btShowAddIntegration()" style="margin-top:4px;">+ Add Integration</button>
             </div><!-- end biz-panel-integrations -->
           </div><!-- end biz-active-content -->
         </div>
@@ -2630,6 +2612,7 @@ function _openApp() {
     investments: JSON.parse(JSON.stringify(INVEST_CATS))
   };
   if(!appData.businesses) appData.businesses=[];
+  appData.businesses.forEach(b=>{ if(!b.integrations) b.integrations=[]; if(!b.minerFilters) b.minerFilters={}; });
   // Migrate: round all stored numeric values to 2 decimal places
   function roundObjVals(obj) { if(obj&&typeof obj==='object') Object.keys(obj).forEach(k=>{ if(typeof obj[k]==='number') obj[k]=Math.round(obj[k]*100)/100; else if(typeof obj[k]==='object') roundObjVals(obj[k]); }); }
   ['income','expenses','savings','investments','deductions','balances','netWorth','paystubYtd'].forEach(s=>roundObjVals(appData[s]));
@@ -4835,6 +4818,7 @@ async function _initApp(userId) {
     investments: JSON.parse(JSON.stringify(INVEST_CATS))
   };
   if(!appData.businesses) appData.businesses=[];
+  appData.businesses.forEach(b=>{ if(!b.integrations) b.integrations=[]; if(!b.minerFilters) b.minerFilters={}; });
   refreshAll();
   initCharts();
   setTimeout(()=>{ if(generateInsights().filter(i=>i.priority==='high').length>0) document.getElementById('insights-dot').classList.add('show'); },600);
@@ -7517,68 +7501,309 @@ function btSwitchTab(tab) {
   if (tab === 'integrations') btRenderIntegrations();
 }
 
-// ── FOREMAN INTEGRATION ──
-const FOREMAN_KEY_PREFIX = 'sft_foreman_';
+// ── INTEGRATIONS FRAMEWORK ──
+// Known proxy mappings (add new services to _redirects + here)
+const INTEGRATION_PROXIES = {
+  'api.foreman.mn': '/api/foreman',
+};
+
+function btIntApiKeyLS(intId)    { return 'sft_int_' + intId + '_key'; }
+function btIntClientLS(intId)    { return 'sft_int_' + intId + '_client'; }
+function btIntCacheLS(intId)     { return 'sft_int_' + intId + '_cache'; }
+function btIntSyncedLS(intId)    { return 'sft_int_' + intId + '_synced'; }
+
+function btGetIntegrations() {
+  const biz = appData.businesses.find(b => b.id === btActiveId);
+  if (!biz) return [];
+  if (!biz.integrations) biz.integrations = [];
+  return biz.integrations;
+}
+
+function btIsForeman(integration) {
+  return !!(integration && (
+    integration.name.toLowerCase().includes('foreman') ||
+    (integration.url || '').includes('foreman.mn')
+  ));
+}
+
+function btBuildIntUrl(integration, path) {
+  const base = integration.url.replace(/\/$/, '');
+  const resolvedPath = path.replace('{clientId}', localStorage.getItem(btIntClientLS(integration.id)) || '');
+  try {
+    const hostname = new URL(base).hostname;
+    const proxy = INTEGRATION_PROXIES[hostname];
+    if (proxy) return proxy + resolvedPath;
+  } catch(e) {}
+  return base + resolvedPath;
+}
+
+function btBuildIntHeaders(integration) {
+  const apiKey   = localStorage.getItem(btIntApiKeyLS(integration.id)) || '';
+  const clientId = localStorage.getItem(btIntClientLS(integration.id)) || '';
+  const headers  = { 'Content-Type': 'application/json' };
+  if (integration.authType === 'basic') {
+    headers['Authorization'] = 'Basic ' + btoa(apiKey + ':');
+  } else if (integration.authType === 'bearer') {
+    headers['Authorization'] = 'Bearer ' + apiKey;
+  } else if (integration.authType === 'apikey_header') {
+    headers['X-API-Key'] = apiKey;
+  }
+  return headers;
+}
 
 function btRenderIntegrations() {
+  const integrations = btGetIntegrations();
+  const list = document.getElementById('biz-int-list');
+
+  if (!integrations.length) {
+    list.innerHTML = `<div style="text-align:center;padding:40px 24px;color:var(--text-3);">
+      <div style="font-size:32px;margin-bottom:12px;">🔌</div>
+      <div style="font-size:14px;font-weight:600;color:var(--text-2);margin-bottom:6px;">No integrations yet</div>
+      <div style="font-size:13px;">Connect external APIs to pull data directly into your dashboard.</div>
+    </div>`;
+    return;
+  }
+
+  list.innerHTML = integrations.map(int => {
+    const apiKey   = localStorage.getItem(btIntApiKeyLS(int.id)) || '';
+    const clientId = localStorage.getItem(btIntClientLS(int.id)) || '';
+    const isConnected = !!(apiKey);
+    const lastSync = localStorage.getItem(btIntSyncedLS(int.id)) || '';
+    const cached   = localStorage.getItem(btIntCacheLS(int.id));
+
+    const fleetHtml = btIsForeman(int) && cached ? (() => {
+      try {
+        const data = JSON.parse(cached);
+        return btBuildForemanFleetHtml(data, int.id);
+      } catch(e) { return ''; }
+    })() : '';
+
+    return `<div class="biz-int-card ${isConnected ? 'connected' : ''}" id="int-card-${int.id}">
+      <div class="biz-int-header">
+        <div class="biz-int-logo">${btIntIcon(int)}</div>
+        <div style="flex:1;min-width:0;">
+          <div class="biz-int-name">${btEsc(int.name)}</div>
+          <div class="biz-int-desc" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${btEsc(int.url)}</div>
+        </div>
+        <div class="biz-int-badge ${isConnected ? 'connected' : 'disconnected'}">${isConnected ? 'Connected' : 'Not set up'}</div>
+      </div>
+      ${!isConnected ? `
+        <div style="margin-bottom:12px;">
+          ${int.authType === 'basic' || int.authType === 'apikey_header' || int.authType === 'bearer' ? `
+          <div class="biz-form-row" style="margin-bottom:10px;">
+            ${int.authType === 'basic' ? `<div>
+              <label class="biz-field-label">Client ID</label>
+              <input class="biz-input" id="int-cid-${int.id}" placeholder="Client ID" value="${btEsc(clientId)}" />
+            </div>` : ''}
+            <div>
+              <label class="biz-field-label">API Key</label>
+              <input class="biz-input" type="password" id="int-key-${int.id}" placeholder="API Key" />
+            </div>
+          </div>` : ''}
+          <button class="btn btn-primary" onclick="btConnectIntegration('${int.id}')">Connect</button>
+          <button class="btn" onclick="btDeleteIntegration('${int.id}')" style="margin-left:8px;font-size:12px;color:var(--red);">Remove</button>
+        </div>
+      ` : `
+        <div class="biz-int-sync-row">
+          <button class="btn btn-primary" onclick="btSyncIntegration('${int.id}')" id="int-sync-${int.id}">Sync Now</button>
+          <div class="biz-int-last-sync">${lastSync ? 'Last synced: ' + lastSync : 'Never synced'}</div>
+          <button class="btn" onclick="btDisconnectIntegration('${int.id}')" style="margin-left:auto;font-size:12px;">Disconnect</button>
+          <button class="btn" onclick="btDeleteIntegration('${int.id}')" style="font-size:12px;color:var(--red);">Remove</button>
+        </div>
+        ${fleetHtml}
+      `}
+    </div>`;
+  }).join('');
+}
+
+function btIntIcon(int) {
+  const name = int.name.toLowerCase();
+  if (name.includes('foreman'))    return '⚒';
+  if (name.includes('stripe'))     return '💳';
+  if (name.includes('quickbooks')) return '📊';
+  if (name.includes('shopify'))    return '🛍';
+  if (name.includes('coinbase'))   return '₿';
+  return '🔗';
+}
+
+function btShowAddIntegration() {
+  document.getElementById('biz-add-int-form').style.display = '';
+  document.getElementById('biz-add-int-btn').style.display = 'none';
+}
+
+function btCancelAddIntegration() {
+  document.getElementById('biz-add-int-form').style.display = 'none';
+  document.getElementById('biz-add-int-btn').style.display = '';
+  // Clear form
+  ['int-name','int-url','int-client-id','int-api-key','int-endpoint'].forEach(id => {
+    const el = document.getElementById(id); if (el) el.value = '';
+  });
+  document.getElementById('int-auth-type').value = 'basic';
+  btUpdateAuthFields();
+}
+
+function btFillTemplate(name) {
+  const templates = {
+    foreman:    { name: 'Foreman',     url: 'https://api.foreman.mn',      auth: 'basic',   endpoint: '/api/v1/clients/{clientId}/miners' },
+    stripe:     { name: 'Stripe',      url: 'https://api.stripe.com',      auth: 'bearer',  endpoint: '/v1/balance/history' },
+    quickbooks: { name: 'QuickBooks',  url: 'https://quickbooks.api.intuit.com', auth: 'bearer', endpoint: '/v3/company/{clientId}/query' },
+    custom:     { name: '',            url: '',                             auth: 'apikey_header', endpoint: '' },
+  };
+  const t = templates[name] || templates.custom;
+  document.getElementById('int-name').value     = t.name;
+  document.getElementById('int-url').value      = t.url;
+  document.getElementById('int-auth-type').value = t.auth;
+  document.getElementById('int-endpoint').value = t.endpoint;
+  btUpdateAuthFields();
+  document.getElementById('int-name').focus();
+}
+
+function btUpdateAuthFields() {
+  const type = document.getElementById('int-auth-type').value;
+  document.getElementById('int-client-id-wrap').style.display = type === 'basic' ? '' : 'none';
+  document.getElementById('int-apikey-wrap').style.display    = type === 'none'  ? 'none' : '';
+  document.getElementById('int-apikey-label').textContent =
+    type === 'basic' ? 'API Key / Password' : type === 'bearer' ? 'Bearer Token' : 'API Key';
+}
+
+function btSaveIntegration() {
+  const name     = document.getElementById('int-name').value.trim();
+  const url      = document.getElementById('int-url').value.trim();
+  const authType = document.getElementById('int-auth-type').value;
+  const clientId = document.getElementById('int-client-id').value.trim();
+  const apiKey   = document.getElementById('int-api-key').value.trim();
+  const endpoint = document.getElementById('int-endpoint').value.trim();
+  if (!name) { alert('Please enter an integration name.'); return; }
+  if (!url)  { alert('Please enter an API base URL.'); return; }
+
   const biz = appData.businesses.find(b => b.id === btActiveId);
   if (!biz) return;
-  const clientId = localStorage.getItem(FOREMAN_KEY_PREFIX + btActiveId + '_client') || '';
-  const apiKey   = localStorage.getItem(FOREMAN_KEY_PREFIX + btActiveId + '_key') || '';
-  const isConnected = !!(clientId && apiKey);
+  if (!biz.integrations) biz.integrations = [];
 
-  document.getElementById('foreman-card').classList.toggle('connected', isConnected);
-  document.getElementById('foreman-badge').textContent = isConnected ? 'Connected' : 'Not connected';
-  document.getElementById('foreman-badge').className = 'biz-int-badge ' + (isConnected ? 'connected' : 'disconnected');
-  document.getElementById('foreman-setup').style.display = isConnected ? 'none' : '';
-  document.getElementById('foreman-connected').style.display = isConnected ? '' : 'none';
+  const int = { id: 'int_' + Date.now(), name, url, authType, endpoint };
+  biz.integrations.push(int);
+  saveData();
 
-  if (isConnected) {
-    document.getElementById('foreman-client-id').value = clientId;
-    document.getElementById('foreman-api-key').value = apiKey;
-    const lastSync = localStorage.getItem(FOREMAN_KEY_PREFIX + btActiveId + '_synced') || '';
-    document.getElementById('foreman-last-sync').textContent = lastSync ? 'Last synced: ' + lastSync : 'Never synced';
-    // Restore cached fleet data if available
-    const cached = localStorage.getItem(FOREMAN_KEY_PREFIX + btActiveId + '_data');
-    if (cached) {
-      try { btRenderForemanFleet(JSON.parse(cached)); } catch(e) {}
+  // Store secrets in localStorage (not in appData)
+  if (apiKey)   localStorage.setItem(btIntApiKeyLS(int.id), apiKey);
+  if (clientId) localStorage.setItem(btIntClientLS(int.id), clientId);
+
+  btCancelAddIntegration();
+  btRenderIntegrations();
+
+  // Auto-sync if credentials provided
+  if (apiKey) btSyncIntegration(int.id);
+}
+
+function btConnectIntegration(intId) {
+  const int = btGetIntegrations().find(i => i.id === intId);
+  if (!int) return;
+  const cidEl = document.getElementById('int-cid-' + intId);
+  const keyEl = document.getElementById('int-key-' + intId);
+  const apiKey   = keyEl ? keyEl.value.trim() : '';
+  const clientId = cidEl ? cidEl.value.trim() : '';
+  if (!apiKey) { alert('Please enter your API key.'); return; }
+  if (int.authType === 'basic' && !clientId) { alert('Please enter your Client ID.'); return; }
+  localStorage.setItem(btIntApiKeyLS(intId), apiKey);
+  if (clientId) localStorage.setItem(btIntClientLS(intId), clientId);
+  btRenderIntegrations();
+  btSyncIntegration(intId);
+}
+
+function btDisconnectIntegration(intId) {
+  if (!confirm('Disconnect this integration and remove stored keys?')) return;
+  [btIntApiKeyLS(intId), btIntClientLS(intId), btIntCacheLS(intId), btIntSyncedLS(intId)].forEach(k => localStorage.removeItem(k));
+  btRenderIntegrations();
+}
+
+function btDeleteIntegration(intId) {
+  if (!confirm('Remove this integration entirely?')) return;
+  [btIntApiKeyLS(intId), btIntClientLS(intId), btIntCacheLS(intId), btIntSyncedLS(intId)].forEach(k => localStorage.removeItem(k));
+  const biz = appData.businesses.find(b => b.id === btActiveId);
+  if (biz) biz.integrations = (biz.integrations || []).filter(i => i.id !== intId);
+  saveData();
+  btRenderIntegrations();
+}
+
+async function btSyncIntegration(intId) {
+  const int = btGetIntegrations().find(i => i.id === intId);
+  if (!int) return;
+  const btn = document.getElementById('int-sync-' + intId);
+  if (btn) { btn.textContent = 'Syncing…'; btn.disabled = true; }
+  try {
+    const url     = btBuildIntUrl(int, int.endpoint || '/');
+    const headers = btBuildIntHeaders(int);
+    const res = await fetch(url, { headers });
+    if (!res.ok) throw new Error(`API error ${res.status}: Check your credentials.`);
+    const data = await res.json();
+    const now  = new Date().toLocaleString();
+    localStorage.setItem(btIntCacheLS(intId), JSON.stringify(data));
+    localStorage.setItem(btIntSyncedLS(intId), now);
+
+    // Foreman special handling: miner fleet display + selector
+    if (btIsForeman(int)) {
+      const allMiners = Array.isArray(data) ? data : (data.miners || []);
+      const fleetData = { miners: allMiners };
+      localStorage.setItem(btIntCacheLS(intId), JSON.stringify(fleetData));
+      _btActiveIntId = intId;
+      btRenderIntegrations();
+      const hasSaved = btGetSavedMinerIds(intId);
+      if (!hasSaved && allMiners.length > 0) {
+        btShowMinerSelector(allMiners, false);
+      } else {
+        await btAnalyzeForemanData(fleetData, intId);
+      }
+    } else {
+      // Generic: send raw response to Claude
+      btRenderIntegrations();
+      const biz = appData.businesses.find(b => b.id === btActiveId);
+      if (biz) await btAnalyzeIntegrationData(int, data);
     }
+  } catch(e) {
+    console.error('Sync error:', e);
+    alert('Sync failed: ' + (e.message || 'Check your credentials and endpoint.'));
+  } finally {
+    if (btn) { btn.textContent = 'Sync Now'; btn.disabled = false; }
   }
 }
 
-function btForemanConnect() {
-  const clientId = document.getElementById('foreman-client-id').value.trim();
-  const apiKey   = document.getElementById('foreman-api-key').value.trim();
-  if (!clientId || !apiKey) { alert('Please enter both Client ID and API Key.'); return; }
-  localStorage.setItem(FOREMAN_KEY_PREFIX + btActiveId + '_client', clientId);
-  localStorage.setItem(FOREMAN_KEY_PREFIX + btActiveId + '_key', apiKey);
-  btRenderIntegrations();
-  btForemanSync();
-}
-
-function btForemanDisconnect() {
-  if (!confirm('Disconnect Foreman and remove stored keys?')) return;
-  localStorage.removeItem(FOREMAN_KEY_PREFIX + btActiveId + '_client');
-  localStorage.removeItem(FOREMAN_KEY_PREFIX + btActiveId + '_key');
-  localStorage.removeItem(FOREMAN_KEY_PREFIX + btActiveId + '_synced');
-  localStorage.removeItem(FOREMAN_KEY_PREFIX + btActiveId + '_data');
-  document.getElementById('foreman-fleet').style.display = 'none';
-  btRenderIntegrations();
+async function btAnalyzeIntegrationData(int, data) {
+  const biz = appData.businesses.find(b => b.id === btActiveId);
+  if (!biz) return;
+  const apiKey = localStorage.getItem('sft_anthropic_key_v1') || '';
+  if (!apiKey) return;
+  document.getElementById('biz-analyzing').style.display = '';
+  document.getElementById('biz-analyzing-sub').textContent = 'AI is analyzing ' + int.name + ' data…';
+  try {
+    const analysis = await btAnalyzeWithAI(biz, int.name + ' Sync', 'text', {
+      type: 'text', data: JSON.stringify(data, null, 2)
+    });
+    biz.uploads.push({ id: 'up_'+Date.now(), date: new Date().toISOString().split('T')[0], filename: int.name+' Sync — '+new Date().toLocaleDateString(), analysis });
+    saveData();
+    btSwitchTab('docs');
+    btRenderDashboard(analysis);
+    btRenderHistory(biz);
+  } catch(e) { console.error(e); }
+  finally { document.getElementById('biz-analyzing').style.display = 'none'; }
 }
 
 // ── MINER ID / FILTER HELPERS ──
+let _btActiveIntId = null; // tracks which integration's miner selector is open
+
 function btGetMinerId(m) {
   return String(m.id || m.minerId || m.apiIpAddress || m.name || m.hostname || m.ip || '');
 }
 
-function btGetSavedMinerIds() {
+function btGetSavedMinerIds(intId) {
+  const id = intId || _btActiveIntId;
   const biz = appData.businesses.find(b => b.id === btActiveId);
-  return (biz && biz.foremanMiners && biz.foremanMiners.length > 0) ? biz.foremanMiners : null;
+  const saved = biz && biz.minerFilters && biz.minerFilters[id];
+  return (saved && saved.length > 0) ? saved : null;
 }
 
-function btFilterToMyMiners(allMiners) {
-  const saved = btGetSavedMinerIds();
-  if (!saved) return allMiners; // no filter set yet — show all
+function btFilterToMyMiners(allMiners, intId) {
+  const saved = btGetSavedMinerIds(intId || _btActiveIntId);
+  if (!saved) return allMiners;
   return allMiners.filter(m => saved.includes(btGetMinerId(m)));
 }
 
@@ -7591,12 +7816,11 @@ let _foremanAllMiners = [];
 
 function btShowMinerSelector(allMiners, canClose) {
   if (allMiners) _foremanAllMiners = allMiners;
-  const saved = btGetSavedMinerIds() || [];
+  const saved = btGetSavedMinerIds(_btActiveIntId) || [];
   document.getElementById('foreman-selector-cancel').style.display = canClose ? '' : 'none';
   document.getElementById('foreman-selector-search').value = '';
   btBuildSelectorRows(_foremanAllMiners, saved);
   document.getElementById('foreman-selector-overlay').style.display = 'flex';
-  // store canClose for overlay click
   document.getElementById('foreman-selector-overlay')._canClose = canClose;
 }
 
@@ -7649,15 +7873,16 @@ function btSaveMinerSelection() {
   if (!selected.length) { alert('Please select at least one miner.'); return; }
   const biz = appData.businesses.find(b => b.id === btActiveId);
   if (!biz) return;
-  biz.foremanMiners = selected;
+  if (!biz.minerFilters) biz.minerFilters = {};
+  biz.minerFilters[_btActiveIntId] = selected;
   saveData();
   btCloseMinerSelector();
-  // Re-render with filter applied
-  const cached = localStorage.getItem(FOREMAN_KEY_PREFIX + btActiveId + '_data');
+  // Re-render and analyze with filter applied
+  const cached = localStorage.getItem(btIntCacheLS(_btActiveIntId));
   if (cached) {
     const data = JSON.parse(cached);
-    btRenderForemanFleet(data);
-    btAnalyzeForemanData(data);
+    btRenderIntegrations();
+    btAnalyzeForemanData(data, _btActiveIntId);
   }
 }
 
@@ -7665,115 +7890,64 @@ function btCloseMinerSelector() {
   document.getElementById('foreman-selector-overlay').style.display = 'none';
 }
 
-async function btForemanSync() {
-  const clientId = localStorage.getItem(FOREMAN_KEY_PREFIX + btActiveId + '_client') || '';
-  const apiKey   = localStorage.getItem(FOREMAN_KEY_PREFIX + btActiveId + '_key') || '';
-  if (!clientId || !apiKey) return;
-
-  const btn = document.getElementById('foreman-sync-btn');
-  btn.textContent = 'Syncing…';
-  btn.disabled = true;
-
-  try {
-    const auth = btoa(apiKey + ':');
-    const headers = { 'Authorization': 'Basic ' + auth, 'Content-Type': 'application/json' };
-
-    const minersRes = await fetch(`/api/foreman/api/v1/clients/${clientId}/miners`, { headers });
-    if (!minersRes.ok) throw new Error(`Foreman API ${minersRes.status}: Check your Client ID and API Key.`);
-    const minersRaw = await minersRes.json();
-
-    let summary = null;
-    try {
-      const sumRes = await fetch(`/api/foreman/api/v1/clients/${clientId}/summary`, { headers });
-      if (sumRes.ok) summary = await sumRes.json();
-    } catch(e) {}
-
-    const allMiners = Array.isArray(minersRaw) ? minersRaw : (minersRaw.miners || []);
-    const fleetData = { miners: allMiners, summary };
-    localStorage.setItem(FOREMAN_KEY_PREFIX + btActiveId + '_data', JSON.stringify(fleetData));
-    const now = new Date().toLocaleString();
-    localStorage.setItem(FOREMAN_KEY_PREFIX + btActiveId + '_synced', now);
-    document.getElementById('foreman-last-sync').textContent = 'Last synced: ' + now;
-
-    // First sync with no saved miners → show selector
-    const hasSavedMiners = btGetSavedMinerIds();
-    if (!hasSavedMiners && allMiners.length > 0) {
-      btRenderForemanFleet(fleetData); // show all first
-      btShowMinerSelector(allMiners, false);
-    } else {
-      btRenderForemanFleet(fleetData);
-      await btAnalyzeForemanData(fleetData);
-    }
-
-  } catch(e) {
-    console.error('Foreman sync error:', e);
-    alert('Sync failed: ' + (e.message || 'Check your Client ID and API Key in Foreman.'));
-  } finally {
-    btn.textContent = 'Sync Now';
-    btn.disabled = false;
-  }
-}
-
-function btRenderForemanFleet(data) {
+function btBuildForemanFleetHtml(data, intId) {
   const allMiners = data.miners || [];
-  if (!allMiners.length) return;
+  if (!allMiners.length) return '';
+  const miners = btFilterToMyMiners(allMiners, intId);
+  const savedIds = btGetSavedMinerIds(intId);
+  const online  = miners.filter(m => m.status==='ONLINE'||m.diagState==='ONLINE'||m.online===true).length;
+  const offline = miners.filter(m => m.status==='OFFLINE'||m.diagState==='OFFLINE'||m.online===false).length;
+  const totalHr = miners.reduce((s,m)=>s+(parseFloat(m.hashRate||m.hashrateAvg||m.mhs5s||m.ghs5s||0)||0),0);
+  const avgTemp = miners.reduce((s,m)=>s+(parseFloat(m.temperature||m.avgTemp||m.temp||0)||0),0)/(miners.length||1);
+  const countLabel = savedIds ? `${miners.length} of ${allMiners.length} miners` : `${allMiners.length} miners`;
 
-  const miners = btFilterToMyMiners(allMiners);
-  const savedIds = btGetSavedMinerIds();
+  const statsCards = [
+    {val:miners.length, lbl:'My Miners'},
+    {val:online,        lbl:'Online', sub:miners.length?Math.round(online/miners.length*100)+'% uptime':''},
+    {val:offline+(miners.length-online-offline), lbl:'Offline/Warn'},
+    {val:totalHr>1000?(totalHr/1000).toFixed(2)+' PH/s':totalHr.toFixed(2)+' TH/s', lbl:'Total Hashrate'},
+    {val:avgTemp>0?avgTemp.toFixed(1)+'°C':'—', lbl:'Avg Temp'},
+  ].map(c=>`<div class="biz-fleet-card"><div class="biz-fleet-val">${c.val}</div><div class="biz-fleet-lbl">${c.lbl}</div>${c.sub?`<div class="biz-fleet-sub">${c.sub}</div>`:''}</div>`).join('');
 
-  document.getElementById('foreman-fleet').style.display = '';
-  const countEl = document.getElementById('foreman-filter-count');
-  countEl.textContent = savedIds
-    ? `${miners.length} of ${allMiners.length} miners`
-    : `${allMiners.length} miners (all)`;
-
-  const online  = miners.filter(m => m.status === 'ONLINE'  || m.diagState === 'ONLINE'  || m.online === true).length;
-  const offline = miners.filter(m => m.status === 'OFFLINE' || m.diagState === 'OFFLINE' || m.online === false).length;
-  const warning = miners.length - online - offline;
-  const totalHashrate = miners.reduce((s, m) => s + (parseFloat(m.hashRate || m.hashrateAvg || m.mhs5s || m.ghs5s || 0) || 0), 0);
-  const avgTemp = miners.reduce((s, m) => s + (parseFloat(m.temperature || m.avgTemp || m.temp || 0) || 0), 0) / (miners.length || 1);
-
-  document.getElementById('foreman-fleet-grid').innerHTML = [
-    { val: miners.length, lbl: 'My Miners', sub: '' },
-    { val: online,  lbl: 'Online',  sub: miners.length ? Math.round(online/miners.length*100)+'% uptime' : '' },
-    { val: offline + warning, lbl: 'Offline/Warn', sub: '' },
-    { val: totalHashrate > 1000 ? (totalHashrate/1000).toFixed(2)+' PH/s' : totalHashrate.toFixed(2)+' TH/s', lbl: 'Total Hashrate', sub: '' },
-    { val: avgTemp > 0 ? avgTemp.toFixed(1)+'°C' : '—', lbl: 'Avg Temp', sub: '' },
-  ].map(c => `<div class="biz-fleet-card">
-    <div class="biz-fleet-val">${c.val}</div>
-    <div class="biz-fleet-lbl">${c.lbl}</div>
-    ${c.sub ? `<div class="biz-fleet-sub">${c.sub}</div>` : ''}
-  </div>`).join('');
-
-  document.getElementById('foreman-miner-tbody').innerHTML = miners.slice(0, 100).map(m => {
-    const status = m.status || m.diagState || (m.online ? 'ONLINE' : 'OFFLINE');
-    const statusClass = status === 'ONLINE' ? 'online' : status === 'OFFLINE' ? 'offline' : 'warning';
-    const hr = parseFloat(m.hashRate || m.hashrateAvg || m.mhs5s || m.ghs5s || 0);
-    const hrLabel = hr ? (hr/1000 > 0.5 ? (hr/1000).toFixed(2)+' TH/s' : hr.toFixed(0)+' GH/s') : '—';
-    const temp = m.temperature || m.avgTemp || m.temp || '—';
-    const eff  = m.efficiency || m.powerEfficiency || '—';
-    const pool = m.poolUrl || m.pool || m.poolName || '—';
-    const name = m.name || m.hostname || m.apiIpAddress || m.ip || m.id || 'Miner';
-    return `<tr>
-      <td style="color:var(--text);font-weight:600;">${btEsc(name)}</td>
-      <td><span class="biz-miner-status ${statusClass}"></span>${status}</td>
-      <td>${hrLabel}</td>
-      <td>${temp !== '—' ? temp+'°C' : '—'}</td>
-      <td>${eff !== '—' ? eff+' J/TH' : '—'}</td>
-      <td style="max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${btEsc(pool)}">${btEsc(pool)}</td>
-    </tr>`;
+  const rows = miners.slice(0,100).map(m=>{
+    const status=m.status||m.diagState||(m.online?'ONLINE':'OFFLINE');
+    const sc=status==='ONLINE'?'online':status==='OFFLINE'?'offline':'warning';
+    const hr=parseFloat(m.hashRate||m.hashrateAvg||m.mhs5s||m.ghs5s||0);
+    const hrL=hr?(hr/1000>0.5?(hr/1000).toFixed(2)+' TH/s':hr.toFixed(0)+' GH/s'):'—';
+    const temp=m.temperature||m.avgTemp||m.temp||'—';
+    const eff=m.efficiency||m.powerEfficiency||'—';
+    const pool=m.poolUrl||m.pool||m.poolName||'—';
+    const name=m.name||m.hostname||m.apiIpAddress||m.ip||m.id||'Miner';
+    return `<tr><td style="color:var(--text);font-weight:600;">${btEsc(name)}</td><td><span class="biz-miner-status ${sc}"></span>${status}</td><td>${hrL}</td><td>${temp!=='—'?temp+'°C':'—'}</td><td>${eff!=='—'?eff+' J/TH':'—'}</td><td style="max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${btEsc(pool)}">${btEsc(pool)}</td></tr>`;
   }).join('');
+
+  return `<div style="margin-top:20px;">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px;">
+      <div class="subsection-title" style="margin-bottom:0;">Fleet Overview</div>
+      <div style="display:flex;align-items:center;gap:8px;">
+        <span class="biz-filter-count">${countLabel}</span>
+        <button class="btn" style="font-size:12px;padding:5px 12px;" onclick="_btActiveIntId='${intId}';btShowMinerSelector(null,true)">Edit My Miners</button>
+      </div>
+    </div>
+    <div class="biz-fleet-grid">${statsCards}</div>
+    <div style="margin-top:20px;">
+      <div class="subsection-title" style="margin-bottom:12px;">Miners</div>
+      <div style="overflow-x:auto;">
+        <table class="biz-miner-table"><thead><tr><th>Miner</th><th>Status</th><th>Hashrate</th><th>Temp</th><th>Efficiency</th><th>Pool</th></tr></thead><tbody>${rows}</tbody></table>
+      </div>
+    </div>
+  </div>`;
 }
 
-async function btAnalyzeForemanData(fleetData) {
+async function btAnalyzeForemanData(fleetData, intId) {
   const biz = appData.businesses.find(b => b.id === btActiveId);
   if (!biz) return;
   const apiKey = localStorage.getItem('sft_anthropic_key_v1') || '';
   if (!apiKey) return;
 
-  // Filter to only my miners before sending to AI
+  const id = intId || _btActiveIntId;
   const allMiners = fleetData.miners || [];
-  const myMiners = btFilterToMyMiners(allMiners);
+  const myMiners = btFilterToMyMiners(allMiners, id);
   const filteredData = { ...fleetData, miners: myMiners };
 
   document.getElementById('biz-analyzing').style.display = '';
