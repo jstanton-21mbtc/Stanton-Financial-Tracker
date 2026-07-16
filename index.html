@@ -999,6 +999,10 @@
       <input type="password" id="login-confirm" placeholder="Confirm access code" onkeydown="if(event.key==='Enter')submitLogin()" />
     </div>
     <div class="login-error" id="login-error"></div>
+    <div id="stay-logged-in-wrap" style="display:flex;align-items:center;gap:8px;margin-bottom:12px;font-size:13px;color:var(--text-2);">
+      <input type="checkbox" id="stay-logged-in" style="width:14px;height:14px;accent-color:var(--blue);cursor:pointer;" />
+      <label for="stay-logged-in" style="cursor:pointer;">Stay logged in</label>
+    </div>
     <button class="login-btn" id="login-btn" onclick="submitLogin()">Sign In</button>
     <div id="login-toggle" style="margin-top:12px;text-align:center;font-size:12px;color:var(--text-2)">
       Don't have an account? <a href="#" onclick="toggleAuthMode();return false;" id="login-toggle-link" style="color:var(--blue);text-decoration:none">Create one</a>
@@ -2856,9 +2860,11 @@ async function submitLogin() {
       if (password !== confirm) { error.textContent='Access codes do not match.'; error.classList.add('show'); return; }
       localStorage.setItem(PW_KEY, hashPw(password));
       if (_localLoginUsername) localStorage.setItem(USERNAME_KEY, _localLoginUsername);
+      if (document.getElementById('stay-logged-in')?.checked) localStorage.setItem('sft_stay_v1','1');
       _openApp();
     } else {
       if (hashPw(password) === getStoredHash()) {
+        if (document.getElementById('stay-logged-in')?.checked) localStorage.setItem('sft_stay_v1','1');
         _openApp();
       } else {
         error.textContent='Incorrect access code. Please try again.';
@@ -2916,6 +2922,7 @@ function logOut() {
   if(localStorage.getItem('sft_clear_key_on_logout_v1')==='1'){
     localStorage.removeItem('sft_anthropic_key_v1');
   }
+  localStorage.removeItem('sft_stay_v1');
   if (!SUPABASE_CONFIGURED) {
     document.getElementById('login-overlay').style.display = 'flex';
     initLoginScreen();
@@ -4829,6 +4836,10 @@ document.addEventListener('DOMContentLoaded', async () => {
   applyTheme(localStorage.getItem(THEME_KEY)||'light');
 
   if (!SUPABASE_CONFIGURED) {
+    if (localStorage.getItem('sft_stay_v1') === '1' && getStoredHash()) {
+      _openApp();
+      return;
+    }
     initLoginScreen();
     return;
   }
