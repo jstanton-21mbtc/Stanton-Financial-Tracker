@@ -930,6 +930,16 @@
     .biz-miner-status.online { background: var(--green); }
     .biz-miner-status.offline { background: var(--red); }
     .biz-miner-status.warning { background: var(--yellow); }
+    /* Miner selector modal */
+    .biz-selector-overlay { position: fixed; inset: 0; background: rgba(0,0,0,.65); z-index: 650; display: flex; align-items: center; justify-content: center; padding: 20px; }
+    .biz-selector-card { background: var(--card); border: 1px solid var(--border); border-radius: 20px; width: 100%; max-width: 600px; max-height: 82vh; display: flex; flex-direction: column; padding: 28px; animation: fadeUp .3s ease; }
+    .biz-selector-list { overflow-y: auto; flex: 1; border: 1px solid var(--border); border-radius: var(--radius-sm); margin-top: 4px; }
+    .biz-selector-row { display: flex; align-items: center; gap: 12px; padding: 10px 14px; border-bottom: 1px solid var(--border-dim); cursor: pointer; transition: background .1s; }
+    .biz-selector-row:last-child { border-bottom: none; }
+    .biz-selector-row:hover { background: var(--elevated); }
+    .biz-selector-row input[type=checkbox] { width: 16px; height: 16px; accent-color: var(--blue); cursor: pointer; flex-shrink: 0; }
+    .biz-filter-bar { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
+    .biz-filter-count { font-size: 11px; color: var(--text-2); background: var(--blue-dim); color: var(--blue); padding: 3px 10px; border-radius: 20px; font-weight: 700; white-space: nowrap; }
   </style>
 </head>
 <body>
@@ -2264,7 +2274,13 @@
                   </div>
                   <!-- Fleet summary -->
                   <div id="foreman-fleet" style="display:none;margin-top:20px;">
-                    <div class="subsection-title" style="margin-bottom:12px;">Fleet Overview</div>
+                    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px;">
+                      <div class="subsection-title" style="margin-bottom:0;">Fleet Overview</div>
+                      <div style="display:flex;align-items:center;gap:8px;">
+                        <span class="biz-filter-count" id="foreman-filter-count"></span>
+                        <button class="btn" style="font-size:12px;padding:5px 12px;" onclick="btShowMinerSelector(null, true)">Edit My Miners</button>
+                      </div>
+                    </div>
                     <div class="biz-fleet-grid" id="foreman-fleet-grid"></div>
                     <div style="margin-top:20px;">
                       <div class="subsection-title" style="margin-bottom:12px;">Miners</div>
@@ -7550,6 +7566,105 @@ function btForemanDisconnect() {
   btRenderIntegrations();
 }
 
+// ── MINER ID / FILTER HELPERS ──
+function btGetMinerId(m) {
+  return String(m.id || m.minerId || m.apiIpAddress || m.name || m.hostname || m.ip || '');
+}
+
+function btGetSavedMinerIds() {
+  const biz = appData.businesses.find(b => b.id === btActiveId);
+  return (biz && biz.foremanMiners && biz.foremanMiners.length > 0) ? biz.foremanMiners : null;
+}
+
+function btFilterToMyMiners(allMiners) {
+  const saved = btGetSavedMinerIds();
+  if (!saved) return allMiners; // no filter set yet — show all
+  return allMiners.filter(m => saved.includes(btGetMinerId(m)));
+}
+
+function btEsc(str) {
+  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ── MINER SELECTOR MODAL ──
+let _foremanAllMiners = [];
+
+function btShowMinerSelector(allMiners, canClose) {
+  if (allMiners) _foremanAllMiners = allMiners;
+  const saved = btGetSavedMinerIds() || [];
+  document.getElementById('foreman-selector-cancel').style.display = canClose ? '' : 'none';
+  document.getElementById('foreman-selector-search').value = '';
+  btBuildSelectorRows(_foremanAllMiners, saved);
+  document.getElementById('foreman-selector-overlay').style.display = 'flex';
+  // store canClose for overlay click
+  document.getElementById('foreman-selector-overlay')._canClose = canClose;
+}
+
+function btBuildSelectorRows(miners, saved) {
+  const list = document.getElementById('foreman-selector-list');
+  list.innerHTML = miners.map(m => {
+    const id = btGetMinerId(m);
+    const name = m.name || m.hostname || m.apiIpAddress || m.ip || 'Miner';
+    const status = m.status || m.diagState || (m.online ? 'ONLINE' : 'OFFLINE');
+    const statusClass = status === 'ONLINE' ? 'online' : status === 'OFFLINE' ? 'offline' : 'warning';
+    const hr = m.hashRate || m.hashrateAvg || m.mhs5s || m.ghs5s || 0;
+    const hrLabel = hr ? (parseFloat(hr)/1000).toFixed(2) + ' TH/s' : '—';
+    const isChecked = saved.length === 0 || saved.includes(id);
+    return `<label class="biz-selector-row">
+      <input type="checkbox" data-miner-id="${btEsc(id)}" ${isChecked ? 'checked' : ''} onchange="btUpdateSelCount()" />
+      <span class="biz-miner-status ${statusClass}"></span>
+      <div style="flex:1;min-width:0;">
+        <div style="font-size:13px;font-weight:600;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${btEsc(name)}</div>
+        <div style="font-size:11px;color:var(--text-3);">${btEsc(status)} · ${hrLabel}</div>
+      </div>
+    </label>`;
+  }).join('');
+  btUpdateSelCount();
+}
+
+function btFilterSelectorList(query) {
+  const q = query.toLowerCase();
+  const saved = btGetSavedMinerIds() || [];
+  const filtered = q ? _foremanAllMiners.filter(m => {
+    const name = (m.name || m.hostname || m.apiIpAddress || m.ip || '').toLowerCase();
+    return name.includes(q);
+  }) : _foremanAllMiners;
+  btBuildSelectorRows(filtered, saved);
+}
+
+function btUpdateSelCount() {
+  const total = document.querySelectorAll('#foreman-selector-list input[type=checkbox]').length;
+  const checked = document.querySelectorAll('#foreman-selector-list input[type=checkbox]:checked').length;
+  document.getElementById('foreman-sel-count').textContent = checked + ' / ' + total + ' selected';
+}
+
+function btSelectAllMiners(select) {
+  document.querySelectorAll('#foreman-selector-list input[type=checkbox]').forEach(cb => cb.checked = select);
+  btUpdateSelCount();
+}
+
+function btSaveMinerSelection() {
+  const selected = [...document.querySelectorAll('#foreman-selector-list input[type=checkbox]:checked')]
+    .map(cb => cb.dataset.minerId).filter(Boolean);
+  if (!selected.length) { alert('Please select at least one miner.'); return; }
+  const biz = appData.businesses.find(b => b.id === btActiveId);
+  if (!biz) return;
+  biz.foremanMiners = selected;
+  saveData();
+  btCloseMinerSelector();
+  // Re-render with filter applied
+  const cached = localStorage.getItem(FOREMAN_KEY_PREFIX + btActiveId + '_data');
+  if (cached) {
+    const data = JSON.parse(cached);
+    btRenderForemanFleet(data);
+    btAnalyzeForemanData(data);
+  }
+}
+
+function btCloseMinerSelector() {
+  document.getElementById('foreman-selector-overlay').style.display = 'none';
+}
+
 async function btForemanSync() {
   const clientId = localStorage.getItem(FOREMAN_KEY_PREFIX + btActiveId + '_client') || '';
   const apiKey   = localStorage.getItem(FOREMAN_KEY_PREFIX + btActiveId + '_key') || '';
@@ -7563,28 +7678,32 @@ async function btForemanSync() {
     const auth = btoa(apiKey + ':');
     const headers = { 'Authorization': 'Basic ' + auth, 'Content-Type': 'application/json' };
 
-    // Fetch miners list
     const minersRes = await fetch(`/api/foreman/api/v1/clients/${clientId}/miners`, { headers });
     if (!minersRes.ok) throw new Error(`Foreman API ${minersRes.status}: Check your Client ID and API Key.`);
-    const miners = await minersRes.json();
+    const minersRaw = await minersRes.json();
 
-    // Also try to fetch summary if available
     let summary = null;
     try {
       const sumRes = await fetch(`/api/foreman/api/v1/clients/${clientId}/summary`, { headers });
       if (sumRes.ok) summary = await sumRes.json();
     } catch(e) {}
 
-    const fleetData = { miners: Array.isArray(miners) ? miners : (miners.miners || []), summary };
+    const allMiners = Array.isArray(minersRaw) ? minersRaw : (minersRaw.miners || []);
+    const fleetData = { miners: allMiners, summary };
     localStorage.setItem(FOREMAN_KEY_PREFIX + btActiveId + '_data', JSON.stringify(fleetData));
     const now = new Date().toLocaleString();
     localStorage.setItem(FOREMAN_KEY_PREFIX + btActiveId + '_synced', now);
     document.getElementById('foreman-last-sync').textContent = 'Last synced: ' + now;
 
-    btRenderForemanFleet(fleetData);
-
-    // Also analyze with AI and push to main dashboard
-    await btAnalyzeForemanData(fleetData);
+    // First sync with no saved miners → show selector
+    const hasSavedMiners = btGetSavedMinerIds();
+    if (!hasSavedMiners && allMiners.length > 0) {
+      btRenderForemanFleet(fleetData); // show all first
+      btShowMinerSelector(allMiners, false);
+    } else {
+      btRenderForemanFleet(fleetData);
+      await btAnalyzeForemanData(fleetData);
+    }
 
   } catch(e) {
     console.error('Foreman sync error:', e);
@@ -7596,54 +7715,52 @@ async function btForemanSync() {
 }
 
 function btRenderForemanFleet(data) {
-  const miners = data.miners || [];
-  if (!miners.length) return;
+  const allMiners = data.miners || [];
+  if (!allMiners.length) return;
+
+  const miners = btFilterToMyMiners(allMiners);
+  const savedIds = btGetSavedMinerIds();
 
   document.getElementById('foreman-fleet').style.display = '';
+  const countEl = document.getElementById('foreman-filter-count');
+  countEl.textContent = savedIds
+    ? `${miners.length} of ${allMiners.length} miners`
+    : `${allMiners.length} miners (all)`;
 
-  // Fleet summary stats
   const online  = miners.filter(m => m.status === 'ONLINE'  || m.diagState === 'ONLINE'  || m.online === true).length;
   const offline = miners.filter(m => m.status === 'OFFLINE' || m.diagState === 'OFFLINE' || m.online === false).length;
   const warning = miners.length - online - offline;
-  const totalHashrate = miners.reduce((s, m) => {
-    const hr = m.hashRate || m.hashrateAvg || m.mhs5s || m.ghs5s || 0;
-    return s + (parseFloat(hr) || 0);
-  }, 0);
-  const avgTemp = miners.reduce((s, m) => {
-    const t = m.temperature || m.avgTemp || m.temp || 0;
-    return s + (parseFloat(t) || 0);
-  }, 0) / (miners.length || 1);
+  const totalHashrate = miners.reduce((s, m) => s + (parseFloat(m.hashRate || m.hashrateAvg || m.mhs5s || m.ghs5s || 0) || 0), 0);
+  const avgTemp = miners.reduce((s, m) => s + (parseFloat(m.temperature || m.avgTemp || m.temp || 0) || 0), 0) / (miners.length || 1);
 
   document.getElementById('foreman-fleet-grid').innerHTML = [
-    { val: miners.length, lbl: 'Total Miners', sub: '' },
-    { val: online,  lbl: 'Online',  sub: `${Math.round(online/miners.length*100)}% uptime` },
+    { val: miners.length, lbl: 'My Miners', sub: '' },
+    { val: online,  lbl: 'Online',  sub: miners.length ? Math.round(online/miners.length*100)+'% uptime' : '' },
     { val: offline + warning, lbl: 'Offline/Warn', sub: '' },
-    { val: totalHashrate > 1000 ? (totalHashrate/1000).toFixed(2) + ' PH/s' : totalHashrate.toFixed(2) + ' TH/s', lbl: 'Total Hashrate', sub: '' },
-    { val: avgTemp > 0 ? avgTemp.toFixed(1) + '°C' : '—', lbl: 'Avg Temp', sub: '' },
+    { val: totalHashrate > 1000 ? (totalHashrate/1000).toFixed(2)+' PH/s' : totalHashrate.toFixed(2)+' TH/s', lbl: 'Total Hashrate', sub: '' },
+    { val: avgTemp > 0 ? avgTemp.toFixed(1)+'°C' : '—', lbl: 'Avg Temp', sub: '' },
   ].map(c => `<div class="biz-fleet-card">
     <div class="biz-fleet-val">${c.val}</div>
     <div class="biz-fleet-lbl">${c.lbl}</div>
     ${c.sub ? `<div class="biz-fleet-sub">${c.sub}</div>` : ''}
   </div>`).join('');
 
-  // Miner table
-  const tbody = document.getElementById('foreman-miner-tbody');
-  tbody.innerHTML = miners.slice(0, 50).map(m => {
+  document.getElementById('foreman-miner-tbody').innerHTML = miners.slice(0, 100).map(m => {
     const status = m.status || m.diagState || (m.online ? 'ONLINE' : 'OFFLINE');
     const statusClass = status === 'ONLINE' ? 'online' : status === 'OFFLINE' ? 'offline' : 'warning';
-    const hr = m.hashRate || m.hashrateAvg || m.mhs5s || m.ghs5s || 0;
-    const hrLabel = hr ? (parseFloat(hr)/1000 > 0.5 ? (parseFloat(hr)/1000).toFixed(2)+' TH/s' : parseFloat(hr).toFixed(0)+' GH/s') : '—';
+    const hr = parseFloat(m.hashRate || m.hashrateAvg || m.mhs5s || m.ghs5s || 0);
+    const hrLabel = hr ? (hr/1000 > 0.5 ? (hr/1000).toFixed(2)+' TH/s' : hr.toFixed(0)+' GH/s') : '—';
     const temp = m.temperature || m.avgTemp || m.temp || '—';
-    const eff = m.efficiency || m.powerEfficiency || '—';
+    const eff  = m.efficiency || m.powerEfficiency || '—';
     const pool = m.poolUrl || m.pool || m.poolName || '—';
-    const name = m.name || m.hostname || m.ip || m.id || 'Miner';
+    const name = m.name || m.hostname || m.apiIpAddress || m.ip || m.id || 'Miner';
     return `<tr>
-      <td style="color:var(--text);font-weight:600;">${name}</td>
+      <td style="color:var(--text);font-weight:600;">${btEsc(name)}</td>
       <td><span class="biz-miner-status ${statusClass}"></span>${status}</td>
       <td>${hrLabel}</td>
-      <td>${temp !== '—' ? temp + '°C' : '—'}</td>
-      <td>${eff !== '—' ? eff + ' J/TH' : '—'}</td>
-      <td style="max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${pool}</td>
+      <td>${temp !== '—' ? temp+'°C' : '—'}</td>
+      <td>${eff !== '—' ? eff+' J/TH' : '—'}</td>
+      <td style="max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${btEsc(pool)}">${btEsc(pool)}</td>
     </tr>`;
   }).join('');
 }
@@ -7654,13 +7771,18 @@ async function btAnalyzeForemanData(fleetData) {
   const apiKey = localStorage.getItem('sft_anthropic_key_v1') || '';
   if (!apiKey) return;
 
+  // Filter to only my miners before sending to AI
+  const allMiners = fleetData.miners || [];
+  const myMiners = btFilterToMyMiners(allMiners);
+  const filteredData = { ...fleetData, miners: myMiners };
+
   document.getElementById('biz-analyzing').style.display = '';
-  document.getElementById('biz-analyzing-sub').textContent = 'AI is analyzing your Foreman fleet data…';
+  document.getElementById('biz-analyzing-sub').textContent = `AI is analyzing ${myMiners.length} miners…`;
 
   try {
     const analysis = await btAnalyzeWithAI(biz, 'Foreman Fleet Sync', 'text', {
       type: 'text',
-      data: JSON.stringify(fleetData, null, 2)
+      data: JSON.stringify(filteredData, null, 2)
     });
     const upload = {
       id: 'up_' + Date.now(),
@@ -7681,6 +7803,25 @@ async function btAnalyzeForemanData(fleetData) {
   }
 }
 </script>
+
+<!-- Foreman Miner Selector Modal -->
+<div id="foreman-selector-overlay" style="display:none;" class="biz-selector-overlay">
+  <div class="biz-selector-card">
+    <div style="font-size:17px;font-weight:800;margin-bottom:6px;">Select Your Miners</div>
+    <div style="font-size:13px;color:var(--text-2);margin-bottom:16px;line-height:1.5;">Check only the miners you own. All future syncs and dashboards will filter to your selection only.</div>
+    <div class="biz-filter-bar">
+      <button class="btn" style="font-size:12px;padding:5px 12px;" onclick="btSelectAllMiners(true)">Select All</button>
+      <button class="btn" style="font-size:12px;padding:5px 12px;" onclick="btSelectAllMiners(false)">Clear</button>
+      <input id="foreman-selector-search" class="biz-input" placeholder="Search by name or IP…" style="flex:1;padding:6px 12px;font-size:12px;" oninput="btFilterSelectorList(this.value)" />
+      <span id="foreman-sel-count" style="font-size:11px;color:var(--text-2);white-space:nowrap;"></span>
+    </div>
+    <div class="biz-selector-list" id="foreman-selector-list"></div>
+    <div style="display:flex;gap:10px;margin-top:18px;justify-content:flex-end;">
+      <button class="btn" id="foreman-selector-cancel" style="display:none;" onclick="btCloseMinerSelector()">Cancel</button>
+      <button class="btn btn-primary" onclick="btSaveMinerSelection()">Save My Miners</button>
+    </div>
+  </div>
+</div>
 
 <!-- Note Editor Popup -->
 <div id="note-editor-popup">
