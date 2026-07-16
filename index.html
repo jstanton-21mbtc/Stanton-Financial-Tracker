@@ -7607,6 +7607,7 @@ function btRenderIntegrations() {
         <div class="biz-int-sync-row">
           <button class="btn btn-primary" onclick="btSyncIntegration('${int.id}')" id="int-sync-${int.id}">Sync Now</button>
           <div class="biz-int-last-sync">${lastSync ? 'Last synced: ' + lastSync : 'Never synced'}</div>
+          ${btIsForeman(int) ? `<button class="btn" onclick="btForemanDiscoverClients('${int.id}')" style="font-size:12px;" title="List all clients on this account to find your Client ID">Find Client ID</button>` : ''}
           <button class="btn" onclick="btDisconnectIntegration('${int.id}')" style="margin-left:auto;font-size:12px;">Disconnect</button>
           <button class="btn" onclick="btDeleteIntegration('${int.id}')" style="font-size:12px;color:var(--red);">Remove</button>
         </div>
@@ -7914,6 +7915,49 @@ function btSaveMinerSelection() {
 
 function btCloseMinerSelector() {
   document.getElementById('foreman-selector-overlay').style.display = 'none';
+}
+
+async function btForemanDiscoverClients(intId) {
+  const int = btGetIntegrations().find(i => i.id === intId);
+  if (!int) return;
+  const apiKey = localStorage.getItem(btIntApiKeyLS(intId)) || '';
+  if (!apiKey) { alert('No API key found. Please reconnect the integration.'); return; }
+
+  const btn = event && event.target;
+  if (btn) { btn.textContent = 'Searching…'; btn.disabled = true; }
+
+  try {
+    const res = await fetch('/.netlify/functions/foreman-proxy', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ path: '/api/v2/clients/', apiKey })
+    });
+    const data = await res.json();
+    const clients = Array.isArray(data) ? data : (data.results || data.clients || []);
+
+    if (!clients.length) {
+      alert('No clients found.\n\nRaw response:\n' + JSON.stringify(data).slice(0, 400));
+      return;
+    }
+
+    // Build a readable list for the user to pick from
+    let msg = 'Clients on your Foreman account:\n\n';
+    clients.forEach((c, i) => {
+      const id   = c.id   || c.clientId || '?';
+      const name = c.name || c.username || c.email || JSON.stringify(c).slice(0,60);
+      msg += `[${id}]  ${name}\n`;
+    });
+    msg += '\nEnter the Client ID you want to use:';
+    const chosen = prompt(msg);
+    if (!chosen) return;
+    localStorage.setItem(btIntClientLS(intId), chosen.trim());
+    alert('Client ID set to ' + chosen.trim() + '. Syncing now…');
+    btSyncIntegration(intId);
+  } catch (e) {
+    alert('Discovery failed: ' + e.message);
+  } finally {
+    if (btn) { btn.textContent = 'Find Client ID'; btn.disabled = false; }
+  }
 }
 
 function btBuildForemanFleetHtml(data, intId) {
