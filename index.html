@@ -120,6 +120,30 @@
     .t-chg { font-weight: 600; font-size: 11px; }
     .t-chg.up { color: var(--green); }
     .t-chg.dn { color: var(--red); }
+    /* ── TICKER SECTIONS ── */
+    .ticker-sections { display:flex; flex-shrink:0; height:100%; }
+    .ticker-section-btn { font-size:9px; font-weight:700; letter-spacing:1px; padding:0 9px; height:100%; display:flex; align-items:center; gap:4px; cursor:pointer; color:var(--text-3); border-right:1px solid var(--border-dim); transition:color .15s; white-space:nowrap; user-select:none; }
+    .ticker-section-btn:hover { color:var(--text-2); }
+    .ticker-section-btn.active { color:var(--blue); }
+    /* ── TICKER NEWS ITEMS ── */
+    .ticker-news-item { display:inline-flex; align-items:center; gap:7px; padding:0 14px; font-size:11px; border-right:1px solid var(--border-dim); height:26px; white-space:nowrap; }
+    .tn-source { font-weight:700; color:var(--blue); font-size:10px; letter-spacing:.3px; flex-shrink:0; }
+    .tn-headline { color:var(--text-2); }
+    /* ── TICKER SPORTS ITEMS ── */
+    .ticker-sports-item { display:inline-flex; align-items:center; gap:5px; padding:0 12px; font-size:11px; border-right:1px solid var(--border-dim); height:26px; white-space:nowrap; }
+    .ts-league { font-size:9px; font-weight:700; color:var(--text-3); letter-spacing:.5px; flex-shrink:0; }
+    .ts-matchup { font-weight:700; color:var(--text); }
+    .ts-score { color:var(--green); font-weight:600; }
+    .ts-status { font-size:10px; color:var(--text-3); }
+    /* ── NEWS FEED PICKER ITEMS ── */
+    .np-feed-item { display:flex; align-items:center; gap:10px; padding:10px 12px; border-radius:var(--radius-sm); border:1.5px solid var(--border); cursor:pointer; transition:all .15s; }
+    .np-feed-item:hover { border-color:var(--text-3); background:var(--elevated); }
+    .np-feed-item.selected { border-color:var(--blue); background:var(--blue-dim); }
+    .np-feed-name { font-size:13px; font-weight:700; color:var(--text); flex:1; }
+    .np-feed-item.selected .np-feed-name { color:var(--blue); }
+    .np-feed-cat { font-size:11px; color:var(--text-3); background:var(--elevated); padding:2px 8px; border-radius:999px; flex-shrink:0; }
+    .np-feed-check { width:18px; height:18px; border-radius:999px; border:2px solid var(--border); display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+    .np-feed-item.selected .np-feed-check { background:var(--blue); border-color:var(--blue); color:#000; }
     /* ── STALE DATA ALERT ── */
     .stale-alert { display:none; align-items:center; gap:10px; padding:8px 18px; background:#3d2a00; border-bottom:1px solid #7a5200; color:#ffc947; font-size:12.5px; flex-shrink:0; }
     .stale-alert.show { display:flex; }
@@ -1303,7 +1327,11 @@
     </header>
     <!-- ── STOCK TICKER ── -->
     <div class="ticker-strip" id="stock-ticker">
-      <div class="ticker-label"><div class="ticker-dot"></div>MARKETS</div>
+      <div class="ticker-sections">
+        <div class="ticker-section-btn active" id="ts-btn-markets" onclick="switchTickerSection('markets')"><div class="ticker-dot"></div>MARKETS</div>
+        <div class="ticker-section-btn" id="ts-btn-news" onclick="switchTickerSection('news')">NEWS</div>
+        <div class="ticker-section-btn" id="ts-btn-sports" onclick="switchTickerSection('sports')">SPORTS</div>
+      </div>
       <div class="ticker-track-wrap"><div class="ticker-track" id="ticker-track"></div></div>
     </div>
 
@@ -1789,6 +1817,34 @@
               <button class="btn btn-primary" onclick="showTickerPicker(false)" style="width:100%;justify-content:center;padding:12px;">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
                 Customize Tickers
+              </button>
+            </div>
+          </div>
+
+          <div class="settings-card">
+            <div class="settings-card-header">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 22h16a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2H8a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2z"/><line x1="9" y1="9" x2="15" y2="9"/><line x1="9" y1="13" x2="15" y2="13"/><line x1="9" y1="17" x2="13" y2="17"/></svg>
+              <div><div class="settings-card-title">News Ticker</div><div class="settings-card-sub">Choose a news feed for your ticker</div></div>
+            </div>
+            <div class="settings-card-body">
+              <div id="settings-news-preview" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:18px"></div>
+              <button class="btn btn-primary" onclick="showNewsPicker()" style="width:100%;justify-content:center;padding:12px;">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 22h16a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2H8a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2z"/><line x1="9" y1="9" x2="15" y2="9"/></svg>
+                Choose News Feed
+              </button>
+            </div>
+          </div>
+
+          <div class="settings-card">
+            <div class="settings-card-header">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><line x1="2" y1="12" x2="22" y2="12"/></svg>
+              <div><div class="settings-card-title">Sports Ticker</div><div class="settings-card-sub">Follow live scores for your sport or team</div></div>
+            </div>
+            <div class="settings-card-body">
+              <div id="settings-sports-preview" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:18px"></div>
+              <button class="btn btn-primary" onclick="showSportsPicker()" style="width:100%;justify-content:center;padding:12px;">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><line x1="2" y1="12" x2="22" y2="12"/></svg>
+                Choose Sport / Team
               </button>
             </div>
           </div>
@@ -4293,6 +4349,8 @@ function renderSettings(){
   renderVideoSection();
   renderThemePreview(localStorage.getItem(THEME_KEY)||'dark');
   renderTickerSettingsPreview();
+  renderNewsSettingsPreview();
+  renderSportsSettingsPreview();
   renderMonthlyBackups();
   const m=appData.meta||{};
   const n=document.getElementById('settings-name');if(n)n.value=m.name||'';
@@ -5553,8 +5611,10 @@ let _reloadTicker;
     return '$'+p.toFixed(2);
   }
   function render(){
+    if(window._tickerSection && window._tickerSection !== 'markets') return;
     const el=document.getElementById('ticker-track');
     if(!el)return;
+    el.style.animationDuration='60s';
     const html=_d.filter(t=>t._showInTicker!==false).map(t=>`<div class="ticker-item"><span class="t-sym">${t.sym}</span><span class="t-price">${fmtPrice(t.price,t.big)}</span></div>`).join('');
     el.innerHTML=html+html;
   }
@@ -5645,6 +5705,299 @@ let _reloadTicker;
   load();
   setInterval(load,5*60*1000);
 })();
+</script>
+
+<script>
+// ── NEWS & SPORTS TICKER ──
+window._tickerSection = localStorage.getItem('sft_ticker_section_v1') || 'markets';
+
+// Restore section on load
+(function(){
+  ['markets','news','sports'].forEach(s => {
+    const btn = document.getElementById('ts-btn-'+s);
+    if(btn) btn.classList.toggle('active', s === window._tickerSection);
+  });
+  if(window._tickerSection === 'news') setTimeout(loadNewsTicker, 800);
+  else if(window._tickerSection === 'sports') setTimeout(loadSportsTicker, 800);
+})();
+
+function switchTickerSection(section) {
+  window._tickerSection = section;
+  localStorage.setItem('sft_ticker_section_v1', section);
+  ['markets','news','sports'].forEach(s => {
+    const btn = document.getElementById('ts-btn-'+s);
+    if(btn) btn.classList.toggle('active', s === section);
+  });
+  if(section === 'markets') {
+    if(typeof _reloadTicker === 'function') _reloadTicker();
+  } else if(section === 'news') {
+    loadNewsTicker();
+  } else if(section === 'sports') {
+    loadSportsTicker();
+  }
+}
+
+// ── NEWS FEEDS ──
+const NEWS_FEED_KEY = 'sft_news_feed_v1';
+const NEWS_CATALOG = [
+  { id:'cnbc',         name:'CNBC',          category:'Finance', url:'https://www.cnbc.com/id/100003114/device/rss/rss.html' },
+  { id:'marketwatch',  name:'MarketWatch',   category:'Finance', url:'https://feeds.marketwatch.com/marketwatch/topstories/' },
+  { id:'wsj',          name:'WSJ Markets',   category:'Finance', url:'https://feeds.a.dj.com/rss/RSSMarketsMain.xml' },
+  { id:'techcrunch',   name:'TechCrunch',    category:'Tech',    url:'https://techcrunch.com/feed/' },
+  { id:'verge',        name:'The Verge',     category:'Tech',    url:'https://www.theverge.com/rss/index.xml' },
+  { id:'ars',          name:'Ars Technica',  category:'Tech',    url:'https://feeds.arstechnica.com/arstechnica/index' },
+  { id:'coindesk',     name:'CoinDesk',      category:'Crypto',  url:'https://www.coindesk.com/arc/outboundfeeds/rss/' },
+  { id:'cointelegraph',name:'CoinTelegraph', category:'Crypto',  url:'https://cointelegraph.com/rss' },
+  { id:'decrypt',      name:'Decrypt',       category:'Crypto',  url:'https://decrypt.co/feed' },
+  { id:'bbc',          name:'BBC News',      category:'General', url:'https://feeds.bbci.co.uk/news/rss.xml' },
+  { id:'ap',           name:'AP News',       category:'General', url:'https://rsshub.app/apnews/topics/apf-topnews' },
+  { id:'espnnews',     name:'ESPN Headlines',category:'Sports',  url:'https://www.espn.com/espn/rss/news' },
+  { id:'nfl',          name:'NFL News',      category:'Sports',  url:'https://www.nfl.com/rss/rsslanding.html?tag=news' },
+];
+
+async function loadNewsTicker() {
+  const track = document.getElementById('ticker-track');
+  if(!track || window._tickerSection !== 'news') return;
+  const saved = JSON.parse(localStorage.getItem(NEWS_FEED_KEY) || 'null');
+  if(!saved) {
+    track.innerHTML = '<div class="ticker-item"><span class="t-sym" style="color:var(--text-2)">Go to Settings → News Ticker to choose a feed</span></div>';
+    track.style.animationDuration = '20s';
+    return;
+  }
+  track.innerHTML = `<div class="ticker-item"><span class="t-sym" style="color:var(--text-3)">Loading ${saved.name}…</span></div>`;
+  try {
+    const proxy = 'https://api.rss2json.com/v1/api.json?count=25&rss_url=' + encodeURIComponent(saved.url);
+    const r = await fetch(proxy);
+    if(!r.ok) throw new Error('fetch');
+    const j = await r.json();
+    const items = (j.items || []).slice(0, 20);
+    if(!items.length) throw new Error('empty');
+    if(window._tickerSection !== 'news') return;
+    const html = items.map(it => {
+      const raw = (it.title || '').replace(/&amp;/g,'&').replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&#039;/g,"'").replace(/&quot;/g,'"');
+      const title = raw.length > 90 ? raw.slice(0,87)+'…' : raw;
+      return `<div class="ticker-news-item"><span class="tn-source">${saved.name.toUpperCase()}</span><span class="tn-headline">${title}</span></div>`;
+    }).join('');
+    track.innerHTML = html + html;
+    track.style.animationDuration = Math.max(45, items.length * 9) + 's';
+  } catch(e) {
+    if(window._tickerSection !== 'news') return;
+    track.innerHTML = '<div class="ticker-item"><span class="t-sym" style="color:var(--red)">Feed unavailable — try another in Settings → News Ticker</span></div>';
+    track.style.animationDuration = '20s';
+  }
+}
+
+function renderNewsSettingsPreview() {
+  const el = document.getElementById('settings-news-preview');
+  if(!el) return;
+  const saved = JSON.parse(localStorage.getItem(NEWS_FEED_KEY) || 'null');
+  if(!saved) { el.innerHTML = '<span style="font-size:12px;color:var(--text-3)">No feed selected</span>'; return; }
+  el.innerHTML = `<span style="background:var(--elevated);border:1px solid var(--border);border-radius:999px;padding:4px 10px;font-size:11px;font-weight:700;color:var(--text)">${saved.name}</span><span style="background:var(--elevated);border:1px solid var(--border);border-radius:999px;padding:4px 10px;font-size:11px;color:var(--text-2)">${saved.category}</span>`;
+}
+
+// ── NEWS PICKER ──
+let _npSel = null, _npCat = 'All';
+function showNewsPicker() {
+  _npSel = JSON.parse(localStorage.getItem(NEWS_FEED_KEY) || 'null');
+  _npCat = 'All';
+  _renderNewsPicker();
+  document.getElementById('news-picker').style.display = 'flex';
+}
+function closeNewsPicker() { document.getElementById('news-picker').style.display = 'none'; }
+function switchNewsCategory(cat) { _npCat = cat; _renderNewsPicker(); }
+function selectNewsFeed(id) { _npSel = NEWS_CATALOG.find(f => f.id === id) || null; _renderNewsPicker(); }
+function confirmNewsPicker() {
+  if(!_npSel) return;
+  localStorage.setItem(NEWS_FEED_KEY, JSON.stringify(_npSel));
+  closeNewsPicker();
+  renderNewsSettingsPreview();
+  if(window._tickerSection === 'news') loadNewsTicker();
+}
+function _renderNewsPicker() {
+  const cats = ['All','Finance','Tech','Crypto','General','Sports'];
+  const tabsEl = document.getElementById('np-tabs');
+  if(tabsEl) tabsEl.innerHTML = cats.map(c => `<div class="tp-tab${_npCat===c?' active':''}" onclick="switchNewsCategory('${c}')">${c}</div>`).join('');
+  const feeds = NEWS_CATALOG.filter(f => _npCat === 'All' || f.category === _npCat);
+  const panel = document.getElementById('np-panel');
+  if(panel) panel.innerHTML = feeds.map(f => {
+    const sel = _npSel && _npSel.id === f.id;
+    return `<div class="np-feed-item${sel?' selected':''}" onclick="selectNewsFeed('${f.id}')">
+      <div class="np-feed-name">${f.name}</div>
+      <div class="np-feed-cat">${f.category}</div>
+      <div class="np-feed-check">${sel?'<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5"><polyline points="20 6 9 17 4 12"/></svg>':''}</div>
+    </div>`;
+  }).join('');
+  const lbl = document.getElementById('np-sel-label');
+  if(lbl) lbl.innerHTML = _npSel ? `Selected: <strong>${_npSel.name}</strong>` : 'Select a feed above';
+}
+
+// ── SPORTS ──
+const SPORTS_SEL_KEY = 'sft_sports_v1';
+const SPORTS_CATALOG = [
+  { id:'nfl', name:'NFL', sport:'football', league:'nfl', teams:[
+    {abbr:'ARI',name:'Cardinals'},{abbr:'ATL',name:'Falcons'},{abbr:'BAL',name:'Ravens'},
+    {abbr:'BUF',name:'Bills'},{abbr:'CAR',name:'Panthers'},{abbr:'CHI',name:'Bears'},
+    {abbr:'CIN',name:'Bengals'},{abbr:'CLE',name:'Browns'},{abbr:'DAL',name:'Cowboys'},
+    {abbr:'DEN',name:'Broncos'},{abbr:'DET',name:'Lions'},{abbr:'GB',name:'Packers'},
+    {abbr:'HOU',name:'Texans'},{abbr:'IND',name:'Colts'},{abbr:'JAX',name:'Jaguars'},
+    {abbr:'KC',name:'Chiefs'},{abbr:'LAC',name:'Chargers'},{abbr:'LAR',name:'Rams'},
+    {abbr:'LV',name:'Raiders'},{abbr:'MIA',name:'Dolphins'},{abbr:'MIN',name:'Vikings'},
+    {abbr:'NE',name:'Patriots'},{abbr:'NO',name:'Saints'},{abbr:'NYG',name:'Giants'},
+    {abbr:'NYJ',name:'Jets'},{abbr:'PHI',name:'Eagles'},{abbr:'PIT',name:'Steelers'},
+    {abbr:'SF',name:'49ers'},{abbr:'SEA',name:'Seahawks'},{abbr:'TB',name:'Buccaneers'},
+    {abbr:'TEN',name:'Titans'},{abbr:'WSH',name:'Commanders'},
+  ]},
+  { id:'nba', name:'NBA', sport:'basketball', league:'nba', teams:[
+    {abbr:'ATL',name:'Hawks'},{abbr:'BOS',name:'Celtics'},{abbr:'BKN',name:'Nets'},
+    {abbr:'CHA',name:'Hornets'},{abbr:'CHI',name:'Bulls'},{abbr:'CLE',name:'Cavaliers'},
+    {abbr:'DAL',name:'Mavericks'},{abbr:'DEN',name:'Nuggets'},{abbr:'DET',name:'Pistons'},
+    {abbr:'GS',name:'Warriors'},{abbr:'HOU',name:'Rockets'},{abbr:'IND',name:'Pacers'},
+    {abbr:'LAC',name:'Clippers'},{abbr:'LAL',name:'Lakers'},{abbr:'MEM',name:'Grizzlies'},
+    {abbr:'MIA',name:'Heat'},{abbr:'MIL',name:'Bucks'},{abbr:'MIN',name:'Timberwolves'},
+    {abbr:'NO',name:'Pelicans'},{abbr:'NY',name:'Knicks'},{abbr:'OKC',name:'Thunder'},
+    {abbr:'ORL',name:'Magic'},{abbr:'PHI',name:'76ers'},{abbr:'PHX',name:'Suns'},
+    {abbr:'POR',name:'Trail Blazers'},{abbr:'SAC',name:'Kings'},{abbr:'SA',name:'Spurs'},
+    {abbr:'TOR',name:'Raptors'},{abbr:'UTA',name:'Jazz'},{abbr:'WSH',name:'Wizards'},
+  ]},
+  { id:'mlb', name:'MLB', sport:'baseball', league:'mlb', teams:[
+    {abbr:'ARI',name:'D-backs'},{abbr:'ATL',name:'Braves'},{abbr:'BAL',name:'Orioles'},
+    {abbr:'BOS',name:'Red Sox'},{abbr:'CHC',name:'Cubs'},{abbr:'CWS',name:'White Sox'},
+    {abbr:'CIN',name:'Reds'},{abbr:'CLE',name:'Guardians'},{abbr:'COL',name:'Rockies'},
+    {abbr:'DET',name:'Tigers'},{abbr:'HOU',name:'Astros'},{abbr:'KC',name:'Royals'},
+    {abbr:'LAA',name:'Angels'},{abbr:'LAD',name:'Dodgers'},{abbr:'MIA',name:'Marlins'},
+    {abbr:'MIL',name:'Brewers'},{abbr:'MIN',name:'Twins'},{abbr:'NYM',name:'Mets'},
+    {abbr:'NYY',name:'Yankees'},{abbr:'OAK',name:'Athletics'},{abbr:'PHI',name:'Phillies'},
+    {abbr:'PIT',name:'Pirates'},{abbr:'SD',name:'Padres'},{abbr:'SEA',name:'Mariners'},
+    {abbr:'SF',name:'Giants'},{abbr:'STL',name:'Cardinals'},{abbr:'TB',name:'Rays'},
+    {abbr:'TEX',name:'Rangers'},{abbr:'TOR',name:'Blue Jays'},{abbr:'WSH',name:'Nationals'},
+  ]},
+  { id:'nhl', name:'NHL', sport:'hockey', league:'nhl', teams:[
+    {abbr:'ANA',name:'Ducks'},{abbr:'BOS',name:'Bruins'},{abbr:'BUF',name:'Sabres'},
+    {abbr:'CGY',name:'Flames'},{abbr:'CAR',name:'Hurricanes'},{abbr:'CHI',name:'Blackhawks'},
+    {abbr:'COL',name:'Avalanche'},{abbr:'CBJ',name:'Blue Jackets'},{abbr:'DAL',name:'Stars'},
+    {abbr:'DET',name:'Red Wings'},{abbr:'EDM',name:'Oilers'},{abbr:'FLA',name:'Panthers'},
+    {abbr:'LA',name:'Kings'},{abbr:'MIN',name:'Wild'},{abbr:'MTL',name:'Canadiens'},
+    {abbr:'NSH',name:'Predators'},{abbr:'NJ',name:'Devils'},{abbr:'NYI',name:'Islanders'},
+    {abbr:'NYR',name:'Rangers'},{abbr:'OTT',name:'Senators'},{abbr:'PHI',name:'Flyers'},
+    {abbr:'PIT',name:'Penguins'},{abbr:'SEA',name:'Kraken'},{abbr:'SJ',name:'Sharks'},
+    {abbr:'STL',name:'Blues'},{abbr:'TB',name:'Lightning'},{abbr:'TOR',name:'Maple Leafs'},
+    {abbr:'UTA',name:'Utah HC'},{abbr:'VAN',name:'Canucks'},{abbr:'VGK',name:'Golden Knights'},
+    {abbr:'WSH',name:'Capitals'},{abbr:'WPG',name:'Jets'},
+  ]},
+  { id:'mls', name:'MLS', sport:'soccer', league:'usa.1', teams:[
+    {abbr:'ATL',name:'Atlanta Utd'},{abbr:'AUS',name:'Austin FC'},{abbr:'CHI',name:'Chicago Fire'},
+    {abbr:'CIN',name:'FC Cincinnati'},{abbr:'CLB',name:'Columbus Crew'},{abbr:'COL',name:'Colorado Rapids'},
+    {abbr:'DAL',name:'FC Dallas'},{abbr:'DC',name:'D.C. United'},{abbr:'HOU',name:'Houston Dynamo'},
+    {abbr:'LA',name:'LA Galaxy'},{abbr:'LAFC',name:'LAFC'},{abbr:'MIA',name:'Inter Miami'},
+    {abbr:'MIN',name:'Minnesota Utd'},{abbr:'MTL',name:'CF Montréal'},{abbr:'NE',name:'New England'},
+    {abbr:'NY',name:'NY Red Bulls'},{abbr:'NYC',name:'NYCFC'},{abbr:'ORL',name:'Orlando City'},
+    {abbr:'PHI',name:'Philadelphia'},{abbr:'POR',name:'Portland'},{abbr:'RSL',name:'Real Salt Lake'},
+    {abbr:'SEA',name:'Seattle'},{abbr:'SJ',name:'San Jose'},{abbr:'SKC',name:'Sporting KC'},
+    {abbr:'TOR',name:'Toronto FC'},{abbr:'VAN',name:'Vancouver'},
+  ]},
+];
+
+async function loadSportsTicker() {
+  const track = document.getElementById('ticker-track');
+  if(!track || window._tickerSection !== 'sports') return;
+  const saved = JSON.parse(localStorage.getItem(SPORTS_SEL_KEY) || 'null');
+  if(!saved) {
+    track.innerHTML = '<div class="ticker-item"><span class="t-sym" style="color:var(--text-2)">Go to Settings → Sports Ticker to choose a sport</span></div>';
+    track.style.animationDuration = '20s';
+    return;
+  }
+  track.innerHTML = `<div class="ticker-item"><span class="t-sym" style="color:var(--text-3)">Loading ${saved.leagueName} scores…</span></div>`;
+  try {
+    const url = `https://site.api.espn.com/apis/site/v2/sports/${saved.sport}/${saved.league}/scoreboard`;
+    const r = await fetch(url);
+    if(!r.ok) throw new Error('fetch');
+    const j = await r.json();
+    let events = j.events || [];
+    if(saved.team) {
+      events = events.filter(ev => (ev.competitions||[]).some(c =>
+        (c.competitors||[]).some(comp => comp.team?.abbreviation === saved.team)
+      ));
+    }
+    if(window._tickerSection !== 'sports') return;
+    if(!events.length) {
+      track.innerHTML = `<div class="ticker-item"><span class="t-sym" style="color:var(--text-3)">${saved.leagueName}${saved.teamName?' · '+saved.teamName:''} — No games scheduled today</span></div>`;
+      track.style.animationDuration = '20s';
+      return;
+    }
+    const html = events.map(ev => {
+      const comp = (ev.competitions||[])[0]; if(!comp) return '';
+      const comps = comp.competitors || [];
+      const home = comps.find(c=>c.homeAway==='home');
+      const away = comps.find(c=>c.homeAway==='away');
+      const status = comp.status?.type?.shortDetail || '';
+      const homeA = home?.team?.abbreviation||'?', awayA = away?.team?.abbreviation||'?';
+      const homeS = home?.score??'—', awayS = away?.score??'—';
+      return `<div class="ticker-sports-item"><span class="ts-league">${saved.leagueName}</span><span class="ts-matchup">${awayA} vs ${homeA}</span><span class="ts-score">${awayS}–${homeS}</span><span class="ts-status">${status}</span></div>`;
+    }).filter(Boolean).join('');
+    track.innerHTML = html + html;
+    track.style.animationDuration = Math.max(30, events.length * 7) + 's';
+  } catch(e) {
+    if(window._tickerSection !== 'sports') return;
+    track.innerHTML = '<div class="ticker-item"><span class="t-sym" style="color:var(--red)">Sports data unavailable</span></div>';
+    track.style.animationDuration = '20s';
+  }
+}
+
+function renderSportsSettingsPreview() {
+  const el = document.getElementById('settings-sports-preview');
+  if(!el) return;
+  const saved = JSON.parse(localStorage.getItem(SPORTS_SEL_KEY) || 'null');
+  if(!saved) { el.innerHTML = '<span style="font-size:12px;color:var(--text-3)">No sport selected</span>'; return; }
+  let html = `<span style="background:var(--elevated);border:1px solid var(--border);border-radius:999px;padding:4px 10px;font-size:11px;font-weight:700;color:var(--text)">${saved.leagueName}</span>`;
+  if(saved.teamName) html += `<span style="background:var(--elevated);border:1px solid var(--border);border-radius:999px;padding:4px 10px;font-size:11px;color:var(--text-2)">${saved.teamName}</span>`;
+  else html += `<span style="background:var(--elevated);border:1px solid var(--border);border-radius:999px;padding:4px 10px;font-size:11px;color:var(--text-2)">All Teams</span>`;
+  el.innerHTML = html;
+}
+
+// ── SPORTS PICKER ──
+let _spLeague = null, _spTeam = null;
+function showSportsPicker() {
+  const saved = JSON.parse(localStorage.getItem(SPORTS_SEL_KEY) || 'null');
+  _spLeague = saved ? saved.id : SPORTS_CATALOG[0].id;
+  _spTeam = saved ? saved.team : null;
+  _renderSportsPicker();
+  document.getElementById('sports-picker').style.display = 'flex';
+}
+function closeSportsPicker() { document.getElementById('sports-picker').style.display = 'none'; }
+function switchSportsLeague(id) { _spLeague = id; _spTeam = null; _renderSportsPicker(); }
+function toggleSportsTeam(abbr) {
+  _spTeam = (abbr === null || _spTeam === abbr) ? null : abbr;
+  _renderSportsPicker();
+}
+function confirmSportsPicker() {
+  const lg = SPORTS_CATALOG.find(s => s.id === _spLeague); if(!lg) return;
+  const tm = _spTeam ? lg.teams.find(t => t.abbr === _spTeam) : null;
+  localStorage.setItem(SPORTS_SEL_KEY, JSON.stringify({ id:lg.id, leagueName:lg.name, sport:lg.sport, league:lg.league, team:_spTeam||null, teamName:tm?tm.name:null }));
+  closeSportsPicker();
+  renderSportsSettingsPreview();
+  if(window._tickerSection === 'sports') loadSportsTicker();
+}
+function _renderSportsPicker() {
+  const tabsEl = document.getElementById('sp-tabs');
+  if(tabsEl) tabsEl.innerHTML = SPORTS_CATALOG.map(s =>
+    `<div class="tp-tab${_spLeague===s.id?' active':''}" onclick="switchSportsLeague('${s.id}')">${s.name}</div>`
+  ).join('');
+  const lg = SPORTS_CATALOG.find(s => s.id === _spLeague);
+  const panel = document.getElementById('sp-panel');
+  if(panel && lg) {
+    const allChip = `<div class="tp-chip${!_spTeam?' selected':''}" onclick="toggleSportsTeam(null)"><span class="tp-chip-sym">ALL</span><span class="tp-chip-name">Teams</span></div>`;
+    const teamChips = lg.teams.map(t => {
+      const sel = _spTeam === t.abbr;
+      return `<div class="tp-chip${sel?' selected':''}" onclick="toggleSportsTeam('${t.abbr}')"><span class="tp-chip-sym">${t.abbr}</span><span class="tp-chip-name">${t.name}</span></div>`;
+    }).join('');
+    panel.innerHTML = allChip + teamChips;
+  }
+  const sumEl = document.getElementById('sp-summary');
+  if(sumEl && lg) {
+    const tm = _spTeam ? lg.teams.find(t=>t.abbr===_spTeam) : null;
+    sumEl.textContent = lg.name + (tm ? ' · ' + tm.name : ' · All Teams');
+  }
+}
 </script>
 
 <script>
@@ -6471,6 +6824,46 @@ function psApply() {
       <div style="display:flex;gap:8px;">
         <button class="btn" onclick="closeTickerPicker()">Skip</button>
         <button class="btn btn-primary" onclick="confirmTickerPicker()">Save Tickers</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── NEWS PICKER ── -->
+<div class="ticker-picker-overlay" id="news-picker" style="display:none">
+  <div class="ticker-picker-card">
+    <div class="ticker-picker-head">
+      <div class="ticker-picker-title">Choose Your News Feed</div>
+      <div class="ticker-picker-sub">Select one feed to scroll in the News ticker. Switch between Markets, News &amp; Sports from the ticker bar anytime.</div>
+    </div>
+    <div class="ticker-picker-tabs" id="np-tabs"></div>
+    <div class="ticker-picker-body" id="np-panel" style="display:flex;flex-direction:column;gap:8px;"></div>
+    <div class="ticker-picker-foot">
+      <div class="tp-count" id="np-sel-label">Select a feed above</div>
+      <div style="display:flex;gap:8px;">
+        <button class="btn" onclick="closeNewsPicker()">Cancel</button>
+        <button class="btn btn-primary" onclick="confirmNewsPicker()">Save Feed</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── SPORTS PICKER ── -->
+<div class="ticker-picker-overlay" id="sports-picker" style="display:none">
+  <div class="ticker-picker-card" style="max-width:680px">
+    <div class="ticker-picker-head">
+      <div class="ticker-picker-title">Choose Your Sport</div>
+      <div class="ticker-picker-sub">Pick a league, then optionally filter to a specific team. Live scores pull from ESPN.</div>
+    </div>
+    <div class="ticker-picker-tabs" id="sp-tabs"></div>
+    <div class="ticker-picker-body">
+      <div id="sp-panel" class="tp-grid"></div>
+    </div>
+    <div class="ticker-picker-foot">
+      <div class="tp-count">Showing: <strong id="sp-summary"></strong></div>
+      <div style="display:flex;gap:8px;">
+        <button class="btn" onclick="closeSportsPicker()">Cancel</button>
+        <button class="btn btn-primary" onclick="confirmSportsPicker()">Save</button>
       </div>
     </div>
   </div>
