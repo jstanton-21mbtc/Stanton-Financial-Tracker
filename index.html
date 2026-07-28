@@ -223,6 +223,29 @@
     .chart-card h3 { font-size: 11px; font-weight: 600; color: var(--text-2); text-transform: uppercase; letter-spacing: .6px; margin-bottom: 12px; }
     .chart-wrap { position: relative; height: 160px; overflow: hidden; }
     .chart-wrap-lg { position: relative; height: 190px; overflow: hidden; }
+    /* ── CHART EXPAND MODAL ── */
+    .chart-card.expandable { cursor: pointer; transition: border-color .2s, box-shadow .2s; }
+    .chart-card.expandable:hover { border-color: var(--blue); box-shadow: 0 0 0 1px var(--blue); }
+    .chart-expand-hint { font-size: 9px; color: var(--text-3); font-weight: 500; opacity: 0; transition: opacity .15s; text-transform: none; letter-spacing: 0; }
+    .chart-card.expandable:hover .chart-expand-hint { opacity: 1; }
+    .chart-modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,.8); z-index: 700; display: flex; align-items: center; justify-content: center; padding: 20px; }
+    .chart-modal-card { background: var(--card); border: 1px solid var(--border); border-radius: 20px; width: 100%; max-width: 880px; max-height: 90vh; display: flex; flex-direction: column; animation: fadeUp .25s ease; }
+    .chart-modal-head { padding: 22px 28px 18px; display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; flex-shrink: 0; border-bottom: 1px solid var(--border-dim); }
+    .chart-modal-title { font-size: 17px; font-weight: 800; color: var(--text); }
+    .chart-modal-sub { font-size: 12px; color: var(--text-3); margin-top: 3px; }
+    .chart-modal-close { background: var(--elevated); border: 1px solid var(--border); color: var(--text-2); width: 32px; height: 32px; border-radius: 50%; cursor: pointer; font-size: 18px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: all .15s; line-height: 1; font-family: inherit; }
+    .chart-modal-close:hover { border-color: var(--text-3); color: var(--text); }
+    .chart-modal-body { padding: 22px 28px 24px; overflow-y: auto; flex: 1; display: flex; flex-direction: column; gap: 20px; }
+    .chart-modal-canvas-wrap { position: relative; height: 280px; flex-shrink: 0; }
+    .chart-modal-detail table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+    .chart-modal-detail th { color: var(--text-3); font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: .5px; padding: 6px 10px; text-align: right; border-bottom: 1px solid var(--border); }
+    .chart-modal-detail th:first-child { text-align: left; }
+    .chart-modal-detail td { padding: 7px 10px; border-bottom: 1px solid var(--border-dim); color: var(--text-2); text-align: right; }
+    .chart-modal-detail td:first-child { text-align: left; color: var(--text); font-weight: 500; }
+    .chart-modal-detail tr:last-child td { border-bottom: none; }
+    .chart-modal-detail .cm-pos { color: var(--green); font-weight: 600; }
+    .chart-modal-detail .cm-neg { color: var(--red); font-weight: 600; }
+    .chart-modal-detail .cm-total td { font-weight: 700; color: var(--text); background: var(--elevated); border-top: 1px solid var(--border); }
     .nw-range-btn { background: var(--elevated); border: 1px solid var(--border); color: var(--text-2); font-size: 11px; font-weight: 600; padding: 4px 11px; border-radius: 6px; cursor: pointer; transition: all .15s; font-family: 'Inter', sans-serif; }
     .nw-range-btn:hover { background: var(--card-hover); color: var(--text); }
     .nw-range-btn.active { background: var(--blue-dim); color: var(--blue); border-color: var(--blue); }
@@ -1255,10 +1278,10 @@
         <div class="kpi-grid" id="kpi-grid"></div>
         <div id="kpi-asof" style="font-size:11px;color:var(--text-3);text-align:right;margin:-20px 0 24px;"></div>
         <div class="charts-grid">
-          <div class="chart-card"><h3>Income vs Expenses</h3><div class="chart-wrap"><canvas id="chart-ie"></canvas></div></div>
-          <div class="chart-card"><h3>Net P&amp;L by Month</h3><div class="chart-wrap"><canvas id="chart-pl"></canvas></div></div>
-          <div class="chart-card"><h3>Net Worth</h3><div class="chart-wrap"><canvas id="chart-nw-dash"></canvas></div></div>
-          <div class="chart-card"><h3 style="display:flex;align-items:center;justify-content:space-between;">Expense Breakdown <span id="donut-flag" style="display:none;background:var(--red-dim);color:var(--red);font-size:10px;font-weight:700;padding:2px 8px;border-radius:999px;letter-spacing:.3px;text-transform:uppercase;">&#9650; &gt;40% Category</span></h3><div class="chart-wrap"><canvas id="chart-pie"></canvas></div></div>
+          <div class="chart-card expandable" onclick="openChartModal('ie')"><h3 style="display:flex;align-items:center;justify-content:space-between;">Income vs Expenses<span class="chart-expand-hint">&#x26F6; Expand</span></h3><div class="chart-wrap"><canvas id="chart-ie"></canvas></div></div>
+          <div class="chart-card expandable" onclick="openChartModal('pl')"><h3 style="display:flex;align-items:center;justify-content:space-between;">Net P&amp;L by Month<span class="chart-expand-hint">&#x26F6; Expand</span></h3><div class="chart-wrap"><canvas id="chart-pl"></canvas></div></div>
+          <div class="chart-card expandable" onclick="openChartModal('nw')"><h3 style="display:flex;align-items:center;justify-content:space-between;">Net Worth<span class="chart-expand-hint">&#x26F6; Expand</span></h3><div class="chart-wrap"><canvas id="chart-nw-dash"></canvas></div></div>
+          <div class="chart-card expandable" onclick="openChartModal('pie')"><h3 style="display:flex;align-items:center;justify-content:space-between;">Expense Breakdown<span id="donut-flag" style="display:none;background:var(--red-dim);color:var(--red);font-size:10px;font-weight:700;padding:2px 8px;border-radius:999px;letter-spacing:.3px;text-transform:uppercase;">&#9650; &gt;40% Category</span><span class="chart-expand-hint">&#x26F6; Expand</span></h3><div class="chart-wrap"><canvas id="chart-pie"></canvas></div></div>
         </div>
         <div class="subsection">
           <div class="subsection-title">Monthly Summary</div>
@@ -4238,6 +4261,116 @@ function updateCharts(){
   charts.pie.data.labels=el.length?el:['No data'];charts.pie.data.datasets[0].data=el.length?el.map(k=>eb[k]):[1];charts.pie.data.datasets[0].backgroundColor=el.length?CC.palette:['#2C3038'];charts.pie.update();
 }
 
+// ── CHART EXPAND MODAL ──
+let _expandChart = null;
+const CHART_META = {
+  ie:  { title: 'Income vs Expenses',  sub: 'Monthly income compared to expenses — full year' },
+  pl:  { title: 'Net P&L by Month',    sub: 'Monthly profit & loss — green = surplus, red = deficit' },
+  nw:  { title: 'Net Worth Trend',     sub: 'Historical net worth from saved snapshots' },
+  pie: { title: 'Expense Breakdown',   sub: 'YTD spending by category — sorted by amount' },
+};
+function openChartModal(key) {
+  const meta = CHART_META[key]; if (!meta) return;
+  document.getElementById('chart-modal-title').textContent = meta.title;
+  document.getElementById('chart-modal-sub').textContent = meta.sub;
+  const canvas = document.getElementById('chart-modal-canvas');
+  if (_expandChart) { _expandChart.destroy(); _expandChart = null; }
+  const CBM = {responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:'#8A919E',font:{size:12,family:'Inter'}}}},scales:{x:{ticks:{color:'#8A919E',font:{size:12}},grid:{color:'rgba(44,48,56,0.5)'}},y:{ticks:{color:'#8A919E',font:{size:12}},grid:{color:'rgba(44,48,56,0.5)'}}}};
+  if (key === 'ie') {
+    _expandChart = new Chart(canvas, {type:'bar',data:{labels:MONTH_SHORT,datasets:[
+      {label:'Income',data:MK.map(monthIncome),backgroundColor:CC.blueFade,borderColor:CC.blue,borderWidth:2,borderRadius:4},
+      {label:'Expenses',data:MK.map(monthExpense),backgroundColor:CC.redFade,borderColor:CC.red,borderWidth:2,borderRadius:4}
+    ]},options:{...CBM,interaction:{mode:'index',intersect:false}}});
+    _renderModalDetailIE();
+  } else if (key === 'pl') {
+    _expandChart = new Chart(canvas, {type:'bar',data:{labels:MONTH_SHORT,datasets:[
+      {label:'Net P&L',data:MK.map(monthPL),backgroundColor:MK.map(m=>monthPL(m)>=0?CC.greenFade:CC.redFade),borderColor:MK.map(m=>monthPL(m)>=0?CC.green:CC.red),borderWidth:2,borderRadius:4}
+    ]},options:{...CBM}});
+    _renderModalDetailPL();
+  } else if (key === 'nw') {
+    const _dw=_buildNwWin(appData.netWorth?.history||[]);
+    _expandChart = new Chart(canvas, {type:'line',data:{labels:_dw.labels,datasets:[
+      {label:'Net Worth',data:_dw.netData,borderColor:CC.blue,backgroundColor:'rgba(57,255,20,0.08)',fill:true,tension:.4,spanGaps:false,pointRadius:3,pointHoverRadius:6,pointBackgroundColor:CC.blue,borderWidth:2}
+    ]},options:{...CBM,interaction:{mode:'index',intersect:false},plugins:{...CBM.plugins,legend:{display:false},tooltip:{backgroundColor:'rgba(13,15,20,0.96)',borderColor:'rgba(44,48,56,0.9)',borderWidth:1,titleColor:'#fff',bodyColor:'#8A919E',titleFont:{size:12,weight:'700',family:'Inter'},bodyFont:{size:12,family:'Inter'},padding:10,filter:i=>i.parsed.y!==null,callbacks:{title:i=>i[0]?.label||'',label:c=>c.parsed.y==null?null:' Net Worth: '+(c.parsed.y<0?'-':'')+fmt$(Math.abs(c.parsed.y))}}}}});
+    _renderModalDetailNW();
+  } else if (key === 'pie') {
+    const eb=expenseBreakdown(),el=Object.keys(eb).filter(k=>eb[k]>0);
+    _expandChart = new Chart(canvas, {type:'doughnut',data:{labels:el.length?el:['No data'],datasets:[{data:el.length?el.map(k=>eb[k]):[1],backgroundColor:el.length?CC.palette:['#2C3038'],borderWidth:0}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'right',labels:{color:'#8A919E',font:{size:12,family:'Inter'},padding:12}},tooltip:{callbacks:{label:function(ctx){const total=ctx.dataset.data.reduce((a,b)=>a+b,0);const pct=total>0?((ctx.parsed/total)*100).toFixed(1):0;return` ${ctx.label}: $${ctx.parsed.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})} (${pct}%)`;}}}}}});
+    _renderModalDetailPie();
+  }
+  document.getElementById('chart-expand-modal').style.display = 'flex';
+  document.addEventListener('keydown', _chartModalKeyClose);
+}
+function closeChartModal(e) {
+  if (e && e.type === 'click' && e.target !== e.currentTarget) return;
+  document.getElementById('chart-expand-modal').style.display = 'none';
+  if (_expandChart) { _expandChart.destroy(); _expandChart = null; }
+  document.removeEventListener('keydown', _chartModalKeyClose);
+}
+function _chartModalKeyClose(e) { if (e.key === 'Escape') closeChartModal(); }
+function _renderModalDetailIE() {
+  let html='<table><thead><tr><th>Month</th><th>Income</th><th>Expenses</th><th>Net P&L</th><th>Savings Rate</th></tr></thead><tbody>';
+  let ti=0,te=0,hasData=false;
+  MK.forEach((mk,i)=>{
+    const inc=monthIncome(mk),exp=monthExpense(mk),pl=inc-exp,sr=inc>0?pl/inc:null;
+    ti+=inc;te+=exp;
+    if(inc===0&&exp===0) return; hasData=true;
+    html+=`<tr><td>${MONTH_SHORT[i]}</td><td>${fmt$(inc)}</td><td>${fmt$(exp)}</td><td class="${pl>=0?'cm-pos':'cm-neg'}">${pl>=0?'+':'-'}${fmt$(Math.abs(pl))}</td><td class="${sr!==null&&sr>=0.2?'cm-pos':sr!==null&&sr<0?'cm-neg':''}">${sr!==null?fmtPct(sr):'—'}</td></tr>`;
+  });
+  if(!hasData){html+='<tr><td colspan="5" style="text-align:center;color:var(--text-3);padding:16px;">No data entered yet.</td></tr>';}
+  const tpl=ti-te,tsr=ti>0?tpl/ti:null;
+  html+=`<tr class="cm-total"><td>YTD Total</td><td>${fmt$(ti)}</td><td>${fmt$(te)}</td><td class="${tpl>=0?'cm-pos':'cm-neg'}">${tpl>=0?'+':'-'}${fmt$(Math.abs(tpl))}</td><td class="${tsr!==null&&tsr>=0.2?'cm-pos':'cm-neg'}">${tsr!==null?fmtPct(tsr):'—'}</td></tr>`;
+  html+='</tbody></table>';
+  document.getElementById('chart-modal-detail').innerHTML=html;
+}
+function _renderModalDetailPL() {
+  let html='<table><thead><tr><th>Month</th><th>Income</th><th>Expenses</th><th>Net P&L</th><th>Status</th></tr></thead><tbody>';
+  let tp=0,count=0,surplus=0;
+  MK.forEach((mk,i)=>{
+    const inc=monthIncome(mk),exp=monthExpense(mk),pl=monthPL(mk);
+    if(inc===0&&exp===0) return; count++;
+    tp+=pl; if(pl>=0) surplus++;
+    html+=`<tr><td>${MONTH_SHORT[i]}</td><td>${fmt$(inc)}</td><td>${fmt$(exp)}</td><td class="${pl>=0?'cm-pos':'cm-neg'}">${pl>=0?'+':'-'}${fmt$(Math.abs(pl))}</td><td class="${pl>=0?'cm-pos':'cm-neg'}">${pl>=0?'Surplus':'Deficit'}</td></tr>`;
+  });
+  if(!count){html+='<tr><td colspan="5" style="text-align:center;color:var(--text-3);padding:16px;">No data entered yet.</td></tr>';}
+  html+=`<tr class="cm-total"><td>YTD Total</td><td colspan="2">${surplus}/${count} profitable months</td><td class="${tp>=0?'cm-pos':'cm-neg'}">${tp>=0?'+':'-'}${fmt$(Math.abs(tp))}</td><td class="${tp>=0?'cm-pos':'cm-neg'}">${count?tp>=0?'Net Surplus':'Net Loss':'—'}</td></tr>`;
+  html+='</tbody></table>';
+  document.getElementById('chart-modal-detail').innerHTML=html;
+}
+function _renderModalDetailNW() {
+  const history=(appData.netWorth?.history||[]).slice().reverse();
+  if(!history.length){
+    document.getElementById('chart-modal-detail').innerHTML='<div style="text-align:center;padding:20px;color:var(--text-3);font-size:13px;">No snapshots yet. Go to Net Worth and click "Save Snapshot".</div>';
+    return;
+  }
+  let html='<table><thead><tr><th>Date</th><th>Assets</th><th>Liabilities</th><th>Net Worth</th><th>Change</th></tr></thead><tbody>';
+  history.forEach((snap,i)=>{
+    const prev=history[i+1];
+    const delta=prev!=null?(snap.net-prev.net):null;
+    html+=`<tr><td>${snap.date||'—'}</td><td>${fmt$(snap.assets||0)}</td><td>${fmt$(snap.liabilities||0)}</td><td class="${snap.net>=0?'cm-pos':'cm-neg'}">${snap.net>=0?'':'-'}${fmt$(Math.abs(snap.net))}</td><td class="${delta==null?'':delta>=0?'cm-pos':'cm-neg'}">${delta==null?'—':(delta>=0?'+':'-')+fmt$(Math.abs(delta))}</td></tr>`;
+  });
+  html+='</tbody></table>';
+  document.getElementById('chart-modal-detail').innerHTML=html;
+}
+function _renderModalDetailPie() {
+  const eb=expenseBreakdown();
+  const entries=Object.entries(eb).filter(([,v])=>v>0).sort((a,b)=>b[1]-a[1]);
+  const total=entries.reduce((a,[,v])=>a+v,0);
+  if(!entries.length){
+    document.getElementById('chart-modal-detail').innerHTML='<div style="text-align:center;padding:20px;color:var(--text-3);font-size:13px;">No expense data yet.</div>';
+    return;
+  }
+  let html='<table><thead><tr><th>Category</th><th>Amount</th><th>% of Total</th><th>Status</th></tr></thead><tbody>';
+  entries.forEach(([cat,val])=>{
+    const pct=total>0?(val/total*100).toFixed(1):0;
+    const isHigh=val/total>0.4;
+    html+=`<tr><td>${cat}</td><td>${fmt$(val)}</td><td class="${isHigh?'cm-neg':''}">${pct}%</td><td class="${isHigh?'cm-neg':'cm-pos'}">${isHigh?'▲ High Share':'OK'}</td></tr>`;
+  });
+  html+=`<tr class="cm-total"><td>Total Expenses</td><td>${fmt$(total)}</td><td>100%</td><td></td></tr>`;
+  html+='</tbody></table>';
+  document.getElementById('chart-modal-detail').innerHTML=html;
+}
+
 // ── REFRESH ──
 function refreshAll(){
   renderDashboard();renderPL();
@@ -6189,6 +6322,23 @@ function psApply() {
       <button class="btn btn-primary" id="tutorial-next-btn" onclick="tutorialStep(1)">Next</button>
     </div>
     <button class="tutorial-skip" onclick="closeTutorial()">Skip tour</button>
+  </div>
+</div>
+
+<!-- ── CHART EXPAND MODAL ── -->
+<div class="chart-modal-overlay" id="chart-expand-modal" style="display:none;" onclick="closeChartModal(event)">
+  <div class="chart-modal-card" onclick="event.stopPropagation()">
+    <div class="chart-modal-head">
+      <div>
+        <div class="chart-modal-title" id="chart-modal-title"></div>
+        <div class="chart-modal-sub" id="chart-modal-sub"></div>
+      </div>
+      <button class="chart-modal-close" onclick="closeChartModal()">&times;</button>
+    </div>
+    <div class="chart-modal-body">
+      <div class="chart-modal-canvas-wrap"><canvas id="chart-modal-canvas"></canvas></div>
+      <div class="chart-modal-detail" id="chart-modal-detail"></div>
+    </div>
   </div>
 </div>
 
