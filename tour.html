@@ -437,10 +437,11 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;font-
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
       </div>
       <div class="feature-name">AI Financial Advisor</div>
-      <div class="feature-desc">Chat with Claude AI about your actual financial data. Ask questions, get analysis, and get personalized recommendations.</div>
-      <div class="feature-pill">
-        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-        Claude Sonnet
+      <div class="feature-desc">Bring your own AI key — Claude, ChatGPT, or Gemini. Chat with your real financial data and get personalized advice. Switch providers anytime in Settings.</div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:14px;">
+        <span style="display:inline-flex;align-items:center;gap:4px;background:var(--elevated);border-radius:999px;padding:3px 10px;font-size:11px;font-weight:600;color:var(--green);">Claude</span>
+        <span style="display:inline-flex;align-items:center;gap:4px;background:var(--elevated);border-radius:999px;padding:3px 10px;font-size:11px;font-weight:600;color:var(--green);">ChatGPT</span>
+        <span style="display:inline-flex;align-items:center;gap:4px;background:var(--elevated);border-radius:999px;padding:3px 10px;font-size:11px;font-weight:600;color:var(--green);">Gemini</span>
       </div>
     </div>
 
@@ -764,46 +765,62 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;font-
       <div class="tour-panel" id="panel-chat">
         <div class="tour-panel-copy reveal">
           <div class="tour-panel-badge">AI Financial Advisor</div>
-          <h3 class="tour-panel-title">Your personal CFO, powered by Claude</h3>
-          <p class="tour-panel-desc">Chat with Claude Sonnet about your actual financial data. The AI sees your income, expenses, savings, and investments — and gives personalized advice based on your real numbers.</p>
+          <h3 class="tour-panel-title">Your personal CFO — your choice of AI</h3>
+          <p class="tour-panel-desc">Bring your own AI key. Connect Claude, ChatGPT, or Gemini and chat with your real financial data. The AI sees your income, expenses, savings, and investments — and gives advice based on your actual numbers.</p>
           <ul class="tour-bullets">
-            <li><div class="tb-check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></div>AI has full context of your financial data</li>
-            <li><div class="tb-check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></div>Ask anything — budgeting, investing, debt payoff</li>
-            <li><div class="tb-check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></div>Business Tracker also has a dedicated AI advisor</li>
-            <li><div class="tb-check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></div>Powered by Claude Sonnet 4.6</li>
+            <li><div class="tb-check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></div>Works with Claude, ChatGPT (GPT-4o), or Gemini</li>
+            <li><div class="tb-check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></div>AI has full context of your real financial data</li>
+            <li><div class="tb-check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></div>Ask anything — budgeting, debt payoff, investing</li>
+            <li><div class="tb-check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></div>Switch providers anytime in Settings</li>
+            <li><div class="tb-check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></div>Business Tracker has a dedicated AI advisor too</li>
           </ul>
         </div>
         <div class="reveal">
           <div class="mock-ui">
             <div class="mock-topbar">
               <div class="mock-dot mock-dot-r"></div><div class="mock-dot mock-dot-y"></div><div class="mock-dot mock-dot-g"></div>
-              <div class="mock-url">AI Financial Advisor</div>
+              <div class="mock-url">Settings — AI / API</div>
             </div>
-            <div class="chat-mock">
-              <div class="chat-msg">
-                <div class="chat-avatar avatar-ai">AI</div>
-                <div class="chat-bubble bubble-ai">Hey! I can see your full financial picture. Your savings rate is 38% — great work! What would you like to work on today?</div>
+            <!-- Provider picker mock -->
+            <div style="padding:16px 16px 0;">
+              <div style="font-size:9px;font-weight:700;color:var(--text-3);text-transform:uppercase;letter-spacing:.6px;margin-bottom:8px;">AI Provider</div>
+              <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:14px;">
+                <button id="tour-provider-claude" onclick="tourSelectProvider('claude')" style="background:var(--green-dim);border:1.5px solid var(--green);border-radius:8px;padding:8px 4px;cursor:pointer;font-family:inherit;display:flex;flex-direction:column;align-items:center;gap:4px;transition:all .2s;">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="2"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>
+                  <span style="font-size:10px;font-weight:700;color:var(--green)">Claude</span>
+                </button>
+                <button id="tour-provider-openai" onclick="tourSelectProvider('openai')" style="background:var(--elevated);border:1.5px solid var(--border);border-radius:8px;padding:8px 4px;cursor:pointer;font-family:inherit;display:flex;flex-direction:column;align-items:center;gap:4px;transition:all .2s;">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text-2)" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+                  <span style="font-size:10px;font-weight:700;color:var(--text-2)">ChatGPT</span>
+                </button>
+                <button id="tour-provider-gemini" onclick="tourSelectProvider('gemini')" style="background:var(--elevated);border:1.5px solid var(--border);border-radius:8px;padding:8px 4px;cursor:pointer;font-family:inherit;display:flex;flex-direction:column;align-items:center;gap:4px;transition:all .2s;">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text-2)" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+                  <span style="font-size:10px;font-weight:700;color:var(--text-2)">Gemini</span>
+                </button>
               </div>
-              <div class="chat-msg user">
-                <div class="chat-avatar avatar-user">JS</div>
-                <div class="chat-bubble bubble-user">How can I pay off my car loan faster?</div>
-              </div>
-              <div class="chat-msg">
-                <div class="chat-avatar avatar-ai">AI</div>
-                <div class="chat-bubble bubble-ai">Based on your data, you're putting $320/mo toward debt. If you redirect the extra $180/mo from dining out (you're 40% over budget there), you'd cut 8 months off your car loan payoff.</div>
-              </div>
-              <div class="chat-msg user">
-                <div class="chat-avatar avatar-user">JS</div>
-                <div class="chat-bubble bubble-user">What's my biggest spending category?</div>
-              </div>
-              <div class="chat-msg">
-                <div class="chat-avatar avatar-ai">AI</div>
-                <div class="chat-bubble bubble-ai">Housing is #1 at $1,850/mo (35% of income). That's healthy. But Dining &amp; Entertainment at $680/mo is running 36% over your $500 budget.</div>
+              <div style="background:var(--elevated);border:1px solid var(--border);border-radius:8px;padding:10px 12px;margin-bottom:10px;">
+                <div style="font-size:9px;font-weight:600;color:var(--text-3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;" id="tour-key-label">Anthropic API Key</div>
+                <div style="background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:7px 10px;font-size:11px;color:var(--text-3);" id="tour-key-placeholder">sk-ant-api03-...</div>
               </div>
             </div>
-            <div class="chat-input-row">
-              <div class="chat-input-mock">Ask about your finances...</div>
-              <button class="chat-send"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg></button>
+            <div style="border-top:1px solid var(--border);margin:0 16px 0;"></div>
+            <!-- Chat preview -->
+            <div style="padding:10px 0 0;">
+              <div style="padding:6px 16px;font-size:9px;font-weight:700;color:var(--text-3);text-transform:uppercase;letter-spacing:.6px;" id="tour-powered-by">Powered by Claude</div>
+              <div class="chat-mock" style="padding:10px 16px;">
+                <div class="chat-msg">
+                  <div class="chat-avatar avatar-ai" id="tour-ai-avatar">AI</div>
+                  <div class="chat-bubble bubble-ai">Your savings rate is 38% — great work! Housing is your largest expense at $1,850/mo. How can I help today?</div>
+                </div>
+                <div class="chat-msg user">
+                  <div class="chat-avatar avatar-user">JS</div>
+                  <div class="chat-bubble bubble-user">How do I pay off my car loan faster?</div>
+                </div>
+                <div class="chat-msg">
+                  <div class="chat-avatar avatar-ai" id="tour-ai-avatar-2">AI</div>
+                  <div class="chat-bubble bubble-ai">You're $180/mo over budget on dining. Redirect that to your car loan and you'll pay it off 8 months early, saving ~$420 in interest.</div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -969,7 +986,7 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;font-
       <li><div class="pf-check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></div>All 13 financial modules — unlimited</li>
       <li><div class="pf-check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></div>AI Paystub Import (Claude Vision)</li>
       <li><div class="pf-check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></div>AI Bank Statement Categorization</li>
-      <li><div class="pf-check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></div>AI Financial Advisor chat</li>
+      <li><div class="pf-check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></div>AI Advisor — Claude, ChatGPT, or Gemini</li>
       <li><div class="pf-check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></div>Business Tracker with AI Advisor</li>
       <li><div class="pf-check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></div>Live stock &amp; crypto ticker</li>
       <li><div class="pf-check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></div>3 themes + PWA install</li>
@@ -1018,6 +1035,31 @@ function animatePaystub() {
     zone.style.display = 'none';
     result.style.display = 'block';
   }, 1800);
+}
+
+// Provider picker demo
+function tourSelectProvider(provider) {
+  const cfg = {
+    claude:  { label:'Anthropic API Key', placeholder:'sk-ant-api03-...', poweredBy:'Powered by Claude',  btnColor:'var(--green)', svgColor:'var(--green)' },
+    openai:  { label:'OpenAI API Key',    placeholder:'sk-...',           poweredBy:'Powered by ChatGPT', btnColor:'var(--green)', svgColor:'var(--green)' },
+    gemini:  { label:'Google Gemini API Key', placeholder:'AIza...',      poweredBy:'Powered by Gemini',  btnColor:'var(--green)', svgColor:'var(--green)' },
+  };
+  ['claude','openai','gemini'].forEach(p => {
+    const btn = document.getElementById('tour-provider-' + p);
+    if (!btn) return;
+    const active = p === provider;
+    btn.style.background   = active ? 'var(--green-dim)' : 'var(--elevated)';
+    btn.style.borderColor  = active ? 'var(--green)'     : 'var(--border)';
+    btn.querySelector('span').style.color = active ? 'var(--green)' : 'var(--text-2)';
+    btn.querySelector('svg').setAttribute('stroke', active ? 'var(--green)' : 'var(--text-2)');
+  });
+  const c = cfg[provider];
+  const lbl = document.getElementById('tour-key-label');
+  const ph  = document.getElementById('tour-key-placeholder');
+  const pb  = document.getElementById('tour-powered-by');
+  if (lbl) lbl.textContent = c.label;
+  if (ph)  ph.textContent  = c.placeholder;
+  if (pb)  pb.textContent  = c.poweredBy;
 }
 
 // Scroll reveal
