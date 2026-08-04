@@ -3330,14 +3330,61 @@ const _MC={bg:"#0d1117",panel:"#151b24",panel2:"#1b232e",border:"#232d3a",
 let _MS={btc:63819,diff:126.23,host:171.34,poolFee:1.0,luxRecover:false};
 let _MCharts={};
 let _mBuilt=false;
+let _mLiveFleet=null; // {units:[{serial,th,power,temp,active}], totalTH, totalW, n, synced}
+
+// Pull fleet data from Foreman integration cache in Business Tracker
+function _mGetForemanFleet(){
+  try {
+    if(!appData||!appData.businesses) return null;
+    for(const biz of appData.businesses){
+      if(!biz.integrations) continue;
+      for(const int of biz.integrations){
+        if(!btIsForeman(int)) continue;
+        const raw=localStorage.getItem('sft_int_'+int.id+'_cache');
+        if(!raw) continue;
+        const data=JSON.parse(raw);
+        const allMiners=data.miners||[];
+        const miners=btFilterToMyMiners(allMiners,int.id);
+        if(!miners.length) continue;
+        const synced=localStorage.getItem('sft_int_'+int.id+'_synced')||'';
+        const units=miners.map(m=>{
+          const hrRaw=parseFloat(m.core?.hashRate??m.hashRate??0)||0;
+          // Foreman returns H/s for Bitcoin ASICs; 188 TH = ~1.88e14 H/s
+          let th=0;
+          if(hrRaw>1e9) th=hrRaw/1e12;       // H/s → TH/s
+          else if(hrRaw>1e6) th=hrRaw/1e9;   // GH/s → TH/s
+          else if(hrRaw>50) th=hrRaw;         // already TH/s
+          else if(hrRaw>0) th=hrRaw/1e6;      // MH/s → TH/s
+          const power=parseFloat(m.core?.powerDraw??m.power??m.wattage??0)||3300;
+          const temp=parseFloat(m.core?.temps?.[0]??m.temperature??0)||0;
+          const serial=(m.name||m.hostname||m.apiIpAddress||String(m.id||'')).slice(-6);
+          const active=m.active===true||m.status==='ONLINE';
+          return{serial,th:parseFloat(th.toFixed(2)),power,temp,active};
+        }).filter(u=>u.th>0).sort((a,b)=>a.th-b.th);
+        if(!units.length) continue;
+        return{
+          units,
+          totalTH:units.reduce((s,u)=>s+u.th,0),
+          totalW:units.reduce((s,u)=>s+u.power,0),
+          n:units.length,
+          online:units.filter(u=>u.active).length,
+          synced,
+        };
+      }
+    }
+  }catch(e){}
+  return null;
+}
 
 function _mCalc(){
   const {btc,diff,host,poolFee,luxRecover}=_MS;
   const netTh=(diff*1e12*Math.pow(2,32))/600/1e12;
   const btcPerThDay=((144*_MK.BLOCK)/netTh)*(1-poolFee/100);
-  const th=_MK.TH+(luxRecover?28*(189-182.3):0);
+  const fleetTH=_mLiveFleet?_mLiveFleet.totalTH:_MK.TH;
+  const fleetN=_mLiveFleet?_mLiveFleet.n:_MK.N;
+  const th=fleetTH+((!_mLiveFleet&&luxRecover)?28*(189-182.3):0);
   const revDay=th*btcPerThDay*btc, btcDay=th*btcPerThDay;
-  const billDay=(_MK.N*host)/_MK.DAYS_MO, netDay=revDay-billDay;
+  const billDay=(fleetN*host)/_MK.DAYS_MO, netDay=revDay-billDay;
   return{netTh,btcPerThDay,th,revDay,btcDay,billDay,netDay,
     netMo:netDay*_MK.DAYS_MO,beBtc:billDay/(th*btcPerThDay),netEHs:netTh/1e6};
 }
@@ -3407,10 +3454,11 @@ function renderMiningDashboard(){
               <div style="position:relative;height:200px;"><canvas id="m-ch-price"></canvas></div>
             </div>
             <div style="background:${_MC.panel};border:1px solid ${_MC.border};border-radius:12px;padding:16px 18px 12px;">
+              <div id="m-live-fleet" style="display:none;align-items:center;gap:8px;margin-bottom:10px;"></div>
               <div style="display:flex;justify-content:space-between;align-items:baseline;flex-wrap:wrap;gap:8px;margin-bottom:10px;">
                 <div>
                   <div style="font-size:13px;font-weight:700;">Per-unit hashrate</div>
-                  <div style="font-size:11.5px;color:${_MC.dim};">Sorted ascending · ${_MK.N} keepers</div>
+                  <div id="m-units-sub" style="font-size:11.5px;color:${_MC.dim};">Snapshot · ${_MK.N} keepers</div>
                 </div>
                 <div style="display:flex;gap:12px;font-size:11px;color:${_MC.dim};">
                   <span><b style="color:${_MC.amber};">■</b> LuxOS</span>
@@ -3490,6 +3538,14 @@ async function _mFetchLive(){
     }
   } catch(e) {}
 
+  // ── Foreman fleet data ──
+  const fleet = _mGetForemanFleet();
+  if (fleet) {
+    _mLiveFleet = fleet;
+    const fb = document.getElementById('m-live-fleet');
+    if (fb) { fb.style.display='flex'; fb.innerHTML=`<span style="font-size:10px;font-weight:700;letter-spacing:.8px;color:#0d1117;background:#39c5cf;border-radius:4px;padding:2px 7px;">LIVE FLEET</span>&nbsp;<span style="font-size:11.5px;color:${_MC.dim};">${fleet.n} miners · ${fleet.online} online · synced ${fleet.synced}</span>`; }
+  }
+
   _mUpdate();
   // Show last updated time
   const ts = document.getElementById('m-live-ts');
@@ -3502,9 +3558,13 @@ function _mUpdate(){
   // Slider value labels
   const labels={btc:`$${_mFmt(btc,0)}`,diff:`${_mFmt(diff,1)}T · ${_mFmt(m.netEHs,0)} EH/s`,host:`$${_mFmt(host,2)}`,poolFee:`${_mFmt(poolFee,2)}%`};
   Object.entries(labels).forEach(([k,v])=>{const e=document.getElementById('msv-'+k);if(e)e.textContent=v;});
-  // LuxOS toggle style
+  // LuxOS toggle — hide when live fleet is active (real hashrates already reflected)
   const lbl=document.getElementById('m-lux-lbl');
-  if(lbl){lbl.style.background=luxRecover?'rgba(138,100,32,0.35)':'';lbl.style.borderColor=luxRecover?_MC.amber:_MC.border;}
+  if(lbl){
+    lbl.style.display=_mLiveFleet?'none':'flex';
+    lbl.style.background=luxRecover?'rgba(138,100,32,0.35)':'';
+    lbl.style.borderColor=luxRecover?_MC.amber:_MC.border;
+  }
   // Stats
   const se=document.getElementById('m-stats');
   if(se)se.innerHTML=
@@ -3532,18 +3592,26 @@ function _mUpdate(){
           y:{ticks:{color:_MC.dim,callback:v=>`$${v}`},grid:{color:_MC.grid}}},
         plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>`$${_mFmt(c.parsed.y,0)}/mo`,title:t=>`BTC $${_mFmt(t[0].parsed.x,0)}`}}}}});
   }
-  // Per-unit bar chart
-  const cohort=t=>t.includes('Lux')?_MC.amber:t.includes('151')?_MC.red:_MC.cyan;
+  // Per-unit bar chart — live fleet or static snapshot
+  const liveU=_mLiveFleet?_mLiveFleet.units:null;
+  const barLabels=liveU?liveU.map(u=>u.serial):_MUNITS.map(u=>u[0].slice(-4));
+  const barData=liveU?liveU.map(u=>u.th):_MUNITS.map(u=>u[2]);
+  const barColors=liveU?liveU.map(u=>u.active?_MC.amber:_MC.red):_MUNITS.map(u=>u[1].includes('Lux')?_MC.amber:u[1].includes('151')?_MC.red:_MC.cyan);
+  const barTooltip=liveU?(c=>`${c.parsed.y} TH · ${liveU[c.dataIndex].temp||'—'}°C · ${liveU[c.dataIndex].active?'Online':'Offline'}`):(c=>`${c.parsed.y} TH · ${_MUNITS[c.dataIndex][4]}°C · ${_MUNITS[c.dataIndex][1]}`);
+  const yMin=liveU?Math.max(0,Math.floor(Math.min(...barData)-10)):160;
+  const yMax=liveU?Math.ceil(Math.max(...barData)+10):200;
   const uc=document.getElementById('m-ch-units');
   if(uc){if(_MCharts.units)_MCharts.units.destroy();
     _MCharts.units=new Chart(uc,{type:'bar',
-      data:{labels:_MUNITS.map(u=>u[0].slice(-4)),
-        datasets:[{data:_MUNITS.map(u=>u[2]),backgroundColor:_MUNITS.map(u=>cohort(u[1])),borderRadius:2,barPercentage:0.9}]},
+      data:{labels:barLabels,datasets:[{data:barData,backgroundColor:barColors,borderRadius:2,barPercentage:0.9}]},
       options:{responsive:true,maintainAspectRatio:false,
         scales:{x:{ticks:{color:_MC.faint,font:{size:9},maxRotation:90},grid:{color:_MC.grid}},
-          y:{min:160,max:200,ticks:{color:_MC.dim},grid:{color:_MC.grid}}},
-        plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>`${c.parsed.y} TH · ${_MUNITS[c.dataIndex][4]}°C · ${_MUNITS[c.dataIndex][1]}`}}}}});
+          y:{min:yMin,max:yMax,ticks:{color:_MC.dim},grid:{color:_MC.grid}}},
+        plugins:{legend:{display:false},tooltip:{callbacks:{label:barTooltip}}}}});
   }
+  // Update per-unit chart subtitle
+  const uSub=document.getElementById('m-units-sub');
+  if(uSub) uSub.textContent=liveU?`Live · ${liveU.length} miners · ${liveU.filter(u=>u.active).length} online`:`Snapshot · ${_MUNITS.length} keepers`;
   // Realized vs modeled line chart
   const rec=_MPAYOUTS.map(p=>{
     const nTh=(diff*1e12*Math.pow(2,32))/600/1e12;
