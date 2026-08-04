@@ -3350,10 +3350,11 @@ function _mStat(label,val,sub,tone){
     ${sub?`<div style="font-size:11px;color:${_MC.faint};margin-top:3px;">${sub}</div>`:''}
   </div>`;
 }
-function _mSlider(key,label,min,max,step){
+function _mSlider(key,label,min,max,step,live=false){
+  const liveBadge = live ? `<span id="m-live-${key}" style="display:none;font-size:9px;font-weight:700;letter-spacing:.8px;color:#0d1117;background:#3fb950;border-radius:3px;padding:1px 5px;margin-left:5px;vertical-align:middle;">LIVE</span>` : '';
   return `<div style="margin-bottom:14px;">
-    <div style="display:flex;justify-content:space-between;margin-bottom:6px;">
-      <span style="font-size:12px;color:${_MC.dim};font-weight:600;">${label}</span>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+      <span style="font-size:12px;color:${_MC.dim};font-weight:600;">${label}${liveBadge}</span>
       <span id="msv-${key}" style="font-size:13px;color:${_MC.amber};font-weight:700;font-variant-numeric:tabular-nums;"></span>
     </div>
     <input id="msl-${key}" type="range" min="${min}" max="${max}" step="${step}" value="${_MS[key]}" style="width:100%;accent-color:${_MC.amber};height:4px;">
@@ -3385,10 +3386,10 @@ function renderMiningDashboard(){
         <div style="display:grid;grid-template-columns:300px 1fr;gap:18px;align-items:start;">
           <div style="background:${_MC.panel};border:1px solid ${_MC.border};border-radius:12px;padding:18px;position:sticky;top:16px;">
             <div style="font-size:12px;letter-spacing:1.5px;text-transform:uppercase;color:${_MC.dim};font-weight:700;margin-bottom:16px;">Assumptions</div>
-            ${_mSlider('btc','BTC price',40000,100000,500)}
-            ${_mSlider('diff','Network difficulty (T)',90,180,0.5)}
-            ${_mSlider('host','Hosting / unit / mo',140,210,0.5)}
-            ${_mSlider('poolFee','Pool fee',0,3,0.25)}
+            ${_mSlider('btc','BTC price',40000,100000,500,true)}
+            ${_mSlider('diff','Network difficulty (T)',90,200,0.5,true)}
+            ${_mSlider('host','Hosting / unit / mo',140,210,0.5,false)}
+            ${_mSlider('poolFee','Pool fee',0,3,0.25,false)}
             <label id="m-lux-lbl" style="display:flex;align-items:center;gap:10px;margin-top:8px;padding:10px 12px;border-radius:8px;cursor:pointer;border:1px solid ${_MC.border};transition:0.15s;">
               <input type="checkbox" id="m-lux" style="accent-color:${_MC.amber};width:16px;height:16px;">
               <div>
@@ -3397,6 +3398,7 @@ function renderMiningDashboard(){
               </div>
             </label>
             <div id="m-meta" style="margin-top:16px;padding-top:14px;border-top:1px solid ${_MC.border};font-size:11.5px;color:${_MC.faint};line-height:1.7;"></div>
+            <div id="m-live-ts" style="margin-top:10px;font-size:10.5px;color:${_MC.faint};text-align:center;letter-spacing:.3px;">Fetching live data…</div>
           </div>
           <div style="display:flex;flex-direction:column;gap:18px;">
             <div style="background:${_MC.panel};border:1px solid ${_MC.border};border-radius:12px;padding:16px 18px 12px;">
@@ -3440,6 +3442,58 @@ function renderMiningDashboard(){
     document.getElementById('m-lux').addEventListener('change',e=>{_MS.luxRecover=e.target.checked;_mUpdate();});
   }
   _mUpdate();
+  _mFetchLive();
+  if(window._mLiveInterval) clearInterval(window._mLiveInterval);
+  window._mLiveInterval = setInterval(_mFetchLive, 60000);
+}
+
+async function _mFetchLive(){
+  // ── BTC Price ──
+  try {
+    const liveBtc = window._getLiveBtcPrice ? window._getLiveBtcPrice() : null;
+    if (liveBtc && liveBtc > 0) {
+      _MS.btc = Math.round(liveBtc);
+    } else {
+      const r = await fetch('https://api.coinbase.com/v2/prices/BTC-USD/spot');
+      const d = await r.json();
+      _MS.btc = Math.round(parseFloat(d.data.amount));
+    }
+    const sl = document.getElementById('msl-btc');
+    if (sl) sl.value = _MS.btc;
+    const lbl = document.getElementById('m-live-btc');
+    if (lbl) lbl.style.display = 'inline';
+  } catch(e) {}
+
+  // ── Network Difficulty ──
+  try {
+    const r = await fetch('https://mempool.space/api/v1/difficulty-adjustment');
+    const d = await r.json();
+    // nextRetargetHeight and remainingBlocks let us compute current difficulty
+    // Use currentDifficulty from the response (field name varies — try several)
+    let rawDiff = d.difficulty || d.currentDifficulty || null;
+    if (!rawDiff) {
+      // Fallback: fetch latest block for difficulty
+      const r2 = await fetch('https://mempool.space/api/blocks/tip/height');
+      const height = await r2.text();
+      const r3 = await fetch(`https://mempool.space/api/block-height/${height.trim()}`);
+      const blockHash = await r3.text();
+      const r4 = await fetch(`https://mempool.space/api/block/${blockHash.trim()}`);
+      const block = await r4.json();
+      rawDiff = block.difficulty;
+    }
+    if (rawDiff) {
+      _MS.diff = parseFloat((rawDiff / 1e12).toFixed(2));
+      const sl = document.getElementById('msl-diff');
+      if (sl){ sl.value = _MS.diff; sl.max = Math.max(sl.max, _MS.diff + 20); }
+      const lbl = document.getElementById('m-live-diff');
+      if (lbl) lbl.style.display = 'inline';
+    }
+  } catch(e) {}
+
+  _mUpdate();
+  // Show last updated time
+  const ts = document.getElementById('m-live-ts');
+  if (ts) ts.textContent = 'Live · updated ' + new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'});
 }
 
 function _mUpdate(){
