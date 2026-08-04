@@ -28,6 +28,11 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js"></script>
+  <!-- Mining Dashboard deps -->
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/recharts@2.12.7/umd/Recharts.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     :root {
@@ -1210,6 +1215,10 @@
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/><polyline points="7 10 10 7 13 10 17 6"/></svg>
         Business Tracker
       </button>
+      <button class="nav-item" onclick="showTab('mining')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 9h1v6H9zm3-3h1v9h-1zm3 3h1v6h-1"/><path d="M6 21v-2M12 21v-2M18 21v-2"/></svg>
+        Mining Dashboard
+      </button>
     </div>
 
     <div class="sidebar-section">
@@ -1294,6 +1303,10 @@
       <button class="drawer-item" id="mob-biztracker" onclick="showTab('biztracker');closeMobDrawer()">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/><polyline points="7 10 10 7 13 10 17 6"/></svg>
         Biz
+      </button>
+      <button class="drawer-item" id="mob-mining" onclick="showTab('mining');closeMobDrawer()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 9h1v6H9zm3-3h1v9h-1zm3 3h1v6h-1"/></svg>
+        Mining
       </button>
       <button class="drawer-item" id="mob-settings" onclick="showTab('settings');closeMobDrawer()">
         <svg viewBox="0 0 24 24" fill="none" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
@@ -2294,6 +2307,11 @@
         </div><!-- end learn-grid -->
       </div><!-- end tab-learn -->
 
+      <!-- ── MINING DASHBOARD ── -->
+      <div id="tab-mining" class="tab-panel">
+        <div id="mining-root" style="min-height:600px;"></div>
+      </div>
+
       <!-- ── BUSINESS TRACKER ── -->
       <div id="tab-biztracker" class="tab-panel">
         <!-- No API key state -->
@@ -3247,6 +3265,7 @@ const TAB_META = {
   settings:    ['Settings',          'Profile, access code & data management'],
   learn:       ['Resources & Learning','Guides, tips & financial education'],
   biztracker:  ['Business Tracker',    'Upload docs · AI analysis · Live dashboard'],
+  mining:      ['Mining Dashboard',    'Fleet economics · BTC/day · Net P&L · 5Stack LLC'],
 };
 
 function showTab(id) {
@@ -3260,6 +3279,7 @@ function showTab(id) {
   if (id==='dashboard')   updateCharts();
   if (id==='settings')    renderSettings();
   if (id==='biztracker')  btInit();
+  if (id==='mining')      renderMiningDashboard();
   // Sync mobile bottom nav
   const mobBottomIds = ['dashboard','expenses','budget','networth'];
   document.querySelectorAll('.mob-nav-item').forEach(b=>b.classList.remove('active'));
@@ -3274,6 +3294,15 @@ function showTab(id) {
   }
   // Scroll content to top on mobile
   if (window.innerWidth <= 768) window.scrollTo(0, 0);
+}
+
+// ── MINING DASHBOARD ──
+let _miningRoot = null;
+function renderMiningDashboard() {
+  const el = document.getElementById('mining-root');
+  if (!el || !window.MiningDashboard) return;
+  if (!_miningRoot) _miningRoot = ReactDOM.createRoot(el);
+  _miningRoot.render(React.createElement(window.MiningDashboard));
 }
 
 function clearExpensesData() {
@@ -6060,6 +6089,256 @@ function _renderSportsPicker() {
     sumEl.textContent = lg.name + (tm ? ' · ' + tm.name : ' · All Teams');
   }
 }
+</script>
+
+<!-- ── MINING DASHBOARD COMPONENT ── -->
+<script type="text/babel" data-presets="react">
+(function(){
+const { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
+        BarChart, Bar, Cell, ReferenceLine, Area, AreaChart } = Recharts;
+const { useState, useMemo } = React;
+
+const UNITS = [
+  ["NGSBATBBDJBJB044Y","188T·Lux",175.6,3387,64,"A1"],["THQGATBBDJABD041H","188T·Lux",176.8,3353,61,"A1"],
+  ["THQGATBBDJABD0262","188T·Lux",177.7,3328,63,"A1"],["THQGATBBDJABD01TV","188T·Lux",178.2,3360,60,"A1"],
+  ["NGSBATBBDJBJB044B","188T·Lux",178.3,3369,58,"A1"],["THQGATBBDJABD01V0","188T",178.4,3290,74,"A5"],
+  ["NGSBATBBDJBJB04K7","188T·Lux",178.5,3372,62,"A1"],["THQGATBBDJABD03RJ","188T·Lux",178.6,3306,62,"A1"],
+  ["THQGATBBDJABD03T0","188T·Lux",178.8,3372,59,"A1"],["THQGATBBDJABD041G","188T·Lux",179.9,3380,61,"A1"],
+  ["NGSBATBBDJBJB04LG","188T·Lux",180.2,3377,57,"A1"],["THQGATBBDJABD026T","188T·Lux",181.5,3297,61,"A1"],
+  ["NGSBATBBDJBJB04E0","188T·Lux",181.7,3334,59,"A1"],["THQGATBBDJABD00WL","188T·Lux",182.3,3431,62,"A1"],
+  ["THQGATBBDJABD02JT","188T·Lux",182.5,3327,63,"A1"],["THQGATBBDJABD041F","151T",182.7,2642,77,"A1"],
+  ["THQGATBBDJABD041E","188T·Lux",183.1,3374,62,"A1"],["THQGATBBDJABD026S","188T·Lux",183.4,3314,56,"A1"],
+  ["THQGATBBDJABD041J","188T·Lux",183.4,3349,60,"A1"],["NGSBATBBDJBJB04AN","188T·Lux",183.5,3407,61,"A1"],
+  ["THQGATBBDJABD02K3","188T·Lux",183.9,3344,59,"A1"],["THQGATBBDJABD026N","188T·Lux",184.3,3379,61,"A1"],
+  ["THQGATBBDJABD00BK","188T·Lux",184.9,3385,58,"A1"],["THQGATBBDJABD026M","188T·Lux",185.4,3357,57,"A1"],
+  ["NGSBATBBDJBJB03MR","188T·Lux",185.9,3374,62,"A1"],["THQGATBBDJABD00WS","188T·Lux",186.2,3323,64,"A1"],
+  ["THQGATBBDJABD00WP","188T·Lux",186.7,3383,59,"A1"],["NGSBATBBDJBJB045H","188T·Lux",187.0,3455,60,"A1"],
+  ["THQGATBBDJABD03WX","188T·Lux",187.1,3396,58,"A1"],["THQGATBBDJABD00WV","188T·Lux",188.1,3402,58,"A1"],
+  ["THQGATBBDJABD02K2","175T",188.3,3062,74,"B4"],["NGSBATBBDJBJB04LH","175T",188.9,3062,77,"A2"],
+  ["THQGATBBDJABD03WT","175T",189.3,3062,77,"A2"],["THQGATBBDJABD03T1","175T",191.7,3062,82,"A1"],
+];
+
+const PAYOUTS = [
+  { date: "Jul 31", btc: 0.00302195, usd: 190.06, price: 62895 },
+  { date: "Aug 01", btc: 0.00307966, usd: 194.77, price: 63244 },
+  { date: "Aug 02", btc: 0.00309636, usd: 195.59, price: 63167 },
+];
+
+const FLEET_TH = UNITS.reduce((s,u)=>s+u[2],0);
+const FLEET_W  = UNITS.reduce((s,u)=>s+u[3],0);
+const N        = UNITS.length;
+const REALIZED_BTC = PAYOUTS.reduce((s,p)=>s+p.btc,0)/PAYOUTS.length;
+const DAYS_MO  = 30.42;
+const BLOCK    = 3.125;
+
+const C = {
+  bg:"#0d1117",panel:"#151b24",panel2:"#1b232e",line:"#232d3a",
+  ink:"#e6edf3",dim:"#7d8896",faint:"#4a5563",
+  amber:"#f0a020",amberDim:"#8a6420",green:"#3fb950",red:"#f04747",
+  cyan:"#39c5cf",grid:"#1e2732",
+};
+
+function fmt(n,d=0){ return n.toLocaleString("en-US",{minimumFractionDigits:d,maximumFractionDigits:d}); }
+
+function Stat({label,value,sub,tone}){
+  const col=tone==="pos"?C.green:tone==="neg"?C.red:C.ink;
+  return (
+    <div style={{background:C.panel,border:`1px solid ${C.line}`,borderRadius:10,padding:"16px 18px",flex:1,minWidth:0}}>
+      <div style={{fontSize:11,letterSpacing:1.2,textTransform:"uppercase",color:C.dim,fontWeight:600}}>{label}</div>
+      <div style={{fontSize:26,fontWeight:700,color:col,marginTop:6,fontVariantNumeric:"tabular-nums",lineHeight:1.1}}>{value}</div>
+      {sub&&<div style={{fontSize:12,color:C.faint,marginTop:3}}>{sub}</div>}
+    </div>
+  );
+}
+
+function Slider({label,value,min,max,step,onChange,fmtV}){
+  return (
+    <div style={{marginBottom:14}}>
+      <div style={{display:"flex",justifyContent:"space-between",marginBottom:6}}>
+        <span style={{fontSize:12,color:C.dim,fontWeight:600}}>{label}</span>
+        <span style={{fontSize:13,color:C.amber,fontWeight:700,fontVariantNumeric:"tabular-nums"}}>{fmtV(value)}</span>
+      </div>
+      <input type="range" min={min} max={max} step={step} value={value}
+        onChange={(e)=>onChange(parseFloat(e.target.value))}
+        style={{width:"100%",accentColor:C.amber,height:4}}/>
+    </div>
+  );
+}
+
+function MiningDashboard(){
+  const [btc,setBtc]=useState(63819);
+  const [diff,setDiff]=useState(126.23);
+  const [host,setHost]=useState(171.34);
+  const [poolFee,setPoolFee]=useState(1.0);
+  const [luxRecover,setLuxRecover]=useState(false);
+
+  const m=useMemo(()=>{
+    const netTh=(diff*1e12*2**32)/600/1e12;
+    const btcPerThDay=((144*BLOCK)/netTh)*(1-poolFee/100);
+    const luxLift=luxRecover?28*(189-182.3):0;
+    const th=FLEET_TH+luxLift;
+    const revDay=th*btcPerThDay*btc;
+    const btcDay=th*btcPerThDay;
+    const billDay=(N*host)/DAYS_MO;
+    const netDay=revDay-billDay;
+    const beBtc=billDay/(th*btcPerThDay);
+    return{netTh,btcPerThDay,th,revDay,btcDay,billDay,netDay,
+      netMo:netDay*DAYS_MO,beBtc,netEHs:netTh/1e6};
+  },[btc,diff,host,poolFee,luxRecover]);
+
+  const priceCurve=useMemo(()=>{
+    const arr=[];
+    for(let p=50000;p<=90000;p+=2500){
+      const revDay=m.th*m.btcPerThDay*p;
+      arr.push({price:p,net:Math.round((revDay-m.billDay)*DAYS_MO)});
+    }
+    return arr;
+  },[m]);
+
+  const reconcile=useMemo(()=>{
+    return PAYOUTS.map((p)=>{
+      const netTh=(diff*1e12*2**32)/600/1e12;
+      const modeled=FLEET_TH*((144*BLOCK)/netTh)*(1-poolFee/100);
+      return{date:p.date,actual:+(p.btc).toFixed(6),modeled:+modeled.toFixed(6)};
+    });
+  },[diff,poolFee]);
+
+  const unitBars=UNITS.map((u)=>({serial:u[0].slice(-4),th:u[2],type:u[1],temp:u[4]}));
+  const cohortColor=(t)=>t.includes("Lux")?C.amber:t.includes("151")?C.red:C.cyan;
+  const luxAvg=182.3;
+  const stockUnits=UNITS.filter(u=>!u[1].includes("Lux"));
+  const stockAvg=stockUnits.reduce((s,u)=>s+u[2],0)/stockUnits.length;
+
+  return (
+    <div style={{background:C.bg,color:C.ink,fontFamily:"'Inter',system-ui,sans-serif",padding:"28px 24px",borderRadius:12}}>
+      <div style={{maxWidth:1180,margin:"0 auto"}}>
+
+        <div style={{display:"flex",alignItems:"baseline",gap:14,marginBottom:4,flexWrap:"wrap"}}>
+          <span style={{fontSize:12,letterSpacing:3,color:C.amber,fontWeight:700}}>5STACK LLC</span>
+          <span style={{fontSize:12,color:C.faint}}>KY-LF · BLOCKWARE · S21 KEEPER FLEET</span>
+        </div>
+        <h1 style={{fontSize:30,fontWeight:800,margin:"0 0 2px",letterSpacing:-0.5}}>Fleet Economics</h1>
+        <div style={{fontSize:13,color:C.dim,marginBottom:22}}>
+          Telemetry 2026-08-04 16:16 · {N} units · {fmt(FLEET_TH,0)} TH · {fmt(FLEET_W/1000,1)} kW · {fmt(FLEET_W/FLEET_TH,2)} J/TH · payouts reconciled through Aug 02
+        </div>
+
+        <div style={{display:"flex",gap:12,flexWrap:"wrap",marginBottom:14}}>
+          <Stat label="Net / day"       value={`$${fmt(m.netDay,2)}`}  tone={m.netDay>=0?"pos":"neg"} sub={`$${fmt(m.netMo,0)} / month`}/>
+          <Stat label="Breakeven BTC"   value={`$${fmt(m.beBtc,0)}`}   tone={btc>=m.beBtc?"pos":"neg"} sub={`${btc>=m.beBtc?"+":""}$${fmt(btc-m.beBtc,0)} vs live`}/>
+          <Stat label="BTC / day"       value={fmt(m.btcDay,5)}         sub={`${fmt(m.btcDay*DAYS_MO,4)} / month`}/>
+          <Stat label="Gross rev / day" value={`$${fmt(m.revDay,2)}`}   sub={`hosting $${fmt(m.billDay,2)}/day`}/>
+        </div>
+
+        <div style={{background:C.panel2,border:`1px solid ${C.line}`,borderLeft:`3px solid ${C.green}`,borderRadius:8,padding:"12px 16px",marginBottom:22,fontSize:13,color:C.dim}}>
+          <span style={{color:C.green,fontWeight:700}}>Realized</span> · 3-day avg pool payout <b style={{color:C.ink}}>{fmt(REALIZED_BTC,6)} BTC/day</b> (${fmt(PAYOUTS.reduce((s,p)=>s+p.usd,0)/3,2)}) — model tracks actuals within 0.1%. Swept 0.02483896 BTC to cold storage Jul 31.
+        </div>
+
+        <div style={{display:"grid",gridTemplateColumns:"300px 1fr",gap:18,alignItems:"start"}}>
+
+          <div style={{background:C.panel,border:`1px solid ${C.line}`,borderRadius:12,padding:18,position:"sticky",top:16}}>
+            <div style={{fontSize:12,letterSpacing:1.5,textTransform:"uppercase",color:C.dim,fontWeight:700,marginBottom:16}}>Assumptions</div>
+            <Slider label="BTC price"          value={btc}     min={40000} max={100000} step={500}  onChange={setBtc}     fmtV={(v)=>`$${fmt(v,0)}`}/>
+            <Slider label="Network difficulty (T)" value={diff} min={90}    max={180}   step={0.5}  onChange={setDiff}    fmtV={(v)=>`${fmt(v,1)}T · ${fmt(m.netEHs,0)} EH/s`}/>
+            <Slider label="Hosting / unit / mo" value={host}   min={140}   max={210}   step={0.5}  onChange={setHost}    fmtV={(v)=>`$${fmt(v,2)}`}/>
+            <Slider label="Pool fee"           value={poolFee}  min={0}     max={3}     step={0.25} onChange={setPoolFee} fmtV={(v)=>`${fmt(v,2)}%`}/>
+
+            <label style={{display:"flex",alignItems:"center",gap:10,marginTop:8,padding:"10px 12px",background:luxRecover?C.amberDim:C.panel2,border:`1px solid ${luxRecover?C.amber:C.line}`,borderRadius:8,cursor:"pointer",transition:"0.15s"}}>
+              <input type="checkbox" checked={luxRecover} onChange={(e)=>setLuxRecover(e.target.checked)} style={{accentColor:C.amber,width:16,height:16}}/>
+              <div>
+                <div style={{fontSize:12.5,fontWeight:700,color:C.ink}}>LuxOS tuning recovery</div>
+                <div style={{fontSize:11,color:C.dim}}>28 units 182→189 TH (+187 TH)</div>
+              </div>
+            </label>
+
+            <div style={{marginTop:16,paddingTop:14,borderTop:`1px solid ${C.line}`,fontSize:11.5,color:C.faint,lineHeight:1.7}}>
+              <div style={{display:"flex",justifyContent:"space-between"}}><span>Implied rate</span><b style={{color:C.dim}}>{fmt(host/730/3.29,4)} $/kWh</b></div>
+              <div style={{display:"flex",justifyContent:"space-between"}}><span>Fleet hashrate</span><b style={{color:C.dim}}>{fmt(m.th,0)} TH</b></div>
+              <div style={{display:"flex",justifyContent:"space-between"}}><span>Rev / TH / day</span><b style={{color:C.dim}}>${fmt(m.btcPerThDay*btc,4)}</b></div>
+            </div>
+          </div>
+
+          <div style={{display:"flex",flexDirection:"column",gap:18}}>
+
+            <div style={{background:C.panel,border:`1px solid ${C.line}`,borderRadius:12,padding:"16px 18px 8px"}}>
+              <div style={{fontSize:13,fontWeight:700,marginBottom:2}}>Monthly net vs BTC price</div>
+              <div style={{fontSize:11.5,color:C.dim,marginBottom:12}}>At current difficulty, hosting, and tuning state</div>
+              <ResponsiveContainer width="100%" height={220}>
+                <AreaChart data={priceCurve} margin={{top:5,right:8,left:4,bottom:0}}>
+                  <defs>
+                    <linearGradient id="mg" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor={C.amber} stopOpacity={0.35}/>
+                      <stop offset="100%" stopColor={C.amber} stopOpacity={0.02}/>
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid stroke={C.grid} vertical={false}/>
+                  <XAxis dataKey="price" tick={{fill:C.dim,fontSize:11}} tickFormatter={(v)=>`$${v/1000}k`} stroke={C.line}/>
+                  <YAxis tick={{fill:C.dim,fontSize:11}} tickFormatter={(v)=>`$${v}`} stroke={C.line} width={60}/>
+                  <Tooltip contentStyle={{background:C.panel2,border:`1px solid ${C.line}`,borderRadius:8,color:C.ink}}
+                    formatter={(v)=>[`$${fmt(v,0)}/mo`,"Net"]} labelFormatter={(v)=>`BTC $${fmt(v,0)}`}/>
+                  <ReferenceLine y={0} stroke={C.faint} strokeDasharray="3 3"/>
+                  <Area type="monotone" dataKey="net" stroke={C.amber} strokeWidth={2.5} fill="url(#mg)"/>
+                </AreaChart>
+              </ResponsiveContainer>
+            </div>
+
+            <div style={{background:C.panel,border:`1px solid ${C.line}`,borderRadius:12,padding:"16px 18px 8px"}}>
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"baseline",flexWrap:"wrap",gap:8}}>
+                <div>
+                  <div style={{fontSize:13,fontWeight:700,marginBottom:2}}>Per-unit hashrate</div>
+                  <div style={{fontSize:11.5,color:C.dim,marginBottom:12}}>Sorted ascending · {N} keepers</div>
+                </div>
+                <div style={{display:"flex",gap:14,fontSize:11,color:C.dim}}>
+                  <span><b style={{color:C.amber}}>■</b> 188T LuxOS (avg {fmt(luxAvg,1)})</span>
+                  <span><b style={{color:C.cyan}}>■</b> stock (avg {fmt(stockAvg,1)})</span>
+                  <span><b style={{color:C.red}}>■</b> 151T degraded</span>
+                </div>
+              </div>
+              <ResponsiveContainer width="100%" height={200}>
+                <BarChart data={unitBars} margin={{top:5,right:8,left:4,bottom:0}}>
+                  <CartesianGrid stroke={C.grid} vertical={false}/>
+                  <XAxis dataKey="serial" tick={{fill:C.faint,fontSize:9}} interval={0} angle={-90} textAnchor="end" height={44} stroke={C.line}/>
+                  <YAxis domain={[160,200]} tick={{fill:C.dim,fontSize:11}} stroke={C.line} width={38}/>
+                  <Tooltip contentStyle={{background:C.panel2,border:`1px solid ${C.line}`,borderRadius:8}}
+                    formatter={(v,n,p)=>[`${v} TH · ${p.payload.temp}°C`,p.payload.type]}/>
+                  <ReferenceLine y={188} stroke={C.faint} strokeDasharray="3 3" label={{value:"nameplate 188",fill:C.faint,fontSize:10,position:"right"}}/>
+                  <Bar dataKey="th" radius={[2,2,0,0]}>
+                    {unitBars.map((u,i)=><Cell key={i} fill={cohortColor(u.type)}/>)}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+
+            <div style={{background:C.panel,border:`1px solid ${C.line}`,borderRadius:12,padding:"16px 18px 8px"}}>
+              <div style={{fontSize:13,fontWeight:700,marginBottom:2}}>Realized vs modeled BTC / day</div>
+              <div style={{fontSize:11.5,color:C.dim,marginBottom:12}}>Pool ledger vs difficulty model</div>
+              <ResponsiveContainer width="100%" height={180}>
+                <LineChart data={reconcile} margin={{top:5,right:8,left:4,bottom:0}}>
+                  <CartesianGrid stroke={C.grid} vertical={false}/>
+                  <XAxis dataKey="date" tick={{fill:C.dim,fontSize:11}} stroke={C.line}/>
+                  <YAxis domain={[0.0028,0.0032]} tick={{fill:C.dim,fontSize:10}} tickFormatter={(v)=>v.toFixed(4)} stroke={C.line} width={58}/>
+                  <Tooltip contentStyle={{background:C.panel2,border:`1px solid ${C.line}`,borderRadius:8}} formatter={(v)=>fmt(v,6)}/>
+                  <Line type="monotone" dataKey="actual" stroke={C.green} strokeWidth={2.5} dot={{r:4,fill:C.green}} name="Realized"/>
+                  <Line type="monotone" dataKey="modeled" stroke={C.amber} strokeWidth={2} strokeDasharray="5 3" dot={{r:3,fill:C.amber}} name="Modeled"/>
+                </LineChart>
+              </ResponsiveContainer>
+              <div style={{display:"flex",gap:16,fontSize:11,color:C.dim,padding:"4px 0 8px"}}>
+                <span><b style={{color:C.green}}>—</b> realized</span><span><b style={{color:C.amber}}>- -</b> modeled</span>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        <div style={{fontSize:11,color:C.faint,marginTop:22,lineHeight:1.6}}>
+          Flat billing: efficiency tuning does not reduce cost — the only lever is hashrate above nameplate. Downtime credited at annual true-up. Model uses FPPS, {fmt(BLOCK,3)} BTC block subsidy. Not financial advice.
+        </div>
+      </div>
+    </div>
+  );
+}
+
+window.MiningDashboard = MiningDashboard;
+})();
 </script>
 
 <script>
