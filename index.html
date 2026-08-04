@@ -3571,7 +3571,7 @@ function _mUpdate(){
     _mStat('Net / day',`$${_mFmt(m.netDay,2)}`,`$${_mFmt(m.netMo,0)} / month`,m.netDay>=0?'pos':'neg')+
     _mStat('Breakeven BTC',`$${_mFmt(m.beBtc,0)}`,`${btc>=m.beBtc?'+':''}$${_mFmt(btc-m.beBtc,0)} vs live`,btc>=m.beBtc?'pos':'neg')+
     _mStat('BTC / day',_mFmt(m.btcDay,5),`${_mFmt(m.btcDay*_MK.DAYS_MO,4)} / month`,'')+
-    _mStat('Gross rev / day',`$${_mFmt(m.revDay,2)}`,`hosting $${_mFmt(m.billDay,2)}/day`,'');
+    _mStat('Gross rev / day',`$${_mFmt(m.revDay,2)}`,`hosting $${_mFmt(host,2)}/miner/mo`,'');
   // Meta
   const me=document.getElementById('m-meta');
   if(me)me.innerHTML=[
