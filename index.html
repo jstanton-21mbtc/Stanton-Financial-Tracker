@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
@@ -28,10 +28,6 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js"></script>
-  <!-- Mining Dashboard deps -->
-  <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-  <script src="https://unpkg.com/recharts@2.12.7/umd/Recharts.js"></script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     :root {
@@ -3296,18 +3292,221 @@ function showTab(id) {
 }
 
 // ── MINING DASHBOARD ──
-let _miningRoot = null;
-function renderMiningDashboard() {
-  const el = document.getElementById('mining-root');
-  if (!el) return;
-  if (!window.MiningDashboard || typeof ReactDOM === 'undefined') {
-    el.innerHTML = '<div style="color:#7d8896;font-family:Inter,sans-serif;padding:40px;text-align:center;">Loading mining dashboard…</div>';
-    setTimeout(renderMiningDashboard, 150);
-    return;
+const _MUNITS=[
+  ["NGSBATBBDJBJB044Y","188T·Lux",175.6,3387,64],["THQGATBBDJABD041H","188T·Lux",176.8,3353,61],
+  ["THQGATBBDJABD0262","188T·Lux",177.7,3328,63],["THQGATBBDJABD01TV","188T·Lux",178.2,3360,60],
+  ["NGSBATBBDJBJB044B","188T·Lux",178.3,3369,58],["THQGATBBDJABD01V0","188T",178.4,3290,74],
+  ["NGSBATBBDJBJB04K7","188T·Lux",178.5,3372,62],["THQGATBBDJABD03RJ","188T·Lux",178.6,3306,62],
+  ["THQGATBBDJABD03T0","188T·Lux",178.8,3372,59],["THQGATBBDJABD041G","188T·Lux",179.9,3380,61],
+  ["NGSBATBBDJBJB04LG","188T·Lux",180.2,3377,57],["THQGATBBDJABD026T","188T·Lux",181.5,3297,61],
+  ["NGSBATBBDJBJB04E0","188T·Lux",181.7,3334,59],["THQGATBBDJABD00WL","188T·Lux",182.3,3431,62],
+  ["THQGATBBDJABD02JT","188T·Lux",182.5,3327,63],["THQGATBBDJABD041F","151T",182.7,2642,77],
+  ["THQGATBBDJABD041E","188T·Lux",183.1,3374,62],["THQGATBBDJABD026S","188T·Lux",183.4,3314,56],
+  ["THQGATBBDJABD041J","188T·Lux",183.4,3349,60],["NGSBATBBDJBJB04AN","188T·Lux",183.5,3407,61],
+  ["THQGATBBDJABD02K3","188T·Lux",183.9,3344,59],["THQGATBBDJABD026N","188T·Lux",184.3,3379,61],
+  ["THQGATBBDJABD00BK","188T·Lux",184.9,3385,58],["THQGATBBDJABD026M","188T·Lux",185.4,3357,57],
+  ["NGSBATBBDJBJB03MR","188T·Lux",185.9,3374,62],["THQGATBBDJABD00WS","188T·Lux",186.2,3323,64],
+  ["THQGATBBDJABD00WP","188T·Lux",186.7,3383,59],["NGSBATBBDJBJB045H","188T·Lux",187.0,3455,60],
+  ["THQGATBBDJABD03WX","188T·Lux",187.1,3396,58],["THQGATBBDJABD00WV","188T·Lux",188.1,3402,58],
+  ["THQGATBBDJABD02K2","175T",188.3,3062,74],["NGSBATBBDJBJB04LH","175T",188.9,3062,77],
+  ["THQGATBBDJABD03WT","175T",189.3,3062,77],["THQGATBBDJABD03T1","175T",191.7,3062,82],
+];
+const _MPAYOUTS=[
+  {date:"Jul 31",btc:0.00302195,usd:190.06,price:62895},
+  {date:"Aug 01",btc:0.00307966,usd:194.77,price:63244},
+  {date:"Aug 02",btc:0.00309636,usd:195.59,price:63167},
+];
+const _MK={
+  TH:_MUNITS.reduce((s,u)=>s+u[2],0),
+  W:_MUNITS.reduce((s,u)=>s+u[3],0),
+  N:_MUNITS.length,
+  REALIZED:_MPAYOUTS.reduce((s,p)=>s+p.btc,0)/3,
+  AVG_USD:_MPAYOUTS.reduce((s,p)=>s+p.usd,0)/3,
+  DAYS_MO:30.42,BLOCK:3.125,
+};
+const _MC={bg:"#0d1117",panel:"#151b24",panel2:"#1b232e",border:"#232d3a",
+  ink:"#e6edf3",dim:"#7d8896",faint:"#4a5563",
+  amber:"#f0a020",green:"#3fb950",red:"#f04747",cyan:"#39c5cf",grid:"#1e2732"};
+let _MS={btc:63819,diff:126.23,host:171.34,poolFee:1.0,luxRecover:false};
+let _MCharts={};
+let _mBuilt=false;
+
+function _mCalc(){
+  const {btc,diff,host,poolFee,luxRecover}=_MS;
+  const netTh=(diff*1e12*Math.pow(2,32))/600/1e12;
+  const btcPerThDay=((144*_MK.BLOCK)/netTh)*(1-poolFee/100);
+  const th=_MK.TH+(luxRecover?28*(189-182.3):0);
+  const revDay=th*btcPerThDay*btc, btcDay=th*btcPerThDay;
+  const billDay=(_MK.N*host)/_MK.DAYS_MO, netDay=revDay-billDay;
+  return{netTh,btcPerThDay,th,revDay,btcDay,billDay,netDay,
+    netMo:netDay*_MK.DAYS_MO,beBtc:billDay/(th*btcPerThDay),netEHs:netTh/1e6};
+}
+function _mFmt(n,d=0){return n.toLocaleString('en-US',{minimumFractionDigits:d,maximumFractionDigits:d});}
+function _mStat(label,val,sub,tone){
+  const col=tone==='pos'?_MC.green:tone==='neg'?_MC.red:_MC.ink;
+  return `<div style="background:${_MC.panel};border:1px solid ${_MC.border};border-radius:10px;padding:16px 18px;flex:1;min-width:150px;">
+    <div style="font-size:11px;letter-spacing:1.2px;text-transform:uppercase;color:${_MC.dim};font-weight:600;">${label}</div>
+    <div style="font-size:24px;font-weight:700;color:${col};margin-top:6px;font-variant-numeric:tabular-nums;line-height:1.1;">${val}</div>
+    ${sub?`<div style="font-size:11px;color:${_MC.faint};margin-top:3px;">${sub}</div>`:''}
+  </div>`;
+}
+function _mSlider(key,label,min,max,step){
+  return `<div style="margin-bottom:14px;">
+    <div style="display:flex;justify-content:space-between;margin-bottom:6px;">
+      <span style="font-size:12px;color:${_MC.dim};font-weight:600;">${label}</span>
+      <span id="msv-${key}" style="font-size:13px;color:${_MC.amber};font-weight:700;font-variant-numeric:tabular-nums;"></span>
+    </div>
+    <input id="msl-${key}" type="range" min="${min}" max="${max}" step="${step}" value="${_MS[key]}" style="width:100%;accent-color:${_MC.amber};height:4px;">
+  </div>`;
+}
+
+function renderMiningDashboard(){
+  const el=document.getElementById('mining-root');
+  if(!el)return;
+  if(!_mBuilt){
+    _mBuilt=true;
+    el.innerHTML=`
+    <div style="background:${_MC.bg};color:${_MC.ink};font-family:'Inter',system-ui,sans-serif;padding:28px 24px;border-radius:12px;">
+      <div style="max-width:1180px;margin:0 auto;">
+        <div style="display:flex;align-items:baseline;gap:14px;margin-bottom:4px;flex-wrap:wrap;">
+          <span style="font-size:12px;letter-spacing:3px;color:${_MC.amber};font-weight:700;">5STACK LLC</span>
+          <span style="font-size:12px;color:${_MC.faint};">KY-LF · BLOCKWARE · S21 KEEPER FLEET</span>
+        </div>
+        <h1 style="font-size:28px;font-weight:800;margin:0 0 2px;letter-spacing:-0.5px;">Fleet Economics</h1>
+        <div style="font-size:13px;color:${_MC.dim};margin-bottom:22px;">
+          Telemetry 2026-08-04 16:16 &nbsp;·&nbsp; ${_MK.N} units &nbsp;·&nbsp; ${_mFmt(_MK.TH,0)} TH &nbsp;·&nbsp; ${(_MK.W/1000).toFixed(1)} kW &nbsp;·&nbsp; ${(_MK.W/_MK.TH).toFixed(2)} J/TH &nbsp;·&nbsp; payouts reconciled through Aug 02
+        </div>
+        <div id="m-stats" style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:14px;"></div>
+        <div style="background:${_MC.panel2};border:1px solid ${_MC.border};border-left:3px solid ${_MC.green};border-radius:8px;padding:12px 16px;margin-bottom:22px;font-size:13px;color:${_MC.dim};">
+          <span style="color:${_MC.green};font-weight:700;">Realized</span> &nbsp;·&nbsp; 3-day avg pool payout
+          <b style="color:${_MC.ink};">${_MK.REALIZED.toFixed(6)} BTC/day</b>
+          ($${_MK.AVG_USD.toFixed(2)}) — model tracks actuals within 0.1%. Swept 0.02483896 BTC to cold storage Jul 31.
+        </div>
+        <div style="display:grid;grid-template-columns:300px 1fr;gap:18px;align-items:start;">
+          <div style="background:${_MC.panel};border:1px solid ${_MC.border};border-radius:12px;padding:18px;position:sticky;top:16px;">
+            <div style="font-size:12px;letter-spacing:1.5px;text-transform:uppercase;color:${_MC.dim};font-weight:700;margin-bottom:16px;">Assumptions</div>
+            ${_mSlider('btc','BTC price',40000,100000,500)}
+            ${_mSlider('diff','Network difficulty (T)',90,180,0.5)}
+            ${_mSlider('host','Hosting / unit / mo',140,210,0.5)}
+            ${_mSlider('poolFee','Pool fee',0,3,0.25)}
+            <label id="m-lux-lbl" style="display:flex;align-items:center;gap:10px;margin-top:8px;padding:10px 12px;border-radius:8px;cursor:pointer;border:1px solid ${_MC.border};transition:0.15s;">
+              <input type="checkbox" id="m-lux" style="accent-color:${_MC.amber};width:16px;height:16px;">
+              <div>
+                <div style="font-size:12.5px;font-weight:700;color:${_MC.ink};">LuxOS tuning recovery</div>
+                <div style="font-size:11px;color:${_MC.dim};">28 units 182→189 TH (+187 TH)</div>
+              </div>
+            </label>
+            <div id="m-meta" style="margin-top:16px;padding-top:14px;border-top:1px solid ${_MC.border};font-size:11.5px;color:${_MC.faint};line-height:1.7;"></div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:18px;">
+            <div style="background:${_MC.panel};border:1px solid ${_MC.border};border-radius:12px;padding:16px 18px 12px;">
+              <div style="font-size:13px;font-weight:700;margin-bottom:2px;">Monthly net vs BTC price</div>
+              <div style="font-size:11.5px;color:${_MC.dim};margin-bottom:12px;">At current difficulty, hosting, and tuning state</div>
+              <div style="position:relative;height:200px;"><canvas id="m-ch-price"></canvas></div>
+            </div>
+            <div style="background:${_MC.panel};border:1px solid ${_MC.border};border-radius:12px;padding:16px 18px 12px;">
+              <div style="display:flex;justify-content:space-between;align-items:baseline;flex-wrap:wrap;gap:8px;margin-bottom:10px;">
+                <div>
+                  <div style="font-size:13px;font-weight:700;">Per-unit hashrate</div>
+                  <div style="font-size:11.5px;color:${_MC.dim};">Sorted ascending · ${_MK.N} keepers</div>
+                </div>
+                <div style="display:flex;gap:12px;font-size:11px;color:${_MC.dim};">
+                  <span><b style="color:${_MC.amber};">■</b> LuxOS</span>
+                  <span><b style="color:${_MC.cyan};">■</b> stock</span>
+                  <span><b style="color:${_MC.red};">■</b> degraded</span>
+                </div>
+              </div>
+              <div style="position:relative;height:180px;"><canvas id="m-ch-units"></canvas></div>
+            </div>
+            <div style="background:${_MC.panel};border:1px solid ${_MC.border};border-radius:12px;padding:16px 18px 12px;">
+              <div style="font-size:13px;font-weight:700;margin-bottom:2px;">Realized vs modeled BTC / day</div>
+              <div style="font-size:11.5px;color:${_MC.dim};margin-bottom:12px;">Pool ledger vs difficulty model</div>
+              <div style="position:relative;height:160px;"><canvas id="m-ch-rec"></canvas></div>
+              <div style="display:flex;gap:16px;font-size:11px;color:${_MC.dim};padding:6px 0 2px;">
+                <span><b style="color:${_MC.green};">—</b> realized</span>
+                <span><b style="color:${_MC.amber};">– –</b> modeled</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div style="font-size:11px;color:${_MC.faint};margin-top:22px;line-height:1.6;">
+          Flat billing: efficiency tuning does not reduce cost — only hashrate above nameplate matters. Downtime credited at annual true-up. Model uses FPPS, ${_MK.BLOCK} BTC block subsidy. Not financial advice.
+        </div>
+      </div>
+    </div>`;
+    ['btc','diff','host','poolFee'].forEach(k=>{
+      document.getElementById('msl-'+k).addEventListener('input',e=>{_MS[k]=parseFloat(e.target.value);_mUpdate();});
+    });
+    document.getElementById('m-lux').addEventListener('change',e=>{_MS.luxRecover=e.target.checked;_mUpdate();});
   }
-  el.innerHTML = '';
-  if (!_miningRoot) _miningRoot = ReactDOM.createRoot(el);
-  _miningRoot.render(React.createElement(window.MiningDashboard));
+  _mUpdate();
+}
+
+function _mUpdate(){
+  const m=_mCalc();
+  const {btc,diff,host,poolFee,luxRecover}=_MS;
+  // Slider value labels
+  const labels={btc:`$${_mFmt(btc,0)}`,diff:`${_mFmt(diff,1)}T · ${_mFmt(m.netEHs,0)} EH/s`,host:`$${_mFmt(host,2)}`,poolFee:`${_mFmt(poolFee,2)}%`};
+  Object.entries(labels).forEach(([k,v])=>{const e=document.getElementById('msv-'+k);if(e)e.textContent=v;});
+  // LuxOS toggle style
+  const lbl=document.getElementById('m-lux-lbl');
+  if(lbl){lbl.style.background=luxRecover?'rgba(138,100,32,0.35)':'';lbl.style.borderColor=luxRecover?_MC.amber:_MC.border;}
+  // Stats
+  const se=document.getElementById('m-stats');
+  if(se)se.innerHTML=
+    _mStat('Net / day',`$${_mFmt(m.netDay,2)}`,`$${_mFmt(m.netMo,0)} / month`,m.netDay>=0?'pos':'neg')+
+    _mStat('Breakeven BTC',`$${_mFmt(m.beBtc,0)}`,`${btc>=m.beBtc?'+':''}$${_mFmt(btc-m.beBtc,0)} vs live`,btc>=m.beBtc?'pos':'neg')+
+    _mStat('BTC / day',_mFmt(m.btcDay,5),`${_mFmt(m.btcDay*_MK.DAYS_MO,4)} / month`,'')+
+    _mStat('Gross rev / day',`$${_mFmt(m.revDay,2)}`,`hosting $${_mFmt(m.billDay,2)}/day`,'');
+  // Meta
+  const me=document.getElementById('m-meta');
+  if(me)me.innerHTML=[
+    ['Implied rate',`${(host/730/3.29).toFixed(4)} $/kWh`],
+    ['Fleet hashrate',`${_mFmt(m.th,0)} TH`],
+    ['Rev / TH / day',`$${(m.btcPerThDay*btc).toFixed(4)}`],
+  ].map(([l,v])=>`<div style="display:flex;justify-content:space-between;"><span>${l}</span><b style="color:${_MC.dim};">${v}</b></div>`).join('');
+  // Chart defaults
+  Chart.defaults.color=_MC.dim;
+  // Price curve chart
+  const pPts=[];for(let p=50000;p<=90000;p+=2500)pPts.push({x:p,y:Math.round((m.th*m.btcPerThDay*p-m.billDay)*_MK.DAYS_MO)});
+  const pc=document.getElementById('m-ch-price');
+  if(pc){if(_MCharts.price)_MCharts.price.destroy();
+    _MCharts.price=new Chart(pc,{type:'line',data:{datasets:[{data:pPts,borderColor:_MC.amber,borderWidth:2.5,
+      backgroundColor:'rgba(240,160,32,0.12)',fill:true,tension:0.4,pointRadius:0}]},
+      options:{responsive:true,maintainAspectRatio:false,
+        scales:{x:{type:'linear',min:50000,max:90000,ticks:{color:_MC.dim,callback:v=>`$${v/1000}k`},grid:{color:_MC.grid}},
+          y:{ticks:{color:_MC.dim,callback:v=>`$${v}`},grid:{color:_MC.grid}}},
+        plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>`$${_mFmt(c.parsed.y,0)}/mo`,title:t=>`BTC $${_mFmt(t[0].parsed.x,0)}`}}}}});
+  }
+  // Per-unit bar chart
+  const cohort=t=>t.includes('Lux')?_MC.amber:t.includes('151')?_MC.red:_MC.cyan;
+  const uc=document.getElementById('m-ch-units');
+  if(uc){if(_MCharts.units)_MCharts.units.destroy();
+    _MCharts.units=new Chart(uc,{type:'bar',
+      data:{labels:_MUNITS.map(u=>u[0].slice(-4)),
+        datasets:[{data:_MUNITS.map(u=>u[2]),backgroundColor:_MUNITS.map(u=>cohort(u[1])),borderRadius:2,barPercentage:0.9}]},
+      options:{responsive:true,maintainAspectRatio:false,
+        scales:{x:{ticks:{color:_MC.faint,font:{size:9},maxRotation:90},grid:{color:_MC.grid}},
+          y:{min:160,max:200,ticks:{color:_MC.dim},grid:{color:_MC.grid}}},
+        plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>`${c.parsed.y} TH · ${_MUNITS[c.dataIndex][4]}°C · ${_MUNITS[c.dataIndex][1]}`}}}}});
+  }
+  // Realized vs modeled line chart
+  const rec=_MPAYOUTS.map(p=>{
+    const nTh=(diff*1e12*Math.pow(2,32))/600/1e12;
+    return{date:p.date,actual:p.btc,modeled:_MK.TH*((144*_MK.BLOCK)/nTh)*(1-poolFee/100)};
+  });
+  const rc=document.getElementById('m-ch-rec');
+  if(rc){if(_MCharts.rec)_MCharts.rec.destroy();
+    _MCharts.rec=new Chart(rc,{type:'line',
+      data:{labels:rec.map(r=>r.date),datasets:[
+        {label:'Realized',data:rec.map(r=>r.actual),borderColor:_MC.green,borderWidth:2.5,pointRadius:4,tension:0},
+        {label:'Modeled',data:rec.map(r=>r.modeled),borderColor:_MC.amber,borderWidth:2,borderDash:[5,3],pointRadius:3,tension:0},
+      ]},
+      options:{responsive:true,maintainAspectRatio:false,
+        scales:{x:{ticks:{color:_MC.dim},grid:{color:_MC.grid}},
+          y:{min:0.0028,max:0.0032,ticks:{color:_MC.dim,callback:v=>v.toFixed(4)},grid:{color:_MC.grid}}},
+        plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>`${c.dataset.label}: ${c.parsed.y.toFixed(6)}`}}}}});
+  }
 }
 
 function clearExpensesData() {
@@ -6096,257 +6295,7 @@ function _renderSportsPicker() {
 }
 </script>
 
-<!-- ── MINING DASHBOARD COMPONENT ── -->
-<script>
-(function(){
-function _init(){
-const h=React.createElement,{useState,useMemo}=React;
-const {AreaChart,Area,BarChart,Bar,Cell,LineChart,Line,
-       XAxis,YAxis,CartesianGrid,Tooltip,ResponsiveContainer,ReferenceLine}=Recharts;
 
-const UNITS = [
-  ["NGSBATBBDJBJB044Y","188T·Lux",175.6,3387,64,"A1"],["THQGATBBDJABD041H","188T·Lux",176.8,3353,61,"A1"],
-  ["THQGATBBDJABD0262","188T·Lux",177.7,3328,63,"A1"],["THQGATBBDJABD01TV","188T·Lux",178.2,3360,60,"A1"],
-  ["NGSBATBBDJBJB044B","188T·Lux",178.3,3369,58,"A1"],["THQGATBBDJABD01V0","188T",178.4,3290,74,"A5"],
-  ["NGSBATBBDJBJB04K7","188T·Lux",178.5,3372,62,"A1"],["THQGATBBDJABD03RJ","188T·Lux",178.6,3306,62,"A1"],
-  ["THQGATBBDJABD03T0","188T·Lux",178.8,3372,59,"A1"],["THQGATBBDJABD041G","188T·Lux",179.9,3380,61,"A1"],
-  ["NGSBATBBDJBJB04LG","188T·Lux",180.2,3377,57,"A1"],["THQGATBBDJABD026T","188T·Lux",181.5,3297,61,"A1"],
-  ["NGSBATBBDJBJB04E0","188T·Lux",181.7,3334,59,"A1"],["THQGATBBDJABD00WL","188T·Lux",182.3,3431,62,"A1"],
-  ["THQGATBBDJABD02JT","188T·Lux",182.5,3327,63,"A1"],["THQGATBBDJABD041F","151T",182.7,2642,77,"A1"],
-  ["THQGATBBDJABD041E","188T·Lux",183.1,3374,62,"A1"],["THQGATBBDJABD026S","188T·Lux",183.4,3314,56,"A1"],
-  ["THQGATBBDJABD041J","188T·Lux",183.4,3349,60,"A1"],["NGSBATBBDJBJB04AN","188T·Lux",183.5,3407,61,"A1"],
-  ["THQGATBBDJABD02K3","188T·Lux",183.9,3344,59,"A1"],["THQGATBBDJABD026N","188T·Lux",184.3,3379,61,"A1"],
-  ["THQGATBBDJABD00BK","188T·Lux",184.9,3385,58,"A1"],["THQGATBBDJABD026M","188T·Lux",185.4,3357,57,"A1"],
-  ["NGSBATBBDJBJB03MR","188T·Lux",185.9,3374,62,"A1"],["THQGATBBDJABD00WS","188T·Lux",186.2,3323,64,"A1"],
-  ["THQGATBBDJABD00WP","188T·Lux",186.7,3383,59,"A1"],["NGSBATBBDJBJB045H","188T·Lux",187.0,3455,60,"A1"],
-  ["THQGATBBDJABD03WX","188T·Lux",187.1,3396,58,"A1"],["THQGATBBDJABD00WV","188T·Lux",188.1,3402,58,"A1"],
-  ["THQGATBBDJABD02K2","175T",188.3,3062,74,"B4"],["NGSBATBBDJBJB04LH","175T",188.9,3062,77,"A2"],
-  ["THQGATBBDJABD03WT","175T",189.3,3062,77,"A2"],["THQGATBBDJABD03T1","175T",191.7,3062,82,"A1"],
-];
-
-const PAYOUTS = [
-  { date: "Jul 31", btc: 0.00302195, usd: 190.06, price: 62895 },
-  { date: "Aug 01", btc: 0.00307966, usd: 194.77, price: 63244 },
-  { date: "Aug 02", btc: 0.00309636, usd: 195.59, price: 63167 },
-];
-
-const FLEET_TH = UNITS.reduce((s,u)=>s+u[2],0);
-const FLEET_W  = UNITS.reduce((s,u)=>s+u[3],0);
-const N        = UNITS.length;
-const REALIZED_BTC = PAYOUTS.reduce((s,p)=>s+p.btc,0)/PAYOUTS.length;
-const DAYS_MO  = 30.42;
-const BLOCK    = 3.125;
-
-const C = {
-  bg:"#0d1117",panel:"#151b24",panel2:"#1b232e",line:"#232d3a",
-  ink:"#e6edf3",dim:"#7d8896",faint:"#4a5563",
-  amber:"#f0a020",amberDim:"#8a6420",green:"#3fb950",red:"#f04747",
-  cyan:"#39c5cf",grid:"#1e2732",
-};
-
-function fmt(n,d=0){ return n.toLocaleString("en-US",{minimumFractionDigits:d,maximumFractionDigits:d}); }
-
-function Stat({label,value,sub,tone}){
-  const col=tone==="pos"?C.green:tone==="neg"?C.red:C.ink;
-  return h('div',{style:{background:C.panel,border:`1px solid ${C.line}`,borderRadius:10,padding:"16px 18px",flex:1,minWidth:0}},
-    h('div',{style:{fontSize:11,letterSpacing:1.2,textTransform:"uppercase",color:C.dim,fontWeight:600}},label),
-    h('div',{style:{fontSize:26,fontWeight:700,color:col,marginTop:6,fontVariantNumeric:"tabular-nums",lineHeight:1.1}},value),
-    sub?h('div',{style:{fontSize:12,color:C.faint,marginTop:3}},sub):null
-  );
-}
-
-function Slider({label,value,min,max,step,onChange,fmtV}){
-  return h('div',{style:{marginBottom:14}},
-    h('div',{style:{display:"flex",justifyContent:"space-between",marginBottom:6}},
-      h('span',{style:{fontSize:12,color:C.dim,fontWeight:600}},label),
-      h('span',{style:{fontSize:13,color:C.amber,fontWeight:700,fontVariantNumeric:"tabular-nums"}},fmtV(value))
-    ),
-    h('input',{type:"range",min,max,step,value,
-      onChange:e=>onChange(parseFloat(e.target.value)),
-      style:{width:"100%",accentColor:C.amber,height:4}
-    })
-  );
-}
-
-function MiningDashboard(){
-  const [btc,setBtc]=useState(63819);
-  const [diff,setDiff]=useState(126.23);
-  const [host,setHost]=useState(171.34);
-  const [poolFee,setPoolFee]=useState(1.0);
-  const [luxRecover,setLuxRecover]=useState(false);
-
-  const m=useMemo(()=>{
-    const netTh=(diff*1e12*Math.pow(2,32))/600/1e12;
-    const btcPerThDay=((144*BLOCK)/netTh)*(1-poolFee/100);
-    const luxLift=luxRecover?28*(189-182.3):0;
-    const th=FLEET_TH+luxLift;
-    const revDay=th*btcPerThDay*btc;
-    const btcDay=th*btcPerThDay;
-    const billDay=(N*host)/DAYS_MO;
-    const netDay=revDay-billDay;
-    const beBtc=billDay/(th*btcPerThDay);
-    return{netTh,btcPerThDay,th,revDay,btcDay,billDay,netDay,
-      netMo:netDay*DAYS_MO,beBtc,netEHs:netTh/1e6};
-  },[btc,diff,host,poolFee,luxRecover]);
-
-  const priceCurve=useMemo(()=>{
-    const arr=[];
-    for(let p=50000;p<=90000;p+=2500){
-      arr.push({price:p,net:Math.round((m.th*m.btcPerThDay*p-m.billDay)*DAYS_MO)});
-    }
-    return arr;
-  },[m]);
-
-  const reconcile=useMemo(()=>{
-    return PAYOUTS.map(p=>{
-      const netTh=(diff*1e12*Math.pow(2,32))/600/1e12;
-      const modeled=FLEET_TH*((144*BLOCK)/netTh)*(1-poolFee/100);
-      return{date:p.date,actual:+(p.btc).toFixed(6),modeled:+modeled.toFixed(6)};
-    });
-  },[diff,poolFee]);
-
-  const unitBars=UNITS.map(u=>({serial:u[0].slice(-4),th:u[2],type:u[1],temp:u[4]}));
-  const cohortColor=t=>t.includes("Lux")?C.amber:t.includes("151")?C.red:C.cyan;
-  const luxAvg=182.3;
-  const stockUnits=UNITS.filter(u=>!u[1].includes("Lux"));
-  const stockAvg=stockUnits.reduce((s,u)=>s+u[2],0)/stockUnits.length;
-
-  return h('div',{style:{background:C.bg,color:C.ink,fontFamily:"'Inter',system-ui,sans-serif",padding:"28px 24px",borderRadius:12}},
-    h('div',{style:{maxWidth:1180,margin:"0 auto"}},
-
-      h('div',{style:{display:"flex",alignItems:"baseline",gap:14,marginBottom:4,flexWrap:"wrap"}},
-        h('span',{style:{fontSize:12,letterSpacing:3,color:C.amber,fontWeight:700}},"5STACK LLC"),
-        h('span',{style:{fontSize:12,color:C.faint}},"KY-LF · BLOCKWARE · S21 KEEPER FLEET")
-      ),
-      h('h1',{style:{fontSize:30,fontWeight:800,margin:"0 0 2px",letterSpacing:-0.5}},"Fleet Economics"),
-      h('div',{style:{fontSize:13,color:C.dim,marginBottom:22}},
-        `Telemetry 2026-08-04 16:16 · ${N} units · ${fmt(FLEET_TH,0)} TH · ${fmt(FLEET_W/1000,1)} kW · ${fmt(FLEET_W/FLEET_TH,2)} J/TH · payouts reconciled through Aug 02`
-      ),
-
-      h('div',{style:{display:"flex",gap:12,flexWrap:"wrap",marginBottom:14}},
-        h(Stat,{label:"Net / day",value:`$${fmt(m.netDay,2)}`,tone:m.netDay>=0?"pos":"neg",sub:`$${fmt(m.netMo,0)} / month`}),
-        h(Stat,{label:"Breakeven BTC",value:`$${fmt(m.beBtc,0)}`,tone:btc>=m.beBtc?"pos":"neg",sub:`${btc>=m.beBtc?"+":""}$${fmt(btc-m.beBtc,0)} vs live`}),
-        h(Stat,{label:"BTC / day",value:fmt(m.btcDay,5),sub:`${fmt(m.btcDay*DAYS_MO,4)} / month`}),
-        h(Stat,{label:"Gross rev / day",value:`$${fmt(m.revDay,2)}`,sub:`hosting $${fmt(m.billDay,2)}/day`})
-      ),
-
-      h('div',{style:{background:C.panel2,border:`1px solid ${C.line}`,borderLeft:`3px solid ${C.green}`,borderRadius:8,padding:"12px 16px",marginBottom:22,fontSize:13,color:C.dim}},
-        h('span',{style:{color:C.green,fontWeight:700}},"Realized"),
-        ` · 3-day avg pool payout `,
-        h('b',{style:{color:C.ink}},`${fmt(REALIZED_BTC,6)} BTC/day`),
-        ` ($${fmt(PAYOUTS.reduce((s,p)=>s+p.usd,0)/3,2)}) — model tracks actuals within 0.1%. Swept 0.02483896 BTC to cold storage Jul 31.`
-      ),
-
-      h('div',{style:{display:"grid",gridTemplateColumns:"300px 1fr",gap:18,alignItems:"start"}},
-
-        h('div',{style:{background:C.panel,border:`1px solid ${C.line}`,borderRadius:12,padding:18,position:"sticky",top:16}},
-          h('div',{style:{fontSize:12,letterSpacing:1.5,textTransform:"uppercase",color:C.dim,fontWeight:700,marginBottom:16}},"Assumptions"),
-          h(Slider,{label:"BTC price",value:btc,min:40000,max:100000,step:500,onChange:setBtc,fmtV:v=>`$${fmt(v,0)}`}),
-          h(Slider,{label:"Network difficulty (T)",value:diff,min:90,max:180,step:0.5,onChange:setDiff,fmtV:v=>`${fmt(v,1)}T · ${fmt(m.netEHs,0)} EH/s`}),
-          h(Slider,{label:"Hosting / unit / mo",value:host,min:140,max:210,step:0.5,onChange:setHost,fmtV:v=>`$${fmt(v,2)}`}),
-          h(Slider,{label:"Pool fee",value:poolFee,min:0,max:3,step:0.25,onChange:setPoolFee,fmtV:v=>`${fmt(v,2)}%`}),
-          h('label',{style:{display:"flex",alignItems:"center",gap:10,marginTop:8,padding:"10px 12px",
-            background:luxRecover?C.amberDim:C.panel2,border:`1px solid ${luxRecover?C.amber:C.line}`,
-            borderRadius:8,cursor:"pointer",transition:"0.15s"}},
-            h('input',{type:"checkbox",checked:luxRecover,onChange:e=>setLuxRecover(e.target.checked),
-              style:{accentColor:C.amber,width:16,height:16}}),
-            h('div',null,
-              h('div',{style:{fontSize:12.5,fontWeight:700,color:C.ink}},"LuxOS tuning recovery"),
-              h('div',{style:{fontSize:11,color:C.dim}},"28 units 182→189 TH (+187 TH)")
-            )
-          ),
-          h('div',{style:{marginTop:16,paddingTop:14,borderTop:`1px solid ${C.line}`,fontSize:11.5,color:C.faint,lineHeight:1.7}},
-            h('div',{style:{display:"flex",justifyContent:"space-between"}},h('span',null,"Implied rate"),h('b',{style:{color:C.dim}},`${fmt(host/730/3.29,4)} $/kWh`)),
-            h('div',{style:{display:"flex",justifyContent:"space-between"}},h('span',null,"Fleet hashrate"),h('b',{style:{color:C.dim}},`${fmt(m.th,0)} TH`)),
-            h('div',{style:{display:"flex",justifyContent:"space-between"}},h('span',null,"Rev / TH / day"),h('b',{style:{color:C.dim}},`$${fmt(m.btcPerThDay*btc,4)}`))
-          )
-        ),
-
-        h('div',{style:{display:"flex",flexDirection:"column",gap:18}},
-
-          h('div',{style:{background:C.panel,border:`1px solid ${C.line}`,borderRadius:12,padding:"16px 18px 8px"}},
-            h('div',{style:{fontSize:13,fontWeight:700,marginBottom:2}},"Monthly net vs BTC price"),
-            h('div',{style:{fontSize:11.5,color:C.dim,marginBottom:12}},"At current difficulty, hosting, and tuning state"),
-            h(ResponsiveContainer,{width:"100%",height:220},
-              h(AreaChart,{data:priceCurve,margin:{top:5,right:8,left:4,bottom:0}},
-                h('defs',null,
-                  h('linearGradient',{id:"mg",x1:"0",y1:"0",x2:"0",y2:"1"},
-                    h('stop',{offset:"0%",stopColor:C.amber,stopOpacity:0.35}),
-                    h('stop',{offset:"100%",stopColor:C.amber,stopOpacity:0.02})
-                  )
-                ),
-                h(CartesianGrid,{stroke:C.grid,vertical:false}),
-                h(XAxis,{dataKey:"price",tick:{fill:C.dim,fontSize:11},tickFormatter:v=>`$${v/1000}k`,stroke:C.line}),
-                h(YAxis,{tick:{fill:C.dim,fontSize:11},tickFormatter:v=>`$${v}`,stroke:C.line,width:60}),
-                h(Tooltip,{contentStyle:{background:C.panel2,border:`1px solid ${C.line}`,borderRadius:8,color:C.ink},
-                  formatter:v=>[`$${fmt(v,0)}/mo`,"Net"],labelFormatter:v=>`BTC $${fmt(v,0)}`}),
-                h(ReferenceLine,{y:0,stroke:C.faint,strokeDasharray:"3 3"}),
-                h(Area,{type:"monotone",dataKey:"net",stroke:C.amber,strokeWidth:2.5,fill:"url(#mg)"})
-              )
-            )
-          ),
-
-          h('div',{style:{background:C.panel,border:`1px solid ${C.line}`,borderRadius:12,padding:"16px 18px 8px"}},
-            h('div',{style:{display:"flex",justifyContent:"space-between",alignItems:"baseline",flexWrap:"wrap",gap:8}},
-              h('div',null,
-                h('div',{style:{fontSize:13,fontWeight:700,marginBottom:2}},"Per-unit hashrate"),
-                h('div',{style:{fontSize:11.5,color:C.dim,marginBottom:12}},`Sorted ascending · ${N} keepers`)
-              ),
-              h('div',{style:{display:"flex",gap:14,fontSize:11,color:C.dim}},
-                h('span',null,h('b',{style:{color:C.amber}},"■"),` 188T LuxOS (avg ${fmt(luxAvg,1)})`),
-                h('span',null,h('b',{style:{color:C.cyan}},"■"),` stock (avg ${fmt(stockAvg,1)})`),
-                h('span',null,h('b',{style:{color:C.red}},"■")," 151T degraded")
-              )
-            ),
-            h(ResponsiveContainer,{width:"100%",height:200},
-              h(BarChart,{data:unitBars,margin:{top:5,right:8,left:4,bottom:0}},
-                h(CartesianGrid,{stroke:C.grid,vertical:false}),
-                h(XAxis,{dataKey:"serial",tick:{fill:C.faint,fontSize:9},interval:0,angle:-90,textAnchor:"end",height:44,stroke:C.line}),
-                h(YAxis,{domain:[160,200],tick:{fill:C.dim,fontSize:11},stroke:C.line,width:38}),
-                h(Tooltip,{contentStyle:{background:C.panel2,border:`1px solid ${C.line}`,borderRadius:8},
-                  formatter:(v,n,p)=>[`${v} TH · ${p.payload.temp}°C`,p.payload.type]}),
-                h(ReferenceLine,{y:188,stroke:C.faint,strokeDasharray:"3 3",label:{value:"nameplate 188",fill:C.faint,fontSize:10,position:"right"}}),
-                h(Bar,{dataKey:"th",radius:[2,2,0,0]},
-                  unitBars.map((u,i)=>h(Cell,{key:i,fill:cohortColor(u.type)}))
-                )
-              )
-            )
-          ),
-
-          h('div',{style:{background:C.panel,border:`1px solid ${C.line}`,borderRadius:12,padding:"16px 18px 8px"}},
-            h('div',{style:{fontSize:13,fontWeight:700,marginBottom:2}},"Realized vs modeled BTC / day"),
-            h('div',{style:{fontSize:11.5,color:C.dim,marginBottom:12}},"Pool ledger vs difficulty model"),
-            h(ResponsiveContainer,{width:"100%",height:180},
-              h(LineChart,{data:reconcile,margin:{top:5,right:8,left:4,bottom:0}},
-                h(CartesianGrid,{stroke:C.grid,vertical:false}),
-                h(XAxis,{dataKey:"date",tick:{fill:C.dim,fontSize:11},stroke:C.line}),
-                h(YAxis,{domain:[0.0028,0.0032],tick:{fill:C.dim,fontSize:10},tickFormatter:v=>v.toFixed(4),stroke:C.line,width:58}),
-                h(Tooltip,{contentStyle:{background:C.panel2,border:`1px solid ${C.line}`,borderRadius:8},formatter:v=>fmt(v,6)}),
-                h(Line,{type:"monotone",dataKey:"actual",stroke:C.green,strokeWidth:2.5,dot:{r:4,fill:C.green},name:"Realized"}),
-                h(Line,{type:"monotone",dataKey:"modeled",stroke:C.amber,strokeWidth:2,strokeDasharray:"5 3",dot:{r:3,fill:C.amber},name:"Modeled"})
-              )
-            ),
-            h('div',{style:{display:"flex",gap:16,fontSize:11,color:C.dim,padding:"4px 0 8px"}},
-              h('span',null,h('b',{style:{color:C.green}},"—")," realized"),
-              h('span',null,h('b',{style:{color:C.amber}},"- -")," modeled")
-            )
-          )
-
-        )
-      ),
-
-      h('div',{style:{fontSize:11,color:C.faint,marginTop:22,lineHeight:1.6}},
-        `Flat billing: efficiency tuning does not reduce cost — the only lever is hashrate above nameplate. Downtime credited at annual true-up. Model uses FPPS, ${fmt(BLOCK,3)} BTC block subsidy. Not financial advice.`
-      )
-    )
-  );
-}
-
-window.MiningDashboard = MiningDashboard;
-}
-_init();
-})();
-</script>
 
 <script>
 // ── AI CHAT AGENT ──
