@@ -3360,7 +3360,6 @@ function _mGetForemanFleet(){
           const serial=(m.name||m.hostname||m.apiIpAddress||String(m.id||'')).slice(-6);
           const active=m.active===true||m.status==='ONLINE';
           const model=(m.type?.name||m.platform||'').trim();
-          console.log('[5Stack Foreman] miner:', {serial, model, hrRaw, th: parseFloat(th.toFixed(2)), active});
           return{serial,th:parseFloat(th.toFixed(2)),power,temp,active,model};
         }).filter(u=>u.th>0).sort((a,b)=>a.th-b.th);
         if(!units.length) continue;
@@ -3641,7 +3640,6 @@ function _mRenderAlerts(fleet) {
   if (!fleet || !fleet.units || !fleet.units.length) { el.innerHTML = ''; return; }
   const alertUnits = fleet.units.filter(u => {
     const np = getMinerNameplateTH({type:{name:u.model}, platform:u.model});
-    console.log('[5Stack Alert] unit:', u.serial, 'model:', u.model, 'nameplate:', np, 'TH current:', u.th, 'pct:', np ? Math.round(u.th/np*100)+'%' : 'no match');
     return np > 0 && u.th > 0 && (u.th / np * 100) < HASH_ALERT_THRESHOLD;
   });
   if (!alertUnits.length) { el.innerHTML = ''; return; }
@@ -9542,6 +9540,7 @@ const MINER_NAMEPLATE_TH = [
   {match:/S21\s*Pro\s*Hyd/i,    th:234},
   {match:/S21\s*Hyd/i,          th:335},
   {match:/S21\s*XP/i,           th:270},
+  {match:/S21\s*188/i,          th:188},
   {match:/S21\b/i,              th:200},
   // Bitmain Antminer S19 series
   {match:/S19\s*XP\s*Hyd/i,    th:255},
@@ -9588,6 +9587,9 @@ function getMinerNameplateTH(m) {
   for (const entry of MINER_NAMEPLATE_TH) {
     if (entry.match.test(typeName)) return entry.th;
   }
+  // Fallback: parse TH value from model name (e.g. "Antminer S21 188 TH")
+  const thMatch = typeName.match(/(\d+(?:\.\d+)?)\s*TH/i);
+  if (thMatch) return parseFloat(thMatch[1]);
   return 0;
 }
 
