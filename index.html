@@ -3360,6 +3360,7 @@ function _mGetForemanFleet(){
           const serial=(m.name||m.hostname||m.apiIpAddress||String(m.id||'')).slice(-6);
           const active=m.active===true||m.status==='ONLINE';
           const model=(m.type?.name||m.platform||'').trim();
+          console.log('[5Stack Foreman] miner:', {serial, model, hrRaw, th: parseFloat(th.toFixed(2)), active});
           return{serial,th:parseFloat(th.toFixed(2)),power,temp,active,model};
         }).filter(u=>u.th>0).sort((a,b)=>a.th-b.th);
         if(!units.length) continue;
@@ -3640,6 +3641,7 @@ function _mRenderAlerts(fleet) {
   if (!fleet || !fleet.units || !fleet.units.length) { el.innerHTML = ''; return; }
   const alertUnits = fleet.units.filter(u => {
     const np = getMinerNameplateTH({type:{name:u.model}, platform:u.model});
+    console.log('[5Stack Alert] unit:', u.serial, 'model:', u.model, 'nameplate:', np, 'TH current:', u.th, 'pct:', np ? Math.round(u.th/np*100)+'%' : 'no match');
     return np > 0 && u.th > 0 && (u.th / np * 100) < HASH_ALERT_THRESHOLD;
   });
   if (!alertUnits.length) { el.innerHTML = ''; return; }
