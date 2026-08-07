@@ -4462,6 +4462,8 @@ function nwNet()              { return nwTotalAssets()-nwTotalLiabilities(); }
 
 function renderNetWorth() {
   if(!appData.netWorth) appData.netWorth={assets:{},liabilities:{},history:[]};
+  if(!appData.netWorth.customAssets) appData.netWorth.customAssets=[];
+  if(!appData.netWorth.customLiabilities) appData.netWorth.customLiabilities=[];
   // hardset Bitcoin = 2.7 BTC × live price; Unchained Roth IRA = 0.74 BTC × live price; Bittensor = 97 TAO × live price; Silver = 34 oz × live spot
   try{const p=typeof _getLiveBtcPrice==='function'?_getLiveBtcPrice():null;if(p){appData.netWorth.assets.bitcoin=r2(2.7*p);appData.netWorth.assets.bitcoinIRAUnchained=r2(0.74*p);}}catch(e){}
   try{const p=typeof _getLiveTaoPrice==='function'?_getLiveTaoPrice():null;if(p)appData.netWorth.assets.cryptoOther=r2(97*p);}catch(e){}
@@ -4488,13 +4490,15 @@ function renderNetWorth() {
 
 function buildNwTable(cats, section, total, accentColor) {
   const data=appData.netWorth[section]||{};
+  const customField=section==='assets'?'customAssets':'customLiabilities';
+  const customItems=appData.netWorth[customField]||[];
   let lastGroup='';
-  let html=`<table><thead><tr><th>Category</th><th style="min-width:155px">Current Value</th><th>% of Total</th></tr></thead><tbody>`;
+  let html=`<table><thead><tr><th>Category</th><th style="min-width:155px">Current Value</th><th>% of Total</th><th style="width:28px;"></th></tr></thead><tbody>`;
   cats.forEach(cat=>{
     const val=r2(data[cat.key]||0);
     const pct=total>0?((val/total)*100):0;
     if(cat.group!==lastGroup){
-      html+=`<tr><td colspan="3" style="background:var(--elevated);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--text-3);padding:8px 14px;">${cat.group}</td></tr>`;
+      html+=`<tr><td colspan="4" style="background:var(--elevated);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--text-3);padding:8px 14px;">${cat.group}</td></tr>`;
       lastGroup=cat.group;
     }
     const _isLiveBtc=(section==='assets'&&cat.key==='bitcoin');
@@ -4506,9 +4510,26 @@ function buildNwTable(cats, section, total, accentColor) {
       <td>${cat.label}${_liveTag?`<span style="margin-left:6px;font-size:10px;font-weight:700;color:var(--blue);background:var(--blue-dim);border-radius:4px;padding:1px 5px">${_liveTag}</span>`:''}</td>
       <td>${(_isLiveBtc||_isLiveTao||_isLiveUnchained||_isLiveSilver)?`<input type="number" step="0.01" min="0" value="${val>0?val:''}" placeholder="$0" readonly style="background:var(--elevated);cursor:default;color:var(--text-2)"/>`:`<input type="number" step="0.01" min="0" value="${val>0?val:''}" placeholder="$0" onchange="updateNW('${section}','${cat.key}',this.value)"/>`}</td>
       <td>${val>0?`<div style="display:flex;align-items:center;gap:8px;"><div style="flex:1;background:var(--border);border-radius:999px;height:4px;overflow:hidden;min-width:44px"><div style="width:${Math.min(pct,100).toFixed(1)}%;height:100%;background:${accentColor};border-radius:999px"></div></div><span style="font-size:11px;color:var(--text-3);white-space:nowrap">${pct.toFixed(1)}%</span></div>`:'<span class="val-neutral">—</span>'}</td>
+      <td></td>
     </tr>`;
   });
-  html+=`<tr class="total-row"><td>Total</td><td><strong>${fmt$(total)}</strong></td><td></td></tr></tbody></table>`;
+  // ── Custom items ──
+  if(customItems.length){
+    html+=`<tr><td colspan="4" style="background:var(--elevated);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--text-3);padding:8px 14px;">Custom</td></tr>`;
+    customItems.forEach(cat=>{
+      const val=r2(data[cat.key]||0);
+      const pct=total>0?((val/total)*100):0;
+      html+=`<tr>
+        <td><span class="cat-label" onclick="startRenameNwItem(this,'${section}','${esc(cat.key)}')" style="cursor:pointer;border-bottom:1px dotted var(--text-3);" title="Click to rename">${esc(cat.label)}</span></td>
+        <td><input type="number" step="0.01" min="0" value="${val>0?val:''}" placeholder="$0" onchange="updateNW('${section}','${esc(cat.key)}',this.value)"/></td>
+        <td>${val>0?`<div style="display:flex;align-items:center;gap:8px;"><div style="flex:1;background:var(--border);border-radius:999px;height:4px;overflow:hidden;min-width:44px"><div style="width:${Math.min(pct,100).toFixed(1)}%;height:100%;background:${accentColor};border-radius:999px"></div></div><span style="font-size:11px;color:var(--text-3);white-space:nowrap">${pct.toFixed(1)}%</span></div>`:'<span class="val-neutral">—</span>'}</td>
+        <td><button class="cat-delete-btn" onclick="deleteNwItem('${section}','${esc(cat.key)}')" title="Delete">×</button></td>
+      </tr>`;
+    });
+  }
+  html+=`<tr class="total-row"><td>Total</td><td><strong>${fmt$(total)}</strong></td><td></td><td></td></tr>`;
+  html+=`<tr class="cat-add-row"><td colspan="4"><button class="cat-add-btn" onclick="addNwItem('${section}')">+ Add ${section==='assets'?'Asset':'Liability'}</button></td></tr>`;
+  html+='</tbody></table>';
   return html;
 }
 
@@ -4532,6 +4553,45 @@ function takeSnapshot(){
 
 function deleteSnapshot(i){
   if(confirm('Delete this snapshot?')){ appData.netWorth.history.splice(i,1); saveData(); renderNetWorth(); }
+}
+
+// ── NET WORTH CUSTOM ITEM MANAGEMENT ──
+function addNwItem(section) {
+  if(!appData.netWorth.customAssets) appData.netWorth.customAssets=[];
+  if(!appData.netWorth.customLiabilities) appData.netWorth.customLiabilities=[];
+  const field=section==='assets'?'customAssets':'customLiabilities';
+  const key='c'+Date.now();
+  appData.netWorth[field].push({key, label:'New Item'});
+  appData.netWorth[section][key]=0;
+  saveData(); renderNetWorth();
+  setTimeout(()=>{
+    const wrap=document.getElementById(section==='assets'?'nw-assets-wrap':'nw-liabilities-wrap');
+    if(!wrap) return;
+    const labels=wrap.querySelectorAll('.cat-label');
+    if(labels.length) startRenameNwItem(labels[labels.length-1], section, key);
+  }, 80);
+}
+function deleteNwItem(section, key) {
+  if(!confirm('Delete this item? Its value will be removed.')) return;
+  const field=section==='assets'?'customAssets':'customLiabilities';
+  appData.netWorth[field]=(appData.netWorth[field]||[]).filter(c=>c.key!==key);
+  delete appData.netWorth[section][key];
+  saveData(); renderNetWorth();
+}
+function startRenameNwItem(el, section, key) {
+  const cur=el.textContent;
+  const inp=document.createElement('input');
+  inp.type='text'; inp.value=cur;
+  inp.style.cssText='background:var(--bg);border:1.5px solid var(--blue);border-radius:6px;padding:2px 6px;font-size:13px;color:var(--text);font-family:Inter,sans-serif;width:180px;outline:none;';
+  el.replaceWith(inp); inp.focus(); inp.select();
+  const save=()=>{ const v=inp.value.trim(); if(v&&v!==cur) renameNwItem(section,key,v); else renderNetWorth(); };
+  inp.addEventListener('blur', save);
+  inp.addEventListener('keydown', e=>{ if(e.key==='Enter') inp.blur(); if(e.key==='Escape'){inp.value=cur;inp.blur();} });
+}
+function renameNwItem(section, key, newLabel) {
+  const field=section==='assets'?'customAssets':'customLiabilities';
+  const item=(appData.netWorth[field]||[]).find(c=>c.key===key);
+  if(item){ item.label=newLabel; saveData(); renderNetWorth(); }
 }
 
 // ── AUTO DAILY SNAPSHOT AT 4PM EST ──
