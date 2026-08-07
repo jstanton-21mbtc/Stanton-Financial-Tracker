@@ -9506,6 +9506,69 @@ function btFcbClose() {
   document.getElementById('foreman-client-browser').style.display = 'none';
 }
 
+// ── MINER NAMEPLATE HASHRATE LOOKUP ──
+const MINER_NAMEPLATE_TH = [
+  // Bitmain Antminer S21 series
+  {match:/S21\s*Pro\s*Hyd/i,    th:234},
+  {match:/S21\s*Hyd/i,          th:335},
+  {match:/S21\s*XP/i,           th:270},
+  {match:/S21\b/i,              th:200},
+  // Bitmain Antminer S19 series
+  {match:/S19\s*XP\s*Hyd/i,    th:255},
+  {match:/S19\s*XP/i,           th:141},
+  {match:/S19\s*Pro\+\s*Hyd/i, th:198},
+  {match:/S19\s*Pro\+/i,        th:122},
+  {match:/S19j\s*Pro\+/i,       th:120},
+  {match:/S19j\s*Pro/i,         th:104},
+  {match:/S19j\b/i,             th:90},
+  {match:/S19\s*Pro\b/i,        th:110},
+  {match:/S19\b/i,              th:95},
+  // Bitmain Antminer S17 series
+  {match:/S17\+/i,              th:73},
+  {match:/S17\s*Pro/i,          th:53},
+  {match:/S17\b/i,              th:56},
+  // Whatsminer M60/M56 series
+  {match:/M60S\+/i,             th:228},
+  {match:/M60S\b/i,             th:186},
+  {match:/M60\b/i,              th:172},
+  {match:/M56S\+/i,             th:230},
+  {match:/M56S\b/i,             th:212},
+  {match:/M56\b/i,              th:185},
+  // Whatsminer M50 series
+  {match:/M50S\+\+/i,           th:164},
+  {match:/M50S\+/i,             th:154},
+  {match:/M50S\b/i,             th:126},
+  {match:/M50\b/i,              th:114},
+  // Whatsminer M30 series
+  {match:/M30S\+\+/i,           th:112},
+  {match:/M30S\+/i,             th:100},
+  {match:/M30S\b/i,             th:88},
+  {match:/M30\b/i,              th:86},
+  // Avalon
+  {match:/A1566/i,              th:185},
+  {match:/A1466/i,              th:150},
+  {match:/A1346/i,              th:110},
+  {match:/A1246/i,              th:90},
+];
+const HASH_ALERT_THRESHOLD = 90; // % of nameplate — warn below this
+
+function getMinerNameplateTH(m) {
+  const typeName = (m.type?.name || m.platform || m.model || '').trim();
+  if (!typeName) return 0;
+  for (const entry of MINER_NAMEPLATE_TH) {
+    if (entry.match.test(typeName)) return entry.th;
+  }
+  return 0;
+}
+
+function _toTH(hrRaw) {
+  if (hrRaw > 1e9)      return hrRaw / 1e12;  // H/s → TH/s
+  if (hrRaw > 1e6)      return hrRaw / 1e9;   // GH/s → TH/s
+  if (hrRaw > 50)       return hrRaw;          // already TH/s
+  if (hrRaw > 0)        return hrRaw / 1e6;    // MH/s → TH/s
+  return 0;
+}
+
 function btBuildForemanFleetHtml(data, intId) {
   const client    = data.client || {};
   const allMiners = data.miners || [];
@@ -9550,6 +9613,32 @@ function btBuildForemanFleetHtml(data, intId) {
   }, 0) / (miners.length || 1);
   const countLabel = savedIds ? `${miners.length} of ${allMiners.length} miners` : `${allMiners.length} miners`;
 
+  // ── Hashrate alert detection ──
+  const alertMiners = miners.filter(m => {
+    const np = getMinerNameplateTH(m);
+    if (!np) return false;
+    const th = _toTH(parseFloat(m.core?.hashRate ?? m.hashRate ?? 0));
+    return (th / np * 100) < HASH_ALERT_THRESHOLD;
+  });
+  const alertBanner = alertMiners.length ? (() => {
+    const rows = alertMiners.map(m => {
+      const np  = getMinerNameplateTH(m);
+      const th  = _toTH(parseFloat(m.core?.hashRate ?? m.hashRate ?? 0));
+      const pct = Math.round(th / np * 100);
+      const col = pct < 70 ? 'var(--red)' : 'var(--yellow)';
+      const name = m.name || m.ip || ('Miner ' + m.id);
+      return `<div style="display:flex;gap:10px;align-items:center;padding:3px 0;font-size:12px;">
+        <span style="color:${col};font-weight:800;min-width:36px;">${pct}%</span>
+        <span style="font-weight:600;">${btEsc(name)}</span>
+        <span style="color:var(--text-3);">${th.toFixed(1)} TH/s of ${np} TH/s rated</span>
+      </div>`;
+    }).join('');
+    return `<div style="background:var(--red-dim);border:1px solid var(--red);border-radius:var(--radius-sm);padding:14px 16px;margin-bottom:14px;">
+      <div style="font-size:12px;font-weight:700;color:var(--red);margin-bottom:8px;">&#9888; ${alertMiners.length} Miner${alertMiners.length > 1 ? 's' : ''} Below ${HASH_ALERT_THRESHOLD}% Nameplate Hashrate</div>
+      ${rows}
+    </div>`;
+  })() : '';
+
   const statsCards = [
     {val: miners.length, lbl: 'My Miners'},
     {val: online,        lbl: 'Online',   sub: miners.length ? Math.round(online/miners.length*100)+'% uptime' : ''},
@@ -9568,11 +9657,22 @@ function btBuildForemanFleetHtml(data, intId) {
     const pool = m.pools?.[0]?.url ?? m.pools?.[0]?.pool ?? '—';
     const name = m.name || m.ip || ('Miner ' + m.id);
     const type = m.type?.name ?? m.platform ?? '';
-    return `<tr>
+    // % of nameplate
+    const np = getMinerNameplateTH(m);
+    const thNow = _toTH(hr);
+    let pctCell = '<td style="color:var(--text-3);">—</td>';
+    if (np > 0) {
+      const pct = Math.round(thNow / np * 100);
+      const col = pct < 70 ? 'var(--red)' : pct < HASH_ALERT_THRESHOLD ? 'var(--yellow)' : 'var(--green)';
+      pctCell = `<td style="font-weight:700;color:${col};">${pct}%</td>`;
+    }
+    const rowBg = np > 0 && (thNow / np * 100) < HASH_ALERT_THRESHOLD ? 'background:rgba(207,82,82,0.05);' : '';
+    return `<tr style="${rowBg}">
       <td style="font-weight:600;">${btEsc(name)}</td>
       <td style="font-size:11px;color:var(--text-2);">${btEsc(type)}</td>
       <td><span class="biz-miner-status ${sc}"></span>${stat}</td>
       <td>${hrL}</td>
+      ${pctCell}
       <td>${temp !== '—' ? temp+'°C' : '—'}</td>
       <td style="max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${btEsc(pool)}">${btEsc(pool)}</td>
     </tr>`;
@@ -9585,9 +9685,10 @@ function btBuildForemanFleetHtml(data, intId) {
         <button class="btn" style="font-size:12px;padding:5px 12px;" onclick="_btActiveIntId='${intId}';btShowMinerSelector(null,true)">Filter Miners</button>
       </div>
       <div class="biz-fleet-grid">${statsCards}</div>
+      ${alertBanner}
       <div style="margin-top:16px;overflow-x:auto;">
         <table class="biz-miner-table">
-          <thead><tr><th>Miner</th><th>Type</th><th>Status</th><th>Hashrate</th><th>Temp</th><th>Pool</th></tr></thead>
+          <thead><tr><th>Miner</th><th>Type</th><th>Status</th><th>Hashrate</th><th>% Rated</th><th>Temp</th><th>Pool</th></tr></thead>
           <tbody>${rows}</tbody>
         </table>
       </div>
