@@ -3330,7 +3330,7 @@ const _MC={bg:"#0d1117",panel:"#151b24",panel2:"#1b232e",border:"#232d3a",
 let _MS={btc:63819,diff:126.23,host:171.34,poolFee:1.0,luxRecover:false};
 let _MCharts={};
 let _mBuilt=false;
-let _mLiveFleet=null; // {units:[{serial,th,power,temp,active}], totalTH, totalW, n, synced}
+let _mLiveFleet=null; // {units:[{serial,th,power,temp,active,model}], totalTH, totalW, n, synced}
 
 // Pull fleet data from Foreman integration cache in Business Tracker
 function _mGetForemanFleet(){
@@ -3359,7 +3359,8 @@ function _mGetForemanFleet(){
           const temp=parseFloat(m.core?.temps?.[0]??m.temperature??0)||0;
           const serial=(m.name||m.hostname||m.apiIpAddress||String(m.id||'')).slice(-6);
           const active=m.active===true||m.status==='ONLINE';
-          return{serial,th:parseFloat(th.toFixed(2)),power,temp,active};
+          const model=(m.type?.name||m.platform||'').trim();
+          return{serial,th:parseFloat(th.toFixed(2)),power,temp,active,model};
         }).filter(u=>u.th>0).sort((a,b)=>a.th-b.th);
         if(!units.length) continue;
         return{
@@ -3425,6 +3426,7 @@ function renderMiningDashboard(){
           Telemetry 2026-08-04 16:16 &nbsp;·&nbsp; ${_MK.N} units &nbsp;·&nbsp; ${_mFmt(_MK.TH,0)} TH &nbsp;·&nbsp; ${(_MK.W/1000).toFixed(1)} kW &nbsp;·&nbsp; ${(_MK.W/_MK.TH).toFixed(2)} J/TH &nbsp;·&nbsp; payouts reconciled through Aug 02
         </div>
         <div id="m-stats" style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:14px;"></div>
+        <div id="m-alerts" style="margin-bottom:0;"></div>
         <div style="background:${_MC.panel2};border:1px solid ${_MC.border};border-left:3px solid ${_MC.green};border-radius:8px;padding:12px 16px;margin-bottom:22px;font-size:13px;color:${_MC.dim};">
           <span style="color:${_MC.green};font-weight:700;">Realized</span> &nbsp;·&nbsp; 3-day avg pool payout
           <b style="color:${_MC.ink};">${_MK.REALIZED.toFixed(6)} BTC/day</b>
@@ -3544,6 +3546,7 @@ async function _mFetchLive(){
     _mLiveFleet = fleet;
     const fb = document.getElementById('m-live-fleet');
     if (fb) { fb.style.display='flex'; fb.innerHTML=`<span style="font-size:10px;font-weight:700;letter-spacing:.8px;color:#0d1117;background:#39c5cf;border-radius:4px;padding:2px 7px;">LIVE FLEET</span>&nbsp;<span style="font-size:11.5px;color:${_MC.dim};">${fleet.n} miners · ${fleet.online} online · synced ${fleet.synced}</span>`; }
+    _mRenderAlerts(fleet);
   }
 
   _mUpdate();
@@ -3629,6 +3632,31 @@ function _mUpdate(){
           y:{min:0.0028,max:0.0032,ticks:{color:_MC.dim,callback:v=>v.toFixed(4)},grid:{color:_MC.grid}}},
         plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>`${c.dataset.label}: ${c.parsed.y.toFixed(6)}`}}}}});
   }
+}
+
+function _mRenderAlerts(fleet) {
+  const el = document.getElementById('m-alerts');
+  if (!el) return;
+  if (!fleet || !fleet.units || !fleet.units.length) { el.innerHTML = ''; return; }
+  const alertUnits = fleet.units.filter(u => {
+    const np = getMinerNameplateTH({type:{name:u.model}, platform:u.model});
+    return np > 0 && u.th > 0 && (u.th / np * 100) < HASH_ALERT_THRESHOLD;
+  });
+  if (!alertUnits.length) { el.innerHTML = ''; return; }
+  const rows = alertUnits.map(u => {
+    const np  = getMinerNameplateTH({type:{name:u.model}, platform:u.model});
+    const pct = Math.round(u.th / np * 100);
+    const col = pct < 70 ? _MC.red : _MC.amber;
+    return `<div style="display:flex;gap:10px;align-items:center;padding:3px 0;font-size:12px;">
+      <span style="color:${col};font-weight:800;min-width:38px;">${pct}%</span>
+      <span style="font-weight:600;color:${_MC.ink};">${u.serial}</span>
+      <span style="color:${_MC.dim};">${u.th.toFixed(1)} TH/s &nbsp;of&nbsp; ${np} TH/s rated${u.model?' · '+u.model:''}</span>
+    </div>`;
+  }).join('');
+  el.innerHTML = `<div style="background:rgba(240,71,71,0.08);border:1px solid ${_MC.red};border-radius:8px;padding:14px 16px;margin-bottom:18px;">
+    <div style="font-size:12px;font-weight:700;color:${_MC.red};margin-bottom:8px;">&#9888; ${alertUnits.length} Miner${alertUnits.length > 1 ? 's' : ''} Below ${HASH_ALERT_THRESHOLD}% Nameplate Hashrate</div>
+    ${rows}
+  </div>`;
 }
 
 function clearExpensesData() {
