@@ -3322,12 +3322,12 @@ const _MK={
   N:_MUNITS.length,
   REALIZED:_MPAYOUTS.reduce((s,p)=>s+p.btc,0)/3,
   AVG_USD:_MPAYOUTS.reduce((s,p)=>s+p.usd,0)/3,
-  DAYS_MO:30.42,BLOCK:3.125,
+  DAYS_MO:new Date(new Date().getFullYear(),new Date().getMonth()+1,0).getDate(),BLOCK:3.125,
 };
 const _MC={bg:"#0d1117",panel:"#151b24",panel2:"#1b232e",border:"#232d3a",
   ink:"#e6edf3",dim:"#7d8896",faint:"#4a5563",
   amber:"#f0a020",green:"#3fb950",red:"#f04747",cyan:"#39c5cf",grid:"#1e2732"};
-let _MS={btc:63819,diff:126.23,host:171.34,poolFee:1.0,luxRecover:false};
+let _MS={btc:63819,diff:126.23,host:165.95,poolFee:1.0,luxRecover:false};
 let _MCharts={};
 let _mBuilt=false;
 let _mLiveFleet=null; // {units:[{serial,th,power,temp,active,model}], totalTH, totalW, n, synced}
