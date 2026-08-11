@@ -3390,6 +3390,17 @@ function _mCalc(){
     netMo:netDay*_MK.DAYS_MO,beBtc:billDay/(th*btcPerThDay),netEHs:netTh/1e6};
 }
 function _mFmt(n,d=0){return n.toLocaleString('en-US',{minimumFractionDigits:d,maximumFractionDigits:d});}
+function _mGetCapEx(){
+  try{
+    if(!appData||!appData.businesses) return 0;
+    for(const biz of appData.businesses){
+      if(biz.name&&biz.name.toLowerCase().includes('5stack')){
+        return (biz.ledger||[]).filter(e=>e.type==='expense').reduce((s,e)=>s+(e.amount||0),0);
+      }
+    }
+  }catch(e){}
+  return 0;
+}
 function _mStat(label,val,sub,tone){
   const col=tone==='pos'?_MC.green:tone==='neg'?_MC.red:_MC.ink;
   return `<div style="background:${_MC.panel};border:1px solid ${_MC.border};border-radius:10px;padding:16px 18px;flex:1;min-width:150px;">
@@ -3427,10 +3438,19 @@ function renderMiningDashboard(){
         </div>
         <div id="m-stats" style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:14px;"></div>
         <div id="m-alerts" style="margin-bottom:0;"></div>
-        <div style="background:${_MC.panel2};border:1px solid ${_MC.border};border-left:3px solid ${_MC.green};border-radius:8px;padding:12px 16px;margin-bottom:22px;font-size:13px;color:${_MC.dim};">
-          <span style="color:${_MC.green};font-weight:700;">Realized</span> &nbsp;·&nbsp; 3-day avg pool payout
-          <b style="color:${_MC.ink};">${_MK.REALIZED.toFixed(6)} BTC/day</b>
-          ($${_MK.AVG_USD.toFixed(2)}) — model tracks actuals within 0.1%. Swept 0.02483896 BTC to cold storage Jul 31.
+        <div style="display:flex;gap:0;background:${_MC.panel2};border:1px solid ${_MC.border};border-radius:8px;margin-bottom:22px;overflow:hidden;">
+          <div style="flex:1;padding:12px 16px;border-right:1px solid ${_MC.border};">
+            <div style="font-size:9.5px;letter-spacing:1.2px;color:${_MC.faint};text-transform:uppercase;font-weight:700;margin-bottom:5px;">Fleet Hash Rate</div>
+            <div id="m-banner-hr" style="font-size:17px;font-weight:800;color:${_MC.ink};">—</div>
+          </div>
+          <div style="flex:1;padding:12px 16px;border-right:1px solid ${_MC.border};">
+            <div style="font-size:9.5px;letter-spacing:1.2px;color:${_MC.faint};text-transform:uppercase;font-weight:700;margin-bottom:5px;">Implied Rate</div>
+            <div id="m-banner-imp" style="font-size:17px;font-weight:800;color:${_MC.ink};">—</div>
+          </div>
+          <div style="flex:1;padding:12px 16px;">
+            <div style="font-size:9.5px;letter-spacing:1.2px;color:${_MC.faint};text-transform:uppercase;font-weight:700;margin-bottom:5px;">Rev / TH / day</div>
+            <div id="m-banner-rev" style="font-size:17px;font-weight:800;color:${_MC.green};">—</div>
+          </div>
         </div>
         <div style="display:grid;grid-template-columns:300px 1fr;gap:18px;align-items:start;">
           <div style="background:${_MC.panel};border:1px solid ${_MC.border};border-radius:12px;padding:18px;position:sticky;top:16px;">
@@ -3471,12 +3491,12 @@ function renderMiningDashboard(){
               <div style="position:relative;height:180px;"><canvas id="m-ch-units"></canvas></div>
             </div>
             <div style="background:${_MC.panel};border:1px solid ${_MC.border};border-radius:12px;padding:16px 18px 12px;">
-              <div style="font-size:13px;font-weight:700;margin-bottom:2px;">Realized vs modeled BTC / day</div>
-              <div style="font-size:11.5px;color:${_MC.dim};margin-bottom:12px;">Pool ledger vs difficulty model</div>
-              <div style="position:relative;height:160px;"><canvas id="m-ch-rec"></canvas></div>
+              <div style="font-size:13px;font-weight:700;margin-bottom:2px;">CapEx ROI vs Mining Returns</div>
+              <div id="m-roi-sub" style="font-size:11.5px;color:${_MC.dim};margin-bottom:12px;">Cumulative net revenue vs 5Stack LLC capital investment</div>
+              <div style="position:relative;height:160px;"><canvas id="m-ch-roi"></canvas></div>
               <div style="display:flex;gap:16px;font-size:11px;color:${_MC.dim};padding:6px 0 2px;">
-                <span><b style="color:${_MC.green};">—</b> realized</span>
-                <span><b style="color:${_MC.amber};">– –</b> modeled</span>
+                <span><b style="color:${_MC.green};">—</b> cumulative net</span>
+                <span><b style="color:${_MC.amber};">– –</b> CapEx invested</span>
               </div>
             </div>
           </div>
@@ -3582,6 +3602,13 @@ function _mUpdate(){
     ['Fleet hashrate',`${_mFmt(m.th,0)} TH`],
     ['Rev / TH / day',`$${(m.btcPerThDay*btc).toFixed(4)}`],
   ].map(([l,v])=>`<div style="display:flex;justify-content:space-between;"><span>${l}</span><b style="color:${_MC.dim};">${v}</b></div>`).join('');
+  // Banner stats
+  const banHr=document.getElementById('m-banner-hr');
+  const banImp=document.getElementById('m-banner-imp');
+  const banRev=document.getElementById('m-banner-rev');
+  if(banHr)  banHr.textContent =(_mLiveFleet?`${_mFmt(_mLiveFleet.totalTH,1)} TH/s`:`${_mFmt(m.th,1)} TH/s`);
+  if(banImp) banImp.textContent=`$${(host/730/3.29).toFixed(4)}/kWh`;
+  if(banRev) banRev.textContent=`$${(m.btcPerThDay*btc).toFixed(4)}`;
   // Chart defaults
   Chart.defaults.color=_MC.dim;
   // Price curve chart
@@ -3615,22 +3642,35 @@ function _mUpdate(){
   // Update per-unit chart subtitle
   const uSub=document.getElementById('m-units-sub');
   if(uSub) uSub.textContent=liveU?`Live · ${liveU.length} miners · ${liveU.filter(u=>u.active).length} online`:`Snapshot · ${_MUNITS.length} keepers`;
-  // Realized vs modeled line chart
-  const rec=_MPAYOUTS.map(p=>{
-    const nTh=(diff*1e12*Math.pow(2,32))/600/1e12;
-    return{date:p.date,actual:p.btc,modeled:_MK.TH*((144*_MK.BLOCK)/nTh)*(1-poolFee/100)};
-  });
-  const rc=document.getElementById('m-ch-rec');
-  if(rc){if(_MCharts.rec)_MCharts.rec.destroy();
-    _MCharts.rec=new Chart(rc,{type:'line',
-      data:{labels:rec.map(r=>r.date),datasets:[
-        {label:'Realized',data:rec.map(r=>r.actual),borderColor:_MC.green,borderWidth:2.5,pointRadius:4,tension:0},
-        {label:'Modeled',data:rec.map(r=>r.modeled),borderColor:_MC.amber,borderWidth:2,borderDash:[5,3],pointRadius:3,tension:0},
+  // CapEx ROI chart
+  const capEx=_mGetCapEx();
+  const roiMonths=60;
+  const roiLabels=[],roiCum=[],roiCapLine=[];
+  let roiBE=null;
+  for(let i=0;i<=roiMonths;i++){
+    roiLabels.push(i===0?'Now':`Mo ${i}`);
+    const cum=m.netMo*i;
+    roiCum.push(Math.round(cum));
+    roiCapLine.push(capEx>0?Math.round(capEx):null);
+    if(roiBE===null&&capEx>0&&cum>=capEx) roiBE=i;
+  }
+  const roisub=document.getElementById('m-roi-sub');
+  if(roisub) roisub.textContent=capEx>0
+    ?(roiBE?`CapEx: $${_mFmt(capEx,0)} · Breakeven Mo ${roiBE} (~${(roiBE/12).toFixed(1)} yr at current rate)`:`CapEx: $${_mFmt(capEx,0)} · Breakeven >60 mo at current rate`)
+    :'No CapEx in 5Stack LLC ledger — add expense entries to compute ROI';
+  const roic=document.getElementById('m-ch-roi');
+  if(roic){if(_MCharts.roi)_MCharts.roi.destroy();
+    _MCharts.roi=new Chart(roic,{type:'line',
+      data:{labels:roiLabels,datasets:[
+        {label:'Cumulative Net',data:roiCum,borderColor:_MC.green,borderWidth:2.5,pointRadius:0,tension:0.35,fill:true,backgroundColor:'rgba(63,185,80,0.08)'},
+        {label:'CapEx',data:roiCapLine,borderColor:_MC.amber,borderWidth:2,borderDash:[5,3],pointRadius:0,tension:0},
       ]},
       options:{responsive:true,maintainAspectRatio:false,
-        scales:{x:{ticks:{color:_MC.dim},grid:{color:_MC.grid}},
-          y:{min:0.0028,max:0.0032,ticks:{color:_MC.dim,callback:v=>v.toFixed(4)},grid:{color:_MC.grid}}},
-        plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>`${c.dataset.label}: ${c.parsed.y.toFixed(6)}`}}}}});
+        scales:{
+          x:{ticks:{color:_MC.dim,maxTicksLimit:10,font:{size:9}},grid:{color:_MC.grid}},
+          y:{ticks:{color:_MC.dim,callback:v=>v>=1000?`$${Math.round(v/1000)}k`:`$${v}`},grid:{color:_MC.grid}},
+        },
+        plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>`${c.dataset.label}: $${_mFmt(c.parsed.y,0)}`}}}}});
   }
 }
 
