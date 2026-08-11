@@ -3392,14 +3392,17 @@ function _mCalc(){
 function _mFmt(n,d=0){return n.toLocaleString('en-US',{minimumFractionDigits:d,maximumFractionDigits:d});}
 function _mGetCapEx(){
   try{
-    if(!appData||!appData.businesses) return 0;
+    if(!appData||!appData.businesses) return {total:0,returned:0,remaining:0};
     for(const biz of appData.businesses){
       if(biz.name&&biz.name.toLowerCase().includes('5stack')){
-        return (biz.ledger||[]).filter(e=>e.type==='expense').reduce((s,e)=>s+(e.amount||0),0);
+        const ledger=biz.ledger||[];
+        const total=ledger.filter(e=>e.type==='expense').reduce((s,e)=>s+(e.amount||0),0);
+        const returned=ledger.filter(e=>e.type==='income').reduce((s,e)=>s+(e.amount||0),0);
+        return {total, returned, remaining:Math.max(0,total-returned)};
       }
     }
   }catch(e){}
-  return 0;
+  return {total:0,returned:0,remaining:0};
 }
 function _mStat(label,val,sub,tone){
   const col=tone==='pos'?_MC.green:tone==='neg'?_MC.red:_MC.ink;
@@ -3643,7 +3646,8 @@ function _mUpdate(){
   const uSub=document.getElementById('m-units-sub');
   if(uSub) uSub.textContent=liveU?`Live · ${liveU.length} miners · ${liveU.filter(u=>u.active).length} online`:`Snapshot · ${_MUNITS.length} keepers`;
   // CapEx ROI chart
-  const capEx=_mGetCapEx();
+  const cx=_mGetCapEx();
+  const roiRemaining=cx.remaining;
   const roiMonths=60;
   const roiLabels=[],roiCum=[],roiCapLine=[];
   let roiBE=null;
@@ -3651,19 +3655,26 @@ function _mUpdate(){
     roiLabels.push(i===0?'Now':`Mo ${i}`);
     const cum=m.netMo*i;
     roiCum.push(Math.round(cum));
-    roiCapLine.push(capEx>0?Math.round(capEx):null);
-    if(roiBE===null&&capEx>0&&cum>=capEx) roiBE=i;
+    roiCapLine.push(roiRemaining>0?Math.round(roiRemaining):null);
+    if(roiBE===null&&roiRemaining>0&&cum>=roiRemaining) roiBE=i;
   }
   const roisub=document.getElementById('m-roi-sub');
-  if(roisub) roisub.textContent=capEx>0
-    ?(roiBE?`CapEx: $${_mFmt(capEx,0)} · Breakeven Mo ${roiBE} (~${(roiBE/12).toFixed(1)} yr at current rate)`:`CapEx: $${_mFmt(capEx,0)} · Breakeven >60 mo at current rate`)
-    :'No CapEx in 5Stack LLC ledger — add expense entries to compute ROI';
+  if(roisub){
+    if(cx.total>0){
+      let sub=`CapEx: $${_mFmt(cx.total,0)}`;
+      if(cx.returned>0) sub+=` · Recovered: $${_mFmt(cx.returned,0)} · Remaining: $${_mFmt(cx.remaining,0)}`;
+      sub+=roiBE?` · Breakeven Mo ${roiBE} (~${(roiBE/12).toFixed(1)} yr)`:'  · Breakeven >60 mo at current rate';
+      roisub.textContent=sub;
+    } else {
+      roisub.textContent='No CapEx in 5Stack LLC ledger — add expense entries to compute ROI';
+    }
+  }
   const roic=document.getElementById('m-ch-roi');
   if(roic){if(_MCharts.roi)_MCharts.roi.destroy();
     _MCharts.roi=new Chart(roic,{type:'line',
       data:{labels:roiLabels,datasets:[
         {label:'Cumulative Net',data:roiCum,borderColor:_MC.green,borderWidth:2.5,pointRadius:0,tension:0.35,fill:true,backgroundColor:'rgba(63,185,80,0.08)'},
-        {label:'CapEx',data:roiCapLine,borderColor:_MC.amber,borderWidth:2,borderDash:[5,3],pointRadius:0,tension:0},
+        {label:'Remaining CapEx',data:roiCapLine,borderColor:_MC.amber,borderWidth:2,borderDash:[5,3],pointRadius:0,tension:0},
       ]},
       options:{responsive:true,maintainAspectRatio:false,
         scales:{
