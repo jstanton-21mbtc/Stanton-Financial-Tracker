@@ -3429,30 +3429,33 @@ function _mSlider(key,label,min,max,step,live=false){
 
 async function _mSilentSyncForeman(){
   try {
-    if(!appData||!appData.businesses) return;
+    if(!appData||!appData.businesses){console.warn('[Foreman] no appData');return;}
     for(const biz of appData.businesses){
       if(!biz.integrations) continue;
       for(const int of biz.integrations){
         if(!btIsForeman(int)) continue;
         const apiKey=localStorage.getItem(btIntApiKeyLS(int.id))||'';
         const clientId=localStorage.getItem(btIntClientLS(int.id))||'';
-        if(!apiKey||!clientId) continue;
+        console.log('[Foreman] syncing intId='+int.id+' clientId='+clientId+' hasKey='+!!apiKey);
+        if(!apiKey||!clientId){console.warn('[Foreman] missing key or clientId');continue;}
         const [clientRes,minersRes]=await Promise.all([
           fetch('/.netlify/functions/foreman-proxy',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({path:'/api/v2/clients/'+clientId,apiKey})}),
           fetch('/.netlify/functions/foreman-proxy',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({path:'/api/v2/clients/'+clientId+'/miners?limit=500&offset=0',apiKey})})
         ]);
+        console.log('[Foreman] clientRes='+clientRes.status+' minersRes='+minersRes.status);
         const clientData=clientRes.ok?await clientRes.json():null;
         const minersData=minersRes.ok?await minersRes.json():{};
         const allMiners=Array.isArray(minersData)?minersData:(minersData.results||minersData.miners||[]);
-        if(!allMiners.length&&!clientData) continue;
+        console.log('[Foreman] allMiners='+allMiners.length+' clientHashRate='+(clientData&&(Array.isArray(clientData)?clientData[0]?.hashRate:clientData?.hashRate)));
+        if(!allMiners.length&&!clientData){console.warn('[Foreman] no data returned');continue;}
         const fleetData={client:clientData,miners:allMiners,total:minersData.total||allMiners.length};
         localStorage.setItem(btIntCacheLS(int.id),JSON.stringify(fleetData));
         localStorage.setItem(btIntSyncedLS(int.id),new Date().toLocaleString());
-        // Refresh mining display if tab is visible
         if(document.getElementById('tab-mining')?.classList.contains('active')) _mFetchLive();
+        console.log('[Foreman] sync complete');
       }
     }
-  } catch(e){ console.warn('Background Foreman sync failed:',e); }
+  } catch(e){ console.warn('[Foreman] sync error:',e); }
 }
 
 function renderMiningDashboard(){
