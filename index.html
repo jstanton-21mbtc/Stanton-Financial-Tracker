@@ -3327,7 +3327,7 @@ const _MK={
 const _MC={bg:"#0d1117",panel:"#151b24",panel2:"#1b232e",border:"#232d3a",
   ink:"#e6edf3",dim:"#7d8896",faint:"#4a5563",
   amber:"#f0a020",green:"#3fb950",red:"#f04747",cyan:"#39c5cf",grid:"#1e2732"};
-let _MS={btc:63819,diff:126.23,host:165.95,poolFee:1.0,luxRecover:false};
+let _MS={btc:63819,diff:126.23,host:5654.22,poolFee:1.0,luxRecover:false};
 let _MCharts={};
 let _mBuilt=false;
 let _mLiveFleet=null; // {units:[{serial,th,power,temp,active,model}], totalTH, totalW, n, synced}
@@ -3385,7 +3385,7 @@ function _mCalc(){
   const fleetN=_mLiveFleet?_mLiveFleet.n:_MK.N;
   const th=fleetTH+((!_mLiveFleet&&luxRecover)?28*(189-182.3):0);
   const revDay=th*btcPerThDay*btc, btcDay=th*btcPerThDay;
-  const billDay=(fleetN*host)/_MK.DAYS_MO, netDay=revDay-billDay;
+  const billDay=host/_MK.DAYS_MO, netDay=revDay-billDay;
   return{netTh,btcPerThDay,th,revDay,btcDay,billDay,netDay,
     netMo:netDay*_MK.DAYS_MO,beBtc:billDay/(th*btcPerThDay),netEHs:netTh/1e6};
 }
@@ -3460,7 +3460,7 @@ function renderMiningDashboard(){
             <div style="font-size:12px;letter-spacing:1.5px;text-transform:uppercase;color:${_MC.dim};font-weight:700;margin-bottom:16px;">Assumptions</div>
             ${_mSlider('btc','BTC price',40000,100000,500,true)}
             ${_mSlider('diff','Network difficulty (T)',90,200,0.5,true)}
-            ${_mSlider('host','Hosting / unit / mo',140,210,0.5,false)}
+            ${_mSlider('host','Hosting / mo (total)',3000,9000,50,false)}
             ${_mSlider('poolFee','Pool fee',0,3,0.25,false)}
             <label id="m-lux-lbl" style="display:flex;align-items:center;gap:10px;margin-top:8px;padding:10px 12px;border-radius:8px;cursor:pointer;border:1px solid ${_MC.border};transition:0.15s;">
               <input type="checkbox" id="m-lux" style="accent-color:${_MC.amber};width:16px;height:16px;">
@@ -3597,11 +3597,11 @@ function _mUpdate(){
     _mStat('Net / day',`$${_mFmt(m.netDay,2)}`,`$${_mFmt(m.netMo,0)} / month`,m.netDay>=0?'pos':'neg')+
     _mStat('Breakeven BTC',`$${_mFmt(m.beBtc,0)}`,`${btc>=m.beBtc?'+':''}$${_mFmt(btc-m.beBtc,0)} vs live`,btc>=m.beBtc?'pos':'neg')+
     _mStat('BTC / day',_mFmt(m.btcDay,5),`${_mFmt(m.btcDay*_MK.DAYS_MO,4)} / month`,'')+
-    _mStat('Gross rev / day',`$${_mFmt(m.revDay,2)}`,`hosting $${_mFmt(host,2)}/miner/mo`,'');
+    _mStat('Gross rev / day',`$${_mFmt(m.revDay,2)}`,`hosting $${_mFmt(host,0)}/mo total`,'');
   // Meta
   const me=document.getElementById('m-meta');
   if(me)me.innerHTML=[
-    ['Implied rate',`${(host/730/3.29).toFixed(4)} $/kWh`],
+    ['Implied rate',`${(host/((_mLiveFleet?_mLiveFleet.totalW:_MK.W)/1000*730)).toFixed(4)} $/kWh`],
     ['Fleet hashrate',`${_mFmt(m.th,0)} TH`],
     ['Rev / TH / day',`$${(m.btcPerThDay*btc).toFixed(4)}`],
   ].map(([l,v])=>`<div style="display:flex;justify-content:space-between;"><span>${l}</span><b style="color:${_MC.dim};">${v}</b></div>`).join('');
@@ -3610,7 +3610,7 @@ function _mUpdate(){
   const banImp=document.getElementById('m-banner-imp');
   const banRev=document.getElementById('m-banner-rev');
   if(banHr)  banHr.textContent =(_mLiveFleet?`${_mFmt(_mLiveFleet.totalTH,1)} TH/s`:`${_mFmt(m.th,1)} TH/s`);
-  if(banImp) banImp.textContent=`$${(host/730/3.29).toFixed(4)}/kWh`;
+  if(banImp) banImp.textContent=`$${(host/((_mLiveFleet?_mLiveFleet.totalW:_MK.W)/1000*730)).toFixed(4)}/kWh`;
   if(banRev) banRev.textContent=`$${(m.btcPerThDay*btc).toFixed(4)}`;
   // Chart defaults
   Chart.defaults.color=_MC.dim;
