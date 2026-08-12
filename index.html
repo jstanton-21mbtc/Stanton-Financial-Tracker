@@ -3364,8 +3364,9 @@ function _mGetForemanFleet(){
         }).filter(u=>u.th>0).sort((a,b)=>a.th-b.th);
         if(!units.length) continue;
         // Prefer client-level hashRate from Foreman (matches Foreman UI) over summing individuals
-        const clientHR=data.client?.hashRate;
-        const totalTH=clientHR&&clientHR>0 ? clientHR/1e12 : units.reduce((s,u)=>s+u.th,0);
+        const clientObj=Array.isArray(data.client)?data.client[0]:data.client;
+        const clientHR=clientObj?.hashRate||0;
+        const totalTH=clientHR>0 ? clientHR/1e12 : units.reduce((s,u)=>s+u.th,0);
         return{
           units,
           totalTH:parseFloat(totalTH.toFixed(1)),
