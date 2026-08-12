@@ -3362,14 +3362,14 @@ function _mGetForemanFleet(){
           const model=(m.type?.name||m.platform||'').trim();
           return{serial,th:parseFloat(th.toFixed(2)),power,temp,active,model};
         }).filter(u=>u.th>0).sort((a,b)=>a.th-b.th);
-        if(!units.length) continue;
-        // Prefer client-level hashRate from Foreman (matches Foreman UI) over summing individuals
+        // Prefer client-level hashRate from Foreman (matches Foreman UI)
         const clientObj=Array.isArray(data.client)?data.client[0]:data.client;
         const clientHR=clientObj?.hashRate||0;
+        if(!units.length&&!clientHR) continue; // skip only if both are missing
         const totalTH=clientHR>0 ? clientHR/1e12 : units.reduce((s,u)=>s+u.th,0);
         return{
           units,
-          totalTH:parseFloat(totalTH.toFixed(1)),
+          totalTH:parseFloat(totalTH.toFixed(2)),
           totalW:units.reduce((s,u)=>s+u.power,0),
           n:units.length,
           online:units.filter(u=>u.active).length,
@@ -3429,33 +3429,33 @@ function _mSlider(key,label,min,max,step,live=false){
 
 async function _mSilentSyncForeman(){
   try {
-    if(!appData||!appData.businesses){console.warn('[Foreman] no appData');return;}
+    if(!appData||!appData.businesses) return;
     for(const biz of appData.businesses){
       if(!biz.integrations) continue;
       for(const int of biz.integrations){
         if(!btIsForeman(int)) continue;
         const apiKey=localStorage.getItem(btIntApiKeyLS(int.id))||'';
         const clientId=localStorage.getItem(btIntClientLS(int.id))||'';
-        console.log('[Foreman] syncing intId='+int.id+' clientId='+clientId+' hasKey='+!!apiKey);
-        if(!apiKey||!clientId){console.warn('[Foreman] missing key or clientId');continue;}
+        if(!apiKey||!clientId) continue;
         const [clientRes,minersRes]=await Promise.all([
           fetch('/.netlify/functions/foreman-proxy',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({path:'/api/v2/clients/'+clientId,apiKey})}),
           fetch('/.netlify/functions/foreman-proxy',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({path:'/api/v2/clients/'+clientId+'/miners?limit=500&offset=0',apiKey})})
         ]);
-        console.log('[Foreman] clientRes='+clientRes.status+' minersRes='+minersRes.status);
         const clientData=clientRes.ok?await clientRes.json():null;
         const minersData=minersRes.ok?await minersRes.json():{};
-        const allMiners=Array.isArray(minersData)?minersData:(minersData.results||minersData.miners||[]);
-        console.log('[Foreman] allMiners='+allMiners.length+' clientHashRate='+(clientData&&(Array.isArray(clientData)?clientData[0]?.hashRate:clientData?.hashRate)));
-        if(!allMiners.length&&!clientData){console.warn('[Foreman] no data returned');continue;}
-        const fleetData={client:clientData,miners:allMiners,total:minersData.total||allMiners.length};
+        const freshMiners=Array.isArray(minersData)?minersData:(minersData.results||minersData.miners||[]);
+        if(!clientData&&!freshMiners.length) continue;
+        // Preserve existing miner data (for per-unit chart) if fresh miners lack hash rates
+        const existingRaw=localStorage.getItem(btIntCacheLS(int.id));
+        const existingData=existingRaw?JSON.parse(existingRaw):{};
+        const miners=freshMiners.length?freshMiners:(existingData.miners||[]);
+        const fleetData={client:clientData||existingData.client,miners,total:miners.length};
         localStorage.setItem(btIntCacheLS(int.id),JSON.stringify(fleetData));
         localStorage.setItem(btIntSyncedLS(int.id),new Date().toLocaleString());
-        if(document.getElementById('tab-mining')?.classList.contains('active')) _mFetchLive();
-        console.log('[Foreman] sync complete');
+        _mFetchLive(); // always refresh display after sync
       }
     }
-  } catch(e){ console.warn('[Foreman] sync error:',e); }
+  } catch(e){ console.warn('Foreman bg sync failed:',e); }
 }
 
 function renderMiningDashboard(){
@@ -3647,7 +3647,7 @@ function _mUpdate(){
   const banHr=document.getElementById('m-banner-hr');
   const banImp=document.getElementById('m-banner-imp');
   const banRev=document.getElementById('m-banner-rev');
-  if(banHr)  banHr.textContent =(_mLiveFleet?`${_mFmt(_mLiveFleet.totalTH,1)} TH/s`:`${_mFmt(m.th,1)} TH/s`);
+  if(banHr)  banHr.textContent =(_mLiveFleet?`${_mFmt(_mLiveFleet.totalTH,2)} TH/s`:`${_mFmt(m.th,2)} TH/s`);
   if(banImp) banImp.textContent=`$${(host/((_mLiveFleet?_mLiveFleet.totalW:_MK.W)/1000*730)).toFixed(4)}/kWh`;
   if(banRev) banRev.textContent=`$${(m.btcPerThDay*btc).toFixed(4)}`;
   // Chart defaults
@@ -3664,7 +3664,7 @@ function _mUpdate(){
         plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>`$${_mFmt(c.parsed.y,0)}/mo`,title:t=>`BTC $${_mFmt(t[0].parsed.x,0)}`}}}}});
   }
   // Per-unit bar chart — live fleet or static snapshot
-  const liveU=_mLiveFleet?_mLiveFleet.units:null;
+  const liveU=(_mLiveFleet&&_mLiveFleet.units.length)?_mLiveFleet.units:null;
   const barLabels=liveU?liveU.map(u=>u.serial):_MUNITS.map(u=>u[0].slice(-4));
   const barData=liveU?liveU.map(u=>u.th):_MUNITS.map(u=>u[2]);
   const barColors=liveU?liveU.map(u=>u.active?_MC.amber:_MC.red):_MUNITS.map(u=>u[1].includes('Lux')?_MC.amber:u[1].includes('151')?_MC.red:_MC.cyan);
