@@ -3423,6 +3423,34 @@ function _mSlider(key,label,min,max,step,live=false){
   </div>`;
 }
 
+async function _mSilentSyncForeman(){
+  try {
+    if(!appData||!appData.businesses) return;
+    for(const biz of appData.businesses){
+      if(!biz.integrations) continue;
+      for(const int of biz.integrations){
+        if(!btIsForeman(int)) continue;
+        const apiKey=localStorage.getItem(btIntApiKeyLS(int.id))||'';
+        const clientId=localStorage.getItem(btIntClientLS(int.id))||'';
+        if(!apiKey||!clientId) continue;
+        const [clientRes,minersRes]=await Promise.all([
+          fetch('/.netlify/functions/foreman-proxy',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({path:'/api/v2/clients/'+clientId,apiKey})}),
+          fetch('/.netlify/functions/foreman-proxy',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({path:'/api/v2/clients/'+clientId+'/miners?limit=500&offset=0',apiKey})})
+        ]);
+        const clientData=clientRes.ok?await clientRes.json():null;
+        const minersData=minersRes.ok?await minersRes.json():{};
+        const allMiners=Array.isArray(minersData)?minersData:(minersData.results||minersData.miners||[]);
+        if(!allMiners.length&&!clientData) continue;
+        const fleetData={client:clientData,miners:allMiners,total:minersData.total||allMiners.length};
+        localStorage.setItem(btIntCacheLS(int.id),JSON.stringify(fleetData));
+        localStorage.setItem(btIntSyncedLS(int.id),new Date().toLocaleString());
+        // Refresh mining display if tab is visible
+        if(document.getElementById('tab-mining')?.classList.contains('active')) _mFetchLive();
+      }
+    }
+  } catch(e){ console.warn('Background Foreman sync failed:',e); }
+}
+
 function renderMiningDashboard(){
   const el=document.getElementById('mining-root');
   if(!el)return;
@@ -3516,8 +3544,11 @@ function renderMiningDashboard(){
   }
   _mUpdate();
   _mFetchLive();
+  _mSilentSyncForeman();
   if(window._mLiveInterval) clearInterval(window._mLiveInterval);
   window._mLiveInterval = setInterval(_mFetchLive, 60000);
+  if(window._mForemanSyncInterval) clearInterval(window._mForemanSyncInterval);
+  window._mForemanSyncInterval = setInterval(_mSilentSyncForeman, 5*60*1000);
 }
 
 async function _mFetchLive(){
