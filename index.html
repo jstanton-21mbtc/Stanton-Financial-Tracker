@@ -2794,8 +2794,24 @@ const PW_KEY       = 'sft_stanton_pw_v1';
 const USERNAME_KEY = 'sft_stanton_user_v1';
 function getStoredHash()     { return localStorage.getItem(PW_KEY); }
 function getStoredUsername() { return localStorage.getItem(USERNAME_KEY); }
-function hashPw(pw)          { return btoa(unescape(encodeURIComponent(pw))); }
 function isFirstTime()       { return !getStoredHash(); }
+async function hashPw(pw) {
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(pw));
+  return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('');
+}
+function _isLegacyHash(h) { return h && !/^[0-9a-f]{64}$/.test(h); }
+async function _verifyPw(pw) {
+  const stored = getStoredHash();
+  if (!stored) return false;
+  if (_isLegacyHash(stored)) {
+    // Old btoa hash — check and silently migrate to SHA-256
+    const oldHash = btoa(unescape(encodeURIComponent(pw)));
+    if (oldHash !== stored) return false;
+    localStorage.setItem(PW_KEY, await hashPw(pw));
+    return true;
+  }
+  return (await hashPw(pw)) === stored;
+}
 
 function _getJamesStantonData() {
   const R_EXP = {mortgage:2640.85,vehicle:750,insurance:0,phone:25,electric:250,propane:0,water:0,tv:220.58,groceries:0,dining:0,gas:0,creditCard:0,subscriptions:0,health:0,other:0};
@@ -3163,12 +3179,12 @@ async function submitLogin() {
     if (isFirstTime()) {
       if (password.length < 4) { error.textContent='Access code must be at least 4 characters.'; error.classList.add('show'); return; }
       if (password !== confirm) { error.textContent='Access codes do not match.'; error.classList.add('show'); return; }
-      localStorage.setItem(PW_KEY, hashPw(password));
+      localStorage.setItem(PW_KEY, await hashPw(password));
       if (_localLoginUsername) localStorage.setItem(USERNAME_KEY, _localLoginUsername);
       if (document.getElementById('stay-logged-in')?.checked) localStorage.setItem('sft_stay_v1','1');
       _openApp();
     } else {
-      if (hashPw(password) === getStoredHash()) {
+      if (await _verifyPw(password)) {
         if (document.getElementById('stay-logged-in')?.checked) localStorage.setItem('sft_stay_v1','1');
         _openApp();
       } else {
@@ -4967,7 +4983,7 @@ async function savePassword(){
     if(np){
       if(np.length<4){err.textContent='Access code must be at least 4 characters.';err.classList.add('show');return;}
       if(np!==cf){err.textContent='Access codes do not match.';err.classList.add('show');return;}
-      localStorage.setItem(PW_KEY,hashPw(np));changed.push('access code');
+      localStorage.setItem(PW_KEY,await hashPw(np));changed.push('access code');
     }
     if(!changed.length){err.textContent='Enter a new username or access code to update.';err.classList.add('show');return;}
     ['sec-new','sec-confirm'].forEach(id=>document.getElementById(id).value='');
