@@ -1170,6 +1170,10 @@
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
         Investments
       </button>
+      <button class="nav-item" onclick="showTab('fire')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10 10-4.5 10-10S17.5 2 12 2z"/><path d="M12 6v6l4 2"/></svg>
+        FIRE Tracker
+      </button>
     </div>
 
     <div class="sidebar-section">
@@ -1286,6 +1290,10 @@
       <button class="drawer-item" id="mob-goals" onclick="showTab('goals');closeMobDrawer()">
         <svg viewBox="0 0 24 24" fill="none" stroke-width="2"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>
         Goals
+      </button>
+      <button class="drawer-item" id="mob-fire" onclick="showTab('fire');closeMobDrawer()">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10 10-4.5 10-10S17.5 2 12 2z"/><path d="M12 6v6l4 2"/></svg>
+        FIRE
       </button>
       <button class="drawer-item" id="mob-scorecard" onclick="showTab('scorecard');closeMobDrawer()">
         <svg viewBox="0 0 24 24" fill="none" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
@@ -1671,6 +1679,108 @@
           </button>
         </div>
         <div class="table-wrap" id="goals-wrap" style="display:none"></div>
+      </div>
+
+      <!-- FIRE TRACKER -->
+      <div id="tab-fire" class="tab-panel">
+        <div class="section-title">FIRE Tracker</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start;">
+
+          <!-- Summary Banner -->
+          <div style="background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:24px;grid-column:1/-1;">
+            <div style="display:flex;align-items:center;gap:16px;margin-bottom:20px;flex-wrap:wrap;">
+              <div style="width:44px;height:44px;background:var(--blue-dim);border-radius:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--blue)" stroke-width="2"><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10 10-4.5 10-10S17.5 2 12 2z"/><path d="M12 6v6l4 2"/></svg>
+              </div>
+              <div style="flex:1;min-width:160px;">
+                <div style="font-weight:800;font-size:17px;">Financial Independence · Retire Early</div>
+                <div style="font-size:13px;color:var(--text-2);">Track your path to retiring early using the 4% Rule (Annual Expenses × 25)</div>
+              </div>
+              <div style="text-align:right;">
+                <div style="font-size:30px;font-weight:800;color:var(--blue);line-height:1;" id="fire-fi-number">$0</div>
+                <div style="font-size:12px;color:var(--text-2);margin-top:2px;">Your FI Number</div>
+              </div>
+            </div>
+            <div style="margin-bottom:8px;">
+              <div style="display:flex;justify-content:space-between;margin-bottom:6px;">
+                <span style="font-size:12px;color:var(--text-2);">Progress to FI</span>
+                <span style="font-size:12px;font-weight:700;" id="fire-progress-pct">0%</span>
+              </div>
+              <div style="height:12px;background:var(--border);border-radius:999px;overflow:hidden;">
+                <div id="fire-progress-bar" style="height:100%;background:var(--blue);border-radius:999px;width:0%;transition:width .6s ease;"></div>
+              </div>
+            </div>
+            <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:20px;">
+              <div style="background:var(--elevated);border-radius:10px;padding:14px;text-align:center;">
+                <div style="font-size:11px;color:var(--text-2);margin-bottom:5px;text-transform:uppercase;letter-spacing:.04em;">Portfolio</div>
+                <div style="font-weight:700;font-size:15px;" id="fire-stat-portfolio">$0</div>
+              </div>
+              <div style="background:var(--elevated);border-radius:10px;padding:14px;text-align:center;">
+                <div style="font-size:11px;color:var(--text-2);margin-bottom:5px;text-transform:uppercase;letter-spacing:.04em;">Still Needed</div>
+                <div style="font-weight:700;font-size:15px;" id="fire-stat-needed">$0</div>
+              </div>
+              <div style="background:var(--elevated);border-radius:10px;padding:14px;text-align:center;">
+                <div style="font-size:11px;color:var(--text-2);margin-bottom:5px;text-transform:uppercase;letter-spacing:.04em;">Savings Rate</div>
+                <div style="font-weight:700;font-size:15px;" id="fire-stat-rate">0%</div>
+              </div>
+              <div style="background:var(--elevated);border-radius:10px;padding:14px;text-align:center;">
+                <div style="font-size:11px;color:var(--text-2);margin-bottom:5px;text-transform:uppercase;letter-spacing:.04em;">Years to FI</div>
+                <div style="font-weight:700;font-size:15px;color:var(--blue);" id="fire-stat-years">—</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Inputs Card -->
+          <div style="background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:24px;">
+            <div style="font-weight:700;font-size:15px;margin-bottom:16px;">Your Numbers</div>
+            <div style="display:flex;flex-direction:column;gap:14px;">
+              <div>
+                <label style="font-size:12px;color:var(--text-2);font-weight:600;display:block;margin-bottom:5px;">Annual Expenses ($)</label>
+                <input id="fire-inp-expenses" type="number" min="0" placeholder="e.g. 48000" oninput="recalcFIRE()" style="width:100%;box-sizing:border-box;background:var(--elevated);border:1px solid var(--border);border-radius:8px;padding:9px 12px;color:var(--text);font-size:13px;font-family:inherit;outline:none;">
+              </div>
+              <div>
+                <label style="font-size:12px;color:var(--text-2);font-weight:600;display:block;margin-bottom:5px;">Current Portfolio ($)</label>
+                <input id="fire-inp-portfolio" type="number" min="0" placeholder="e.g. 120000" oninput="recalcFIRE()" style="width:100%;box-sizing:border-box;background:var(--elevated);border:1px solid var(--border);border-radius:8px;padding:9px 12px;color:var(--text);font-size:13px;font-family:inherit;outline:none;">
+              </div>
+              <div>
+                <label style="font-size:12px;color:var(--text-2);font-weight:600;display:block;margin-bottom:5px;">Monthly Contribution ($)</label>
+                <input id="fire-inp-monthly" type="number" min="0" placeholder="e.g. 2000" oninput="recalcFIRE()" style="width:100%;box-sizing:border-box;background:var(--elevated);border:1px solid var(--border);border-radius:8px;padding:9px 12px;color:var(--text);font-size:13px;font-family:inherit;outline:none;">
+              </div>
+              <div>
+                <label style="font-size:12px;color:var(--text-2);font-weight:600;display:block;margin-bottom:5px;">Gross Annual Income ($) <span style="font-weight:400;color:var(--text-3);">for savings rate</span></label>
+                <input id="fire-inp-income" type="number" min="0" placeholder="e.g. 85000" oninput="recalcFIRE()" style="width:100%;box-sizing:border-box;background:var(--elevated);border:1px solid var(--border);border-radius:8px;padding:9px 12px;color:var(--text);font-size:13px;font-family:inherit;outline:none;">
+              </div>
+              <div>
+                <label style="font-size:12px;color:var(--text-2);font-weight:600;display:block;margin-bottom:5px;">Expected Annual Return (%)</label>
+                <input id="fire-inp-return" type="number" min="0" max="30" placeholder="7" oninput="recalcFIRE()" style="width:100%;box-sizing:border-box;background:var(--elevated);border:1px solid var(--border);border-radius:8px;padding:9px 12px;color:var(--text);font-size:13px;font-family:inherit;outline:none;">
+              </div>
+              <div>
+                <label style="font-size:12px;color:var(--text-2);font-weight:600;display:block;margin-bottom:5px;">Current Age</label>
+                <input id="fire-inp-age" type="number" min="18" max="80" placeholder="32" oninput="recalcFIRE()" style="width:100%;box-sizing:border-box;background:var(--elevated);border:1px solid var(--border);border-radius:8px;padding:9px 12px;color:var(--text);font-size:13px;font-family:inherit;outline:none;">
+              </div>
+            </div>
+            <button class="btn btn-primary" onclick="saveFireData()" style="width:100%;margin-top:18px;border-radius:8px;">Save</button>
+          </div>
+
+          <!-- FIRE Variants Card -->
+          <div style="background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:24px;">
+            <div style="font-weight:700;font-size:15px;margin-bottom:4px;">FIRE Variants</div>
+            <div style="font-size:12px;color:var(--text-2);margin-bottom:16px;">Based on your annual expenses</div>
+            <div id="fire-variants" style="display:flex;flex-direction:column;gap:10px;"></div>
+            <div style="margin-top:20px;padding-top:16px;border-top:1px solid var(--border);">
+              <div style="font-weight:700;font-size:13px;margin-bottom:10px;">Coast FIRE</div>
+              <div style="font-size:13px;color:var(--text-2);line-height:1.6;" id="fire-coast-info">Enter your numbers to see Coast FIRE analysis.</div>
+            </div>
+          </div>
+
+          <!-- Projection Timeline -->
+          <div style="background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:24px;grid-column:1/-1;">
+            <div style="font-weight:700;font-size:15px;margin-bottom:4px;">Projection Timeline</div>
+            <div style="font-size:12px;color:var(--text-2);margin-bottom:16px;">Milestone checkpoints on your path to FI</div>
+            <div id="fire-timeline"></div>
+          </div>
+
+        </div>
       </div>
 
       <!-- SCORECARD -->
@@ -2940,6 +3050,7 @@ function _openApp() {
     savings:     JSON.parse(JSON.stringify(SAVINGS_CATS)),
     investments: JSON.parse(JSON.stringify(INVEST_CATS))
   };
+  if(!appData.fire) appData.fire={annualExpenses:0,currentPortfolio:0,monthlyContribution:0,annualIncome:0,expectedReturn:7,currentAge:0};
   if(!appData.businesses) appData.businesses=[];
   appData.businesses.forEach(b=>{ if(!b.integrations) b.integrations=[]; if(!b.minerFilters) b.minerFilters={}; });
   // Migrate: round all stored numeric values to 2 decimal places
@@ -3275,6 +3386,7 @@ const TAB_META = {
   budget:      ['Budget Planner',    'Set targets and track spending vs plan'],
   debt:        ['Debt Payoff',       'Track balances, interest & payoff strategies'],
   goals:       ['Goals',             '2026 financial goals'],
+  fire:        ['FIRE Tracker',      'Financial Independence · Retire Early · 4% Rule'],
   scorecard:   ['Monthly Scorecard', 'Goal tracking & performance review'],
   notes:       ['Monthly Notes',     'Wins, challenges, and action items'],
   settings:    ['Settings',          'Profile, access code & data management'],
@@ -3293,6 +3405,7 @@ function showTab(id) {
   document.getElementById('topbar-sub').textContent=sub;
   if (id==='dashboard')   updateCharts();
   if (id==='settings')    renderSettings();
+  if (id==='fire')        renderFireTracker();
   if (id==='biztracker')  btInit();
   if (id==='mining')      renderMiningDashboard();
   // Sync mobile bottom nav
@@ -9964,6 +10077,173 @@ async function btAnalyzeForemanData(fleetData, intId) {
     </div>
   </div>
 </div>
+
+<script>
+// ── FIRE TRACKER ──
+
+function renderFireTracker() {
+  if (!appData.fire) appData.fire = {};
+  const f = appData.fire;
+  const setVal = (id, val) => { const el = document.getElementById(id); if (el && val != null && val !== 0) el.value = val; };
+  setVal('fire-inp-expenses',  f.annualExpenses);
+  setVal('fire-inp-portfolio', f.currentPortfolio);
+  setVal('fire-inp-monthly',   f.monthlyContribution);
+  setVal('fire-inp-income',    f.annualIncome);
+  const retEl = document.getElementById('fire-inp-return');
+  if (retEl) retEl.value = f.expectedReturn ?? 7;
+  setVal('fire-inp-age', f.currentAge);
+  recalcFIRE();
+}
+
+function getFireInputs() {
+  const n = id => parseFloat(document.getElementById(id)?.value) || 0;
+  return {
+    annualExpenses:    n('fire-inp-expenses'),
+    currentPortfolio:  n('fire-inp-portfolio'),
+    monthlyContribution: n('fire-inp-monthly'),
+    annualIncome:      n('fire-inp-income'),
+    expectedReturn:    parseFloat(document.getElementById('fire-inp-return')?.value) || 7,
+    currentAge:        n('fire-inp-age') || 0,
+  };
+}
+
+function _yearsToFI(currentPortfolio, target, monthlyContribution, annualReturn) {
+  if (currentPortfolio >= target) return 0;
+  if (annualReturn === 0) {
+    const needed = target - currentPortfolio;
+    return monthlyContribution > 0 ? (needed / monthlyContribution) / 12 : Infinity;
+  }
+  const r = annualReturn / 100 / 12;
+  let months = 0, portfolio = currentPortfolio;
+  while (portfolio < target && months < 1200) {
+    portfolio = portfolio * (1 + r) + monthlyContribution;
+    months++;
+  }
+  return months < 1200 ? months / 12 : Infinity;
+}
+
+function recalcFIRE() {
+  const f = getFireInputs();
+  const cur = appData.meta?.currency || '$';
+  const fmtN = n => {
+    if (!n || n <= 0) return cur + '0';
+    if (n >= 1e6) return cur + (n / 1e6).toFixed(2) + 'M';
+    return cur + Math.round(n).toLocaleString();
+  };
+
+  const fiNumber = f.annualExpenses * 25;
+  const progress = fiNumber > 0 ? Math.min(100, (f.currentPortfolio / fiNumber) * 100) : 0;
+  const needed   = Math.max(0, fiNumber - f.currentPortfolio);
+  const savingsRate = f.annualIncome > 0 ? Math.min(100, (f.monthlyContribution * 12 / f.annualIncome) * 100) : 0;
+  const years = _yearsToFI(f.currentPortfolio, fiNumber, f.monthlyContribution, f.expectedReturn);
+  const fiAge = (years < Infinity && f.currentAge > 0) ? Math.round(f.currentAge + years) : null;
+
+  const setText = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
+  setText('fire-fi-number',    fmtN(fiNumber));
+  setText('fire-progress-pct', progress.toFixed(1) + '%');
+  setText('fire-stat-portfolio', fmtN(f.currentPortfolio));
+  setText('fire-stat-needed',   fmtN(needed));
+  setText('fire-stat-rate',     savingsRate.toFixed(1) + '%');
+  setText('fire-stat-years', years < Infinity ? years.toFixed(1) + ' yrs' + (fiAge ? ' (age ' + fiAge + ')' : '') : '—');
+  const bar = document.getElementById('fire-progress-bar');
+  if (bar) bar.style.width = progress.toFixed(1) + '%';
+
+  // FIRE variants
+  const variants = [
+    { name: 'Lean FIRE',    mult: 0.7, color: '#05B169', desc: 'Very frugal lifestyle' },
+    { name: 'Regular FIRE', mult: 1.0, color: '#39FF14', desc: 'Same lifestyle as today' },
+    { name: 'Fat FIRE',     mult: 1.5, color: '#FF6B35', desc: 'Comfortable, upgraded lifestyle' },
+    { name: 'Barista FIRE', mult: 0.5, color: '#60A5FA', desc: 'Part-time work covers half' },
+  ];
+  const varEl = document.getElementById('fire-variants');
+  if (varEl) {
+    varEl.innerHTML = variants.map(v => {
+      const vFI   = f.annualExpenses * v.mult * 25;
+      const vProg = vFI > 0 ? Math.min(100, (f.currentPortfolio / vFI) * 100) : 0;
+      const vYrs  = _yearsToFI(f.currentPortfolio, vFI, f.monthlyContribution, f.expectedReturn);
+      const vAge  = (vYrs < Infinity && f.currentAge > 0) ? Math.round(f.currentAge + vYrs) : null;
+      return `<div style="background:var(--elevated);border-radius:10px;padding:12px 14px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:7px;">
+          <div>
+            <span style="font-weight:700;font-size:13px;">${v.name}</span>
+            <span style="font-size:11px;color:var(--text-3);margin-left:6px;">${v.desc}</span>
+          </div>
+          <div style="text-align:right;">
+            <div style="font-weight:700;font-size:13px;color:${v.color};">${fmtN(vFI)}</div>
+            <div style="font-size:11px;color:var(--text-3);">${vYrs < Infinity ? vYrs.toFixed(1) + ' yrs' + (vAge ? ' · age ' + vAge : '') : '—'}</div>
+          </div>
+        </div>
+        <div style="height:6px;background:var(--border);border-radius:999px;overflow:hidden;">
+          <div style="height:100%;background:${v.color};opacity:.8;border-radius:999px;width:${vProg.toFixed(1)}%;transition:width .5s;"></div>
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  // Coast FIRE
+  const coastEl = document.getElementById('fire-coast-info');
+  if (coastEl) {
+    if (f.annualExpenses > 0 && f.currentAge > 0 && f.expectedReturn > 0) {
+      const targetRetireAge = 65;
+      const yrsToGrow = Math.max(0, targetRetireAge - f.currentAge);
+      const r = f.expectedReturn / 100;
+      const coastFI = yrsToGrow > 0 ? fiNumber / Math.pow(1 + r, yrsToGrow) : fiNumber;
+      const hasCoasted = f.currentPortfolio >= coastFI;
+      const coastProg  = coastFI > 0 ? Math.min(100, (f.currentPortfolio / coastFI) * 100) : 0;
+      coastEl.innerHTML = `
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+          <span>Coast FI Target</span>
+          <span style="font-weight:700;color:var(--blue);">${fmtN(coastFI)}</span>
+        </div>
+        <div style="height:6px;background:var(--border);border-radius:999px;overflow:hidden;margin-bottom:10px;">
+          <div style="height:100%;background:var(--blue);border-radius:999px;width:${coastProg.toFixed(1)}%;transition:width .5s;"></div>
+        </div>
+        ${hasCoasted
+          ? `<div style="color:var(--blue);font-weight:600;font-size:13px;">You've reached Coast FI! Compound growth alone will reach ${fmtN(fiNumber)} by age ${targetRetireAge} — no more contributions needed.</div>`
+          : `<div style="font-size:13px;color:var(--text-2);">Once your portfolio hits ${fmtN(coastFI)}, compound growth alone reaches your FI number by age ${targetRetireAge}. You're ${coastProg.toFixed(0)}% there.</div>`}`;
+    } else {
+      coastEl.textContent = 'Enter your numbers to see Coast FIRE analysis.';
+    }
+  }
+
+  // Timeline milestones
+  const tlEl = document.getElementById('fire-timeline');
+  if (!tlEl) return;
+  if (fiNumber <= 0) {
+    tlEl.innerHTML = '<div style="color:var(--text-2);font-size:13px;">Enter your annual expenses above to see your projection timeline.</div>';
+    return;
+  }
+  const milestones = [10, 25, 50, 75, 90, 100];
+  const rows = milestones.map(pct => {
+    const target = fiNumber * pct / 100;
+    if (f.currentPortfolio >= target) {
+      return { pct, target, label: 'Reached ✓', done: true };
+    }
+    const yrs = _yearsToFI(f.currentPortfolio, target, f.monthlyContribution, f.expectedReturn);
+    if (yrs < Infinity) {
+      const age = (f.currentAge > 0) ? ' (age ' + Math.round(f.currentAge + yrs) + ')' : '';
+      return { pct, target, label: yrs.toFixed(1) + ' yrs' + age, done: false };
+    }
+    return { pct, target, label: '—', done: false };
+  });
+  tlEl.innerHTML = `<div style="display:grid;grid-template-columns:50px 1fr 90px 160px;gap:8px;font-size:11px;color:var(--text-2);font-weight:600;text-transform:uppercase;letter-spacing:.04em;padding:0 4px 6px;">
+    <div>%</div><div>Progress</div><div>Amount</div><div>Timeline</div>
+  </div>` + rows.map(r => `
+    <div style="display:grid;grid-template-columns:50px 1fr 90px 160px;gap:8px;align-items:center;padding:8px 4px;border-top:1px solid var(--border-dim);">
+      <div style="font-weight:700;font-size:13px;color:${r.pct === 100 ? 'var(--blue)' : 'var(--text)'};">${r.pct}%</div>
+      <div style="height:6px;background:var(--border);border-radius:999px;overflow:hidden;">
+        <div style="height:100%;background:${r.done ? 'var(--blue)' : 'var(--border-dim)'};width:${r.done ? '100' : '0'}%;border-radius:999px;"></div>
+      </div>
+      <div style="font-size:12px;color:var(--text-2);">${fmtN(r.target)}</div>
+      <div style="font-size:12px;font-weight:600;color:${r.done ? 'var(--blue)' : 'var(--text)'};">${r.label}</div>
+    </div>`).join('');
+}
+
+function saveFireData() {
+  appData.fire = getFireInputs();
+  saveData();
+}
+</script>
 
 <!-- Note Editor Popup -->
 <div id="note-editor-popup">
