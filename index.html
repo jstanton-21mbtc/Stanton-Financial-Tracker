@@ -4677,9 +4677,11 @@ function renderNetWorth() {
   if(!appData.netWorth.customAssets) appData.netWorth.customAssets=[];
   if(!appData.netWorth.customLiabilities) appData.netWorth.customLiabilities=[];
   // hardset Bitcoin = 2.7 BTC × live price; Unchained Roth IRA = 0.74 BTC × live price; Bittensor = 100 TAO × live price; Silver = 34 oz × live spot
-  try{const p=typeof _getLiveBtcPrice==='function'?_getLiveBtcPrice():null;if(p){appData.netWorth.assets.bitcoin=r2(2.7*p);appData.netWorth.assets.bitcoinIRAUnchained=r2(0.74*p);}}catch(e){}
-  try{const p=typeof _getLiveTaoPrice==='function'?_getLiveTaoPrice():null;if(p)appData.netWorth.assets.cryptoOther=r2(100*p);}catch(e){}
-  try{const p=typeof _getLiveSilverPrice==='function'?_getLiveSilverPrice():null;if(p)appData.netWorth.assets.otherAssets=r2(34*p);}catch(e){}
+  if(!isDemoMode){
+    try{const p=typeof _getLiveBtcPrice==='function'?_getLiveBtcPrice():null;if(p){appData.netWorth.assets.bitcoin=r2(2.7*p);appData.netWorth.assets.bitcoinIRAUnchained=r2(0.74*p);}}catch(e){}
+    try{const p=typeof _getLiveTaoPrice==='function'?_getLiveTaoPrice():null;if(p)appData.netWorth.assets.cryptoOther=r2(100*p);}catch(e){}
+    try{const p=typeof _getLiveSilverPrice==='function'?_getLiveSilverPrice():null;if(p)appData.netWorth.assets.otherAssets=r2(34*p);}catch(e){}
+  }
   const totalA=nwTotalAssets(), totalL=nwTotalLiabilities(), net=nwNet();
   const debtRatio=totalA>0?(totalL/totalA):0;
   const hist=appData.netWorth.history||[];
@@ -5723,137 +5725,156 @@ function getDemoData() {
   return {
     meta: {name:'Alex Rivera', year:'2026', currency:'$'},
     income: {
-      jan:{salary:9500,bonus:0,freelance:1800,rental:2200,other:0},
-      feb:{salary:9500,bonus:8000,freelance:0,rental:2200,other:0},
-      mar:{salary:9500,bonus:0,freelance:950,rental:2200,other:0},
-      apr:{salary:0,bonus:0,freelance:0,rental:0,other:0},
-      may:{salary:0,bonus:0,freelance:0,rental:0,other:0},
-      jun:{salary:0,bonus:0,freelance:0,rental:0,other:0},
-      jul:{salary:0,bonus:0,freelance:0,rental:0,other:0},
-      aug:{salary:0,bonus:0,freelance:0,rental:0,other:0},
-      sep:{salary:0,bonus:0,freelance:0,rental:0,other:0},
-      oct:{salary:0,bonus:0,freelance:0,rental:0,other:0},
-      nov:{salary:0,bonus:0,freelance:0,rental:0,other:0},
-      dec:{salary:0,bonus:0,freelance:0,rental:0,other:0},
+      jan:{salary:9500,bonus:0,    freelance:1800,rental:2200,other:0},
+      feb:{salary:9500,bonus:8000, freelance:0,   rental:2200,other:0},
+      mar:{salary:9500,bonus:0,    freelance:950, rental:2200,other:0},
+      apr:{salary:9500,bonus:0,    freelance:1200,rental:2200,other:0},
+      may:{salary:9500,bonus:0,    freelance:0,   rental:2200,other:0},
+      jun:{salary:9500,bonus:0,    freelance:2500,rental:2200,other:0},
+      jul:{salary:9500,bonus:0,    freelance:0,   rental:2200,other:0},
+      aug:{salary:9500,bonus:0,    freelance:0,   rental:2200,other:500},
+      sep:{salary:9500,bonus:2000, freelance:800, rental:2200,other:0},
+      oct:{salary:9500,bonus:0,    freelance:1500,rental:2200,other:0},
+      nov:{salary:9500,bonus:0,    freelance:0,   rental:2200,other:0},
+      dec:{salary:9500,bonus:0,    freelance:0,   rental:2200,other:500},
     },
     expenses: {
       jan:{mortgage:2640,vehicle:485,insurance:210,phone:95,electric:185,propane:220,water:78,tv:185,groceries:740,dining:520,gas:240,creditCard:450,subscriptions:94,health:180,other:320},
       feb:{mortgage:2640,vehicle:485,insurance:210,phone:95,electric:162,propane:195,water:78,tv:185,groceries:820,dining:680,gas:215,creditCard:450,subscriptions:94,health:180,other:175},
       mar:{mortgage:2640,vehicle:485,insurance:210,phone:95,electric:148,propane:180,water:78,tv:185,groceries:390,dining:210,gas:110,creditCard:450,subscriptions:94,health:180,other:0},
-      apr:{mortgage:0,vehicle:0,insurance:0,phone:0,electric:0,propane:0,water:0,tv:0,groceries:0,dining:0,gas:0,creditCard:0,subscriptions:0,health:0,other:0},
-      may:{mortgage:0,vehicle:0,insurance:0,phone:0,electric:0,propane:0,water:0,tv:0,groceries:0,dining:0,gas:0,creditCard:0,subscriptions:0,health:0,other:0},
-      jun:{mortgage:0,vehicle:0,insurance:0,phone:0,electric:0,propane:0,water:0,tv:0,groceries:0,dining:0,gas:0,creditCard:0,subscriptions:0,health:0,other:0},
-      jul:{mortgage:0,vehicle:0,insurance:0,phone:0,electric:0,propane:0,water:0,tv:0,groceries:0,dining:0,gas:0,creditCard:0,subscriptions:0,health:0,other:0},
-      aug:{mortgage:0,vehicle:0,insurance:0,phone:0,electric:0,propane:0,water:0,tv:0,groceries:0,dining:0,gas:0,creditCard:0,subscriptions:0,health:0,other:0},
-      sep:{mortgage:0,vehicle:0,insurance:0,phone:0,electric:0,propane:0,water:0,tv:0,groceries:0,dining:0,gas:0,creditCard:0,subscriptions:0,health:0,other:0},
-      oct:{mortgage:0,vehicle:0,insurance:0,phone:0,electric:0,propane:0,water:0,tv:0,groceries:0,dining:0,gas:0,creditCard:0,subscriptions:0,health:0,other:0},
-      nov:{mortgage:0,vehicle:0,insurance:0,phone:0,electric:0,propane:0,water:0,tv:0,groceries:0,dining:0,gas:0,creditCard:0,subscriptions:0,health:0,other:0},
-      dec:{mortgage:0,vehicle:0,insurance:0,phone:0,electric:0,propane:0,water:0,tv:0,groceries:0,dining:0,gas:0,creditCard:0,subscriptions:0,health:0,other:0},
+      apr:{mortgage:2640,vehicle:485,insurance:210,phone:95,electric:130,propane:80, water:78,tv:185,groceries:680,dining:380,gas:195,creditCard:450,subscriptions:85,health:180,other:210},
+      may:{mortgage:2640,vehicle:485,insurance:210,phone:95,electric:115,propane:0,  water:78,tv:185,groceries:720,dining:340,gas:210,creditCard:450,subscriptions:85,health:180,other:150},
+      jun:{mortgage:2640,vehicle:485,insurance:210,phone:95,electric:98, propane:0,  water:78,tv:185,groceries:710,dining:480,gas:225,creditCard:450,subscriptions:85,health:0,  other:890},
+      jul:{mortgage:2640,vehicle:485,insurance:210,phone:95,electric:210,propane:0,  water:78,tv:185,groceries:680,dining:390,gas:185,creditCard:450,subscriptions:85,health:180,other:0},
+      aug:{mortgage:2640,vehicle:485,insurance:210,phone:95,electric:220,propane:0,  water:78,tv:185,groceries:740,dining:310,gas:195,creditCard:450,subscriptions:85,health:360,other:120},
+      sep:{mortgage:2640,vehicle:485,insurance:210,phone:95,electric:145,propane:60, water:78,tv:185,groceries:695,dining:280,gas:180,creditCard:450,subscriptions:85,health:180,other:200},
+      oct:{mortgage:2640,vehicle:485,insurance:210,phone:95,electric:165,propane:120,water:78,tv:185,groceries:720,dining:320,gas:210,creditCard:450,subscriptions:85,health:180,other:350},
+      nov:{mortgage:2640,vehicle:485,insurance:210,phone:95,electric:175,propane:180,water:78,tv:185,groceries:850,dining:420,gas:230,creditCard:450,subscriptions:85,health:180,other:640},
+      dec:{mortgage:2640,vehicle:485,insurance:210,phone:95,electric:190,propane:210,water:78,tv:185,groceries:920,dining:540,gas:245,creditCard:450,subscriptions:85,health:180,other:1200},
     },
     savings: {
-      jan:{emergency:500,general:1200,k401:1000,roth:583,bitcoin:300,bitcoinIRA:0,cryptoOther:0,lifeInsurance:100,other:0},
-      feb:{emergency:500,general:1200,k401:1000,roth:583,bitcoin:300,bitcoinIRA:0,cryptoOther:0,lifeInsurance:100,other:0},
-      mar:{emergency:500,general:600,k401:1000,roth:583,bitcoin:300,bitcoinIRA:0,cryptoOther:0,lifeInsurance:100,other:0},
-      apr:{emergency:0,general:0,k401:0,roth:0,bitcoin:0,bitcoinIRA:0,cryptoOther:0,lifeInsurance:0,other:0},
-      may:{emergency:0,general:0,k401:0,roth:0,bitcoin:0,bitcoinIRA:0,cryptoOther:0,lifeInsurance:0,other:0},
-      jun:{emergency:0,general:0,k401:0,roth:0,bitcoin:0,bitcoinIRA:0,cryptoOther:0,lifeInsurance:0,other:0},
-      jul:{emergency:0,general:0,k401:0,roth:0,bitcoin:0,bitcoinIRA:0,cryptoOther:0,lifeInsurance:0,other:0},
-      aug:{emergency:0,general:0,k401:0,roth:0,bitcoin:0,bitcoinIRA:0,cryptoOther:0,lifeInsurance:0,other:0},
-      sep:{emergency:0,general:0,k401:0,roth:0,bitcoin:0,bitcoinIRA:0,cryptoOther:0,lifeInsurance:0,other:0},
-      oct:{emergency:0,general:0,k401:0,roth:0,bitcoin:0,bitcoinIRA:0,cryptoOther:0,lifeInsurance:0,other:0},
-      nov:{emergency:0,general:0,k401:0,roth:0,bitcoin:0,bitcoinIRA:0,cryptoOther:0,lifeInsurance:0,other:0},
-      dec:{emergency:0,general:0,k401:0,roth:0,bitcoin:0,bitcoinIRA:0,cryptoOther:0,lifeInsurance:0,other:0},
+      jan:{emergency:500,general:1200,k401:1000,roth:583,bitcoin:0,bitcoinIRA:0,cryptoOther:0,lifeInsurance:100,other:0},
+      feb:{emergency:500,general:4000,k401:1000,roth:583,bitcoin:0,bitcoinIRA:0,cryptoOther:0,lifeInsurance:100,other:0},
+      mar:{emergency:500,general:600, k401:1000,roth:583,bitcoin:0,bitcoinIRA:0,cryptoOther:0,lifeInsurance:100,other:0},
+      apr:{emergency:500,general:1200,k401:1000,roth:583,bitcoin:0,bitcoinIRA:0,cryptoOther:0,lifeInsurance:100,other:0},
+      may:{emergency:500,general:1200,k401:1000,roth:583,bitcoin:0,bitcoinIRA:0,cryptoOther:0,lifeInsurance:100,other:0},
+      jun:{emergency:500,general:500, k401:1000,roth:583,bitcoin:0,bitcoinIRA:0,cryptoOther:0,lifeInsurance:100,other:0},
+      jul:{emergency:500,general:1200,k401:1000,roth:583,bitcoin:0,bitcoinIRA:0,cryptoOther:0,lifeInsurance:100,other:0},
+      aug:{emergency:500,general:1200,k401:1000,roth:583,bitcoin:0,bitcoinIRA:0,cryptoOther:0,lifeInsurance:100,other:0},
+      sep:{emergency:1000,general:3000,k401:1000,roth:583,bitcoin:0,bitcoinIRA:0,cryptoOther:0,lifeInsurance:100,other:0},
+      oct:{emergency:500,general:1200,k401:1000,roth:583,bitcoin:0,bitcoinIRA:0,cryptoOther:0,lifeInsurance:100,other:0},
+      nov:{emergency:500,general:800, k401:1000,roth:583,bitcoin:0,bitcoinIRA:0,cryptoOther:0,lifeInsurance:100,other:0},
+      dec:{emergency:500,general:600, k401:1000,roth:583,bitcoin:0,bitcoinIRA:0,cryptoOther:0,lifeInsurance:100,other:0},
     },
     investments: {
-      jan:{property:0,homeImprovement:500,health:0,vehicle:0,education:200,other:0},
-      feb:{property:0,homeImprovement:0,health:0,vehicle:0,education:200,other:0},
-      mar:{property:0,homeImprovement:0,health:0,vehicle:0,education:200,other:0},
-      apr:{property:0,homeImprovement:0,health:0,vehicle:0,education:0,other:0},
-      may:{property:0,homeImprovement:0,health:0,vehicle:0,education:0,other:0},
-      jun:{property:0,homeImprovement:0,health:0,vehicle:0,education:0,other:0},
-      jul:{property:0,homeImprovement:0,health:0,vehicle:0,education:0,other:0},
-      aug:{property:0,homeImprovement:0,health:0,vehicle:0,education:0,other:0},
-      sep:{property:0,homeImprovement:0,health:0,vehicle:0,education:0,other:0},
-      oct:{property:0,homeImprovement:0,health:0,vehicle:0,education:0,other:0},
-      nov:{property:0,homeImprovement:0,health:0,vehicle:0,education:0,other:0},
-      dec:{property:0,homeImprovement:0,health:0,vehicle:0,education:0,other:0},
+      jan:{property:0,homeImprovement:500, health:0,vehicle:0,education:200,other:0},
+      feb:{property:0,homeImprovement:0,   health:0,vehicle:0,education:200,other:0},
+      mar:{property:0,homeImprovement:0,   health:0,vehicle:0,education:200,other:0},
+      apr:{property:0,homeImprovement:800, health:0,vehicle:0,education:200,other:0},
+      may:{property:0,homeImprovement:1200,health:0,vehicle:0,education:200,other:0},
+      jun:{property:0,homeImprovement:600, health:0,vehicle:0,education:0,  other:0},
+      jul:{property:0,homeImprovement:0,   health:0,vehicle:0,education:200,other:0},
+      aug:{property:0,homeImprovement:0,   health:0,vehicle:0,education:200,other:0},
+      sep:{property:0,homeImprovement:2500,health:0,vehicle:0,education:200,other:0},
+      oct:{property:0,homeImprovement:0,   health:0,vehicle:0,education:200,other:0},
+      nov:{property:0,homeImprovement:0,   health:0,vehicle:0,education:200,other:0},
+      dec:{property:0,homeImprovement:0,   health:0,vehicle:0,education:200,other:0},
     },
     balances: {
-      savings:     {emergency:29000,general:18500,k401:148500,roth:31200,bitcoin:8400,bitcoinIRA:0,cryptoOther:0,lifeInsurance:8400,other:0},
-      investments: {property:0,homeImprovement:12500,health:0,vehicle:0,education:600,other:0},
+      savings:     {emergency:35000,general:22000,k401:164000,roth:38400,bitcoin:0,bitcoinIRA:0,cryptoOther:0,lifeInsurance:9600,other:0},
+      investments: {property:0,homeImprovement:15600,health:0,vehicle:0,education:2400,other:0},
     },
     debts: [
-      {name:'Visa Credit Card',  balance:5800,  apr:22.99, minPayment:175,  notes:'Transfer to 0% promo card'},
-      {name:'Honda Vehicle Loan',balance:14200, apr:6.49,  minPayment:485,  notes:'Payoff target: Dec 2027'},
-      {name:'Student Loan',      balance:12000, apr:4.5,   minPayment:135,  notes:'Federal — income-based option available'},
+      {name:'Honda Vehicle Loan',balance:8400,  apr:6.49, minPayment:485, notes:'On track — payoff target Q1 2027'},
+      {name:'Student Loan',      balance:10200, apr:4.5,  minPayment:135, notes:'Federal — income-based repayment option available'},
+      {name:'Home Mortgage',     balance:330000,apr:3.875,minPayment:2640,notes:'30-yr fixed — 22 years remaining'},
     ],
     budget: {
       income:   {salary:9500,bonus:0,freelance:500,rental:2200,other:0},
-      expenses: {mortgage:2640,vehicle:485,insurance:210,phone:95,electric:160,propane:150,water:78,tv:185,groceries:800,dining:400,gas:220,creditCard:450,subscriptions:94,health:180,other:200},
+      expenses: {mortgage:2640,vehicle:485,insurance:210,phone:95,electric:160,propane:150,water:78,tv:185,groceries:750,dining:350,gas:200,creditCard:0,subscriptions:85,health:180,other:200},
     },
     netWorth: {
-      assets: {cashChecking:12400,cashSavings:18500,emergencyFund:29000,retirement401k:148500,rothIRA:31200,brokerageAccount:22000,bitcoin:24500,cryptoOther:0,primaryHome:510000,rentalProperty:0,vehicle:28000,lifeInsuranceCash:8400,otherAssets:0},
-      liabilities: {mortgageBalance:341000,homeLoanOther:0,vehicleLoan:14200,studentLoan:12000,creditCardDebt:5800,medicalDebt:0,otherDebt:0},
+      assets: {cashChecking:14800,cashSavings:22000,emergencyFund:35000,retirement401k:164000,rothIRA:38400,brokerageAccount:26500,bitcoin:0,cryptoOther:0,primaryHome:522000,rentalProperty:0,vehicle:23000,lifeInsuranceCash:9600,otherAssets:2800},
+      liabilities: {mortgageBalance:330000,homeLoanOther:0,vehicleLoan:8400,studentLoan:10200,creditCardDebt:0,medicalDebt:0,otherDebt:0},
       history: [
-        {date:'2025-10-01',assets:782000,liabilities:392000,net:390000},
-        {date:'2025-11-01',assets:796000,liabilities:388000,net:408000},
-        {date:'2025-12-01',assets:811000,liabilities:385000,net:426000},
-        {date:'2026-01-01',assets:820000,liabilities:381000,net:439000},
-        {date:'2026-02-01',assets:834000,liabilities:376000,net:458000},
+        {date:'Jan 1, 2025', isoDate:'2025-01-01', assets:694000,liabilities:425000,net:269000},
+        {date:'Apr 1, 2025', isoDate:'2025-04-01', assets:718000,liabilities:416000,net:302000},
+        {date:'Jul 1, 2025', isoDate:'2025-07-01', assets:742000,liabilities:407000,net:335000},
+        {date:'Oct 1, 2025', isoDate:'2025-10-01', assets:766000,liabilities:398000,net:368000},
+        {date:'Jan 1, 2026', isoDate:'2026-01-01', assets:792000,liabilities:389000,net:403000},
+        {date:'Feb 1, 2026', isoDate:'2026-02-01', assets:812000,liabilities:383000,net:429000},
+        {date:'Mar 1, 2026', isoDate:'2026-03-01', assets:818000,liabilities:378000,net:440000},
+        {date:'Apr 1, 2026', isoDate:'2026-04-01', assets:824000,liabilities:374000,net:450000},
+        {date:'May 1, 2026', isoDate:'2026-05-01', assets:829000,liabilities:370000,net:459000},
+        {date:'Jun 1, 2026', isoDate:'2026-06-01', assets:834000,liabilities:366000,net:468000},
+        {date:'Jul 1, 2026', isoDate:'2026-07-01', assets:831000,liabilities:362000,net:469000},
+        {date:'Aug 1, 2026', isoDate:'2026-08-01', assets:836000,liabilities:358000,net:478000},
+        {date:'Sep 1, 2026', isoDate:'2026-09-01', assets:845000,liabilities:354000,net:491000},
+        {date:'Oct 1, 2026', isoDate:'2026-10-01', assets:849000,liabilities:350000,net:499000},
+        {date:'Nov 1, 2026', isoDate:'2026-11-01', assets:853000,liabilities:349000,net:504000},
+        {date:'Dec 1, 2026', isoDate:'2026-12-01', assets:858000,liabilities:348600,net:509400},
       ],
     },
     goals: [
-      {label:'Max ROTH IRA',          target:7000,  current:1749, dueDate:'2026-12-31', notes:'$583/mo automatic transfer'},
-      {label:'Fully Fund Emergency',   target:35000, current:29000,dueDate:'2026-09-30', notes:'Need $6,000 more'},
-      {label:'Pay Off Credit Card',    target:5800,  current:1800, dueDate:'2026-12-31', notes:'Avalanche method — highest APR first'},
-      {label:'Family Vacation Fund',   target:8000,  current:2500, dueDate:'2026-07-01', notes:'Hawaii trip — July 2026'},
-      {label:'New Roof Reserve',       target:15000, current:4200, dueDate:'2027-06-01', notes:'Getting 3 quotes in spring'},
+      {label:'Max ROTH IRA',         target:7000,  current:6996, dueDate:'2026-12-31', notes:'$583/mo automatic transfer — maxed December 2026!'},
+      {label:'Fully Fund Emergency',  target:35000, current:35000,dueDate:'2026-09-30', notes:'COMPLETED — September 2026. 2-year journey finished.'},
+      {label:'Pay Off Credit Card',   target:5800,  current:5800, dueDate:'2026-12-31', notes:'PAID IN FULL — December 2026. Zero credit card debt.'},
+      {label:'Family Vacation Fund',  target:8000,  current:8000, dueDate:'2026-07-01', notes:'Hawaii trip fully funded and completed — July 2026.'},
+      {label:'New Roof Reserve',      target:15000, current:9200, dueDate:'2027-06-01', notes:'Deposit paid. 3 contractor quotes received. On track for spring 2027.'},
     ],
     scorecard: {
-      jan:{wins:'Maxed 401(k) contribution. Sold old camera gear for $800. No impulse purchases.',challenges:'Dining out $120 over budget. Unexpected car repair $320.',actions:'Set up automatic ROTH transfer. Cancel unused gym membership.',notes:'Solid start. Cut dining budget to $400 for Feb.'},
-      feb:{wins:'$8,000 bonus — sent straight to savings. Lowest electric bill in 6 months. Stayed on grocery budget.',challenges:'Valentine\'s week pushed dining over budget again. Subscriptions need audit.',actions:'Apply bonus to credit card. Review and cancel redundant subscriptions.',notes:'Bonus month changed the picture. Net worth crossed $450k milestone. Feeling momentum.'},
-      mar:{wins:'',challenges:'',actions:'',notes:''},
-      apr:{wins:'',challenges:'',actions:'',notes:''},may:{wins:'',challenges:'',actions:'',notes:''},
-      jun:{wins:'',challenges:'',actions:'',notes:''},jul:{wins:'',challenges:'',actions:'',notes:''},
-      aug:{wins:'',challenges:'',actions:'',notes:''},sep:{wins:'',challenges:'',actions:'',notes:''},
-      oct:{wins:'',challenges:'',actions:'',notes:''},nov:{wins:'',challenges:'',actions:'',notes:''},
-      dec:{wins:'',challenges:'',actions:'',notes:''},
+      jan:{wins:'Maxed 401(k) contribution. Sold old camera gear for $800. No impulse purchases all month.',challenges:'Dining out $120 over budget. Unexpected car repair $320.',actions:'Set up automatic ROTH transfer. Cancel unused gym membership by Feb 1.',notes:'Solid start to the year. Cut dining budget to $350 for Feb. Systems are in place.'},
+      feb:{wins:'$8,000 bonus — allocated $4,000 to savings, $1,400 to credit card. Lowest electric bill in 6 months.',challenges:"Valentine's week pushed dining over budget again. Subscription audit still pending.",actions:'Apply bonus aggressively to credit card. Audit and cancel redundant subscriptions.',notes:'Bonus month changed the picture. Net worth crossed $430k. The discipline is compounding.'},
+      mar:{wins:'Freelance project closed $950. Dining dropped to $210 — best month yet. Electric trending down.',challenges:'Annual subscription renewals hit unexpectedly. Need a system for irregular expenses.',actions:'Build annual expense calendar. Cancel Adobe Creative Cloud and two unused streaming services.',notes:'Grade: B+. Income solid, variable expenses improving. Starting to see patterns clearly.'},
+      apr:{wins:'Cancelled 3 redundant subscriptions saving $26/mo. Freelance closed $1,200. Dining under budget.',challenges:'Car registration fee caught me off guard — need a sinking fund for annual bills.',actions:'Create sinking funds for all annual/semi-annual expenses. Start home improvement project.',notes:'Spring momentum building. The budget is starting to feel natural rather than restrictive.'},
+      may:{wins:'Deck project started — boosting home value. Under budget on dining again. Emergency fund growing.',challenges:'Deck materials ran $300 over estimate. Freelance pipeline went quiet for the month.',actions:'Get second quote on remaining deck work. Start reaching out for June freelance projects.',notes:'Biggest win: not panicking when the deck went over. The emergency fund exists for moments like this.'},
+      jun:{wins:'Hawaii vacation fully paid from vacation fund — zero new credit card debt from the trip. Freelance closed $2,500.',challenges:'Dining and other spend elevated during vacation week. Home improvement paused.',actions:'Rebuild vacation fund for 2027. Review all utility bills post-vacation.',notes:'The vacation fund strategy worked perfectly. Paid in full, no guilt, no debt. This is what financial planning feels like.'},
+      jul:{wins:'Back on budget after vacation. Utility savings from new thermostat settings. ROTH contributions on autopilot.',challenges:'July 4th weekend pushed dining slightly over. Summer AC running higher than projected.',actions:'Lower AC setpoint 2° during work hours. Schedule fall HVAC preventive maintenance.',notes:'Quiet month financially — which is exactly what I want. The system is running itself.'},
+      aug:{wins:'Sold old furniture for $500. 401(k) crossing $158k milestone. Caught dental issue early before it became expensive.',challenges:'Dental work $360 — unplanned. Dining crept back up end of month.',actions:'Set dental reminder for February cleaning. Pull dining back to $300 for September.',notes:'Health investment this month was worth it. That same work would have been $1,200+ if I had waited another 6 months.'},
+      sep:{wins:"Q3 bonus $2,000 — fully sent to emergency fund (goal met!) and extra debt payoff. Credit card under $2,000.",challenges:'Roof deposit $2,500 hit cash flow hard. Had to trim general savings this month.',actions:'Get final roof quote. Map out vehicle loan payoff schedule — targeting Q1 2027.',notes:'EMERGENCY FUND FULLY FUNDED. $35,000. This has been a 2-year journey. One of the biggest financial milestones of my life.'},
+      oct:{wins:'Freelance $1,500 closed. Credit card balance $1,200 — nearly done. Vehicle loan on track.',challenges:'Holiday shopping temptation starting early. Grocery prices remain elevated.',actions:'Set firm holiday shopping budget of $800. Pre-order gifts early to avoid impulse spending.',notes:'Feeling the finish line on the credit card. One more aggressive push in November and it is gone.'},
+      nov:{wins:'Stayed under holiday shopping budget. Rental income stable all year. ROTH IRA on track to max in December.',challenges:'Grocery and dining over budget — Thanksgiving and early holiday events.',actions:'Pay off remaining credit card balance in December. Confirm ROTH max contribution timing.',notes:'Hardest month to stay disciplined. But the systems held. The automatic savings kept running even when discretionary spending spiked.'},
+      dec:{wins:'Credit card PAID OFF. ROTH IRA maxed for 2026. Net worth crossed $500k. Emergency fund fully funded. Zero revolving debt.',challenges:'December spending was high across groceries, dining, and gifts — expected and planned for.',actions:'Start 2027 budget. Increase 401(k) contribution rate. Open taxable brokerage account. Invest the freed-up $450/mo from credit card.',notes:'End of year: net worth up $106k from Jan 1. Debt down $27k. Emergency fund complete. Credit card gone. Hawaii trip. ROTH maxed. Starting 2027 with zero credit card debt for the first time in five years.'},
     },
     notes: {
-      jan:{wins:'January was a strong opener. Side income from freelance project exceeded expectations.',challenges:'Dining out remains the biggest variable expense and hardest to control.',actions:'Automate ROTH contribution. Set calendar reminder to review subscriptions Feb 1.',notes:'Overall grade: A-. Income up, debt down, savings on track.'},
-      feb:{wins:'Best savings month of the year so far thanks to the bonus. Credit card balance dropped $1,400.',challenges:'Grocery bill crept up — meal planning needed.',actions:'Start meal planning Sunday nights. Increase emergency fund contribution to $750/mo.',notes:'The bonus was a game changer. Momentum is real. Keep the discipline going into March.'},
-      mar:{wins:'',challenges:'',actions:'',notes:''},
-      apr:{wins:'',challenges:'',actions:'',notes:''},may:{wins:'',challenges:'',actions:'',notes:''},
-      jun:{wins:'',challenges:'',actions:'',notes:''},jul:{wins:'',challenges:'',actions:'',notes:''},
-      aug:{wins:'',challenges:'',actions:'',notes:''},sep:{wins:'',challenges:'',actions:'',notes:''},
-      oct:{wins:'',challenges:'',actions:'',notes:''},nov:{wins:'',challenges:'',actions:'',notes:''},
-      dec:{wins:'',challenges:'',actions:'',notes:''},
+      jan:{wins:'January was a strong opener. Freelance income exceeded expectations.',challenges:'Dining out remains the biggest variable — hardest habit to change.',actions:'Automate ROTH contribution. Set calendar reminder to review subscriptions Feb 1.',notes:'Grade: A-. Income up, debt down, savings on track. Good foundation for the year.'},
+      feb:{wins:'Best savings month yet thanks to the bonus. Credit card dropped $1,400 in one shot.',challenges:'Grocery bill crept up — meal planning would help.',actions:'Start Sunday meal planning. Maintain bonus savings discipline — do not lifestyle inflate.',notes:'The bonus was a game changer. Momentum is building. Keep the discipline through March.'},
+      mar:{wins:'Freelance side income held. Dining discipline clearly improving month over month.',challenges:'Annual subscriptions cost more than expected — need a tracking system.',actions:'Switch annual subscriptions to monthly billing or cancel. Build annual expense calendar.',notes:'Grade: B+. Income solid, expenses trending down. The app is making the invisible visible.'},
+      apr:{wins:'Spring feels lighter. Cancelled dead subscriptions. Dining held for second straight month.',challenges:'Need a system for irregular annual expenses — they keep catching me off guard.',actions:'Track all annual and semi-annual bills as monthly sinking fund line items.',notes:'Starting to think about money differently. Less reactive. More intentional. That is the shift.'},
+      may:{wins:'Strongest savings month outside of bonus month. Home investment feels proactive.',challenges:'Freelance income is lumpy — hard to rely on for monthly planning.',actions:'Budget freelance income at $0 in base budget. Treat every dollar as a bonus.',notes:'New rule adopted: never count on freelance in the base budget. Any dollar that comes in is extra. This removes the stress entirely.'},
+      jun:{wins:'Vacation happened — fully funded, no debt, no stress. That is the whole point.',challenges:'Getting back into routine after vacation takes a week or two mentally.',actions:'Restart Sunday budget review routine post-vacation. Do not let vacation guilt trigger revenge spending.',notes:'Grade: A-. The vacation fund strategy was a complete success. Proved to myself it works. Building 2027 vacation fund starting July 1.'},
+      jul:{wins:'System running smoothly with no financial drama. Steady and boring — in the best way.',challenges:'Summer utility bills are the main variable to watch through August.',actions:'Look into smart thermostat to reduce AC cost. Review utility bills vs budget.',notes:'Sometimes no news is good news. Tracking consistently. Hitting savings targets. Nothing to fix.'},
+      aug:{wins:'Extra income from selling old furniture. Health investment paid off — avoided bigger bill later.',challenges:'Medical expenses are wildcards that disrupt monthly projections.',actions:'Increase health sinking fund to $200/mo to better absorb unexpected medical costs.',notes:'Grade: B+. Good income month, elevated health expense, net positive. Emergency fund still untouched.'},
+      sep:{wins:'Emergency fund COMPLETE. Q3 bonus maximized. Credit card nearly zero. Biggest milestone month of the year.',challenges:'Roof project is a major outlay — monitoring cash flow carefully through Q4.',actions:'Do not let roof project derail ROTH contributions. Stay the course on all automatic savings.',notes:'MILESTONE MONTH. $35,000 emergency fund fully funded. Two years of consistent $500/mo contributions. Financial security achieved.'},
+      oct:{wins:'Credit card almost gone. Freelance closed strong. On track to finish every 2026 goal.',challenges:'Holiday season mental pressure to spend more than planned.',notes:'Grade: A. Strong income, managed expenses, debt nearly eliminated. Heading into the holidays from a position of strength.'},
+      nov:{wins:'Held the holiday budget line on the big categories. All savings goals tracking to plan.',challenges:'November is always the hardest month for discretionary discipline.',actions:'Wrap all holiday shopping by December 15 to avoid panic buying.',notes:'Grade: B. Dining and groceries over, but the major savings and debt payments held. Proud of the consistency.'},
+      dec:{wins:'Credit card paid off. ROTH maxed. $500k+ net worth. Emergency fund complete. Best financial year of my life.',challenges:'December is expensive — the key is accepting it, planning for it, and not letting it derail January.',actions:'Write 2027 financial plan. Raise 401(k) contribution rate. Open taxable brokerage. Invest the freed $450/mo.',notes:'Grade: A+. Net worth up $106k in 12 months. Debt down $27k. Every goal hit or exceeded. 5Stack made the difference — seeing every dollar every month, building toward something real. 2027 starts with zero credit card debt.'},
     },
     customCats: null,
-    // Paystub import data — Jan/Feb/Mar paystubs imported
-    // Alex Rivera: $9,500/mo salary | Feb includes $8,000 bonus
+    // Paystub import data — full year imported (12 months)
+    // Alex Rivera: $9,500/mo salary | Feb +$8,000 bonus | Sep +$2,000 bonus
     // Fed ~17.7% | State ~5% | SS 6.2% | Medicare 1.45% | 401k $1,000/mo
     deductions: {
       jan:{taxesFed:1680, taxesState:475, taxesFica:589, taxesMed:138, taxes:0, totalTaxes:2882},
       feb:{taxesFed:3500, taxesState:875, taxesFica:1085,taxesMed:254, taxes:0, totalTaxes:5714},
       mar:{taxesFed:1680, taxesState:475, taxesFica:589, taxesMed:138, taxes:0, totalTaxes:2882},
-      apr:{taxesFed:0,taxesState:0,taxesFica:0,taxesMed:0,taxes:0,totalTaxes:0},
-      may:{taxesFed:0,taxesState:0,taxesFica:0,taxesMed:0,taxes:0,totalTaxes:0},
-      jun:{taxesFed:0,taxesState:0,taxesFica:0,taxesMed:0,taxes:0,totalTaxes:0},
-      jul:{taxesFed:0,taxesState:0,taxesFica:0,taxesMed:0,taxes:0,totalTaxes:0},
-      aug:{taxesFed:0,taxesState:0,taxesFica:0,taxesMed:0,taxes:0,totalTaxes:0},
-      sep:{taxesFed:0,taxesState:0,taxesFica:0,taxesMed:0,taxes:0,totalTaxes:0},
-      oct:{taxesFed:0,taxesState:0,taxesFica:0,taxesMed:0,taxes:0,totalTaxes:0},
-      nov:{taxesFed:0,taxesState:0,taxesFica:0,taxesMed:0,taxes:0,totalTaxes:0},
-      dec:{taxesFed:0,taxesState:0,taxesFica:0,taxesMed:0,taxes:0,totalTaxes:0},
+      apr:{taxesFed:1680, taxesState:475, taxesFica:589, taxesMed:138, taxes:0, totalTaxes:2882},
+      may:{taxesFed:1680, taxesState:475, taxesFica:589, taxesMed:138, taxes:0, totalTaxes:2882},
+      jun:{taxesFed:1680, taxesState:475, taxesFica:589, taxesMed:138, taxes:0, totalTaxes:2882},
+      jul:{taxesFed:1680, taxesState:475, taxesFica:589, taxesMed:138, taxes:0, totalTaxes:2882},
+      aug:{taxesFed:1680, taxesState:475, taxesFica:589, taxesMed:138, taxes:0, totalTaxes:2882},
+      sep:{taxesFed:2030, taxesState:575, taxesFica:713, taxesMed:167, taxes:0, totalTaxes:3485},
+      oct:{taxesFed:1680, taxesState:475, taxesFica:589, taxesMed:138, taxes:0, totalTaxes:2882},
+      nov:{taxesFed:1680, taxesState:475, taxesFica:589, taxesMed:138, taxes:0, totalTaxes:2882},
+      dec:{taxesFed:1680, taxesState:475, taxesFica:589, taxesMed:138, taxes:0, totalTaxes:2882},
     },
-    // YTD totals from most recent paystub (March)
+    // YTD totals from most recent paystub (December — full year)
     paystubYtd: {
-      k401:      3000,   // $1,000/mo × 3 months
-      taxesFed:  6860,   // Jan $1,680 + Feb $3,500 + Mar $1,680
-      taxesState:1825,   // Jan $475  + Feb $875  + Mar $475
-      taxesFica: 2263,   // Jan $589  + Feb $1,085 + Mar $589
-      taxesMed:  530,    // Jan $138  + Feb $254  + Mar $138
+      k401:      12000,  // $1,000/mo × 12 months
+      taxesFed:  22330,  // full year (10 × $1,680 + Feb $3,500 + Sep $2,030)
+      taxesState:6200,   // full year (10 × $475  + Feb $875  + Sep $575)
+      taxesFica: 7688,   // full year (10 × $589  + Feb $1,085 + Sep $713)
+      taxesMed:  1801,   // full year (10 × $138  + Feb $254  + Sep $167)
     },
   };
 }
@@ -6402,9 +6423,9 @@ let _reloadTicker;
       const b=_d.find(d=>d.sym==='BTC');
       const t=_d.find(d=>d.sym==='TAO');
       if(typeof appData!=='undefined'&&appData?.netWorth){
-        if(b&&b._live){appData.netWorth.assets.bitcoin=r2(2.7*b.price);appData.netWorth.assets.bitcoinIRAUnchained=r2(0.74*b.price);changed=true;}
-        if(t&&t._live){appData.netWorth.assets.cryptoOther=r2(100*t.price);changed=true;}
-        if(window._silverPrice){appData.netWorth.assets.otherAssets=r2(34*window._silverPrice);changed=true;}
+        if(!isDemoMode&&b&&b._live){appData.netWorth.assets.bitcoin=r2(2.7*b.price);appData.netWorth.assets.bitcoinIRAUnchained=r2(0.74*b.price);changed=true;}
+        if(!isDemoMode&&t&&t._live){appData.netWorth.assets.cryptoOther=r2(100*t.price);changed=true;}
+        if(!isDemoMode&&window._silverPrice){appData.netWorth.assets.otherAssets=r2(34*window._silverPrice);changed=true;}
         if(changed&&typeof saveData==='function')saveData();
         if(changed&&typeof renderNetWorth==='function')renderNetWorth();
       }
