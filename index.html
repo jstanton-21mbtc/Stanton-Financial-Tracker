@@ -4676,9 +4676,9 @@ function renderNetWorth() {
   if(!appData.netWorth) appData.netWorth={assets:{},liabilities:{},history:[]};
   if(!appData.netWorth.customAssets) appData.netWorth.customAssets=[];
   if(!appData.netWorth.customLiabilities) appData.netWorth.customLiabilities=[];
-  // hardset Bitcoin = 2.7 BTC × live price; Unchained Roth IRA = 0.74 BTC × live price; Bittensor = 97 TAO × live price; Silver = 34 oz × live spot
+  // hardset Bitcoin = 2.7 BTC × live price; Unchained Roth IRA = 0.74 BTC × live price; Bittensor = 100 TAO × live price; Silver = 34 oz × live spot
   try{const p=typeof _getLiveBtcPrice==='function'?_getLiveBtcPrice():null;if(p){appData.netWorth.assets.bitcoin=r2(2.7*p);appData.netWorth.assets.bitcoinIRAUnchained=r2(0.74*p);}}catch(e){}
-  try{const p=typeof _getLiveTaoPrice==='function'?_getLiveTaoPrice():null;if(p)appData.netWorth.assets.cryptoOther=r2(97*p);}catch(e){}
+  try{const p=typeof _getLiveTaoPrice==='function'?_getLiveTaoPrice():null;if(p)appData.netWorth.assets.cryptoOther=r2(100*p);}catch(e){}
   try{const p=typeof _getLiveSilverPrice==='function'?_getLiveSilverPrice():null;if(p)appData.netWorth.assets.otherAssets=r2(34*p);}catch(e){}
   const totalA=nwTotalAssets(), totalL=nwTotalLiabilities(), net=nwNet();
   const debtRatio=totalA>0?(totalL/totalA):0;
@@ -4717,7 +4717,7 @@ function buildNwTable(cats, section, total, accentColor) {
     const _isLiveTao=(section==='assets'&&cat.key==='cryptoOther');
     const _isLiveUnchained=(section==='assets'&&cat.key==='bitcoinIRAUnchained');
     const _isLiveSilver=(section==='assets'&&cat.key==='otherAssets');
-    const _liveTag=_isLiveBtc?'LIVE · 2.7 BTC':_isLiveTao?'LIVE · 97 TAO':_isLiveUnchained?'LIVE · 0.74 BTC':_isLiveSilver?'LIVE · 34 oz':'';
+    const _liveTag=_isLiveBtc?'LIVE · 2.7 BTC':_isLiveTao?'LIVE · 100 TAO':_isLiveUnchained?'LIVE · 0.74 BTC':_isLiveSilver?'LIVE · 34 oz':'';
     html+=`<tr>
       <td>${cat.label}${_liveTag?`<span style="margin-left:6px;font-size:10px;font-weight:700;color:var(--blue);background:var(--blue-dim);border-radius:4px;padding:1px 5px">${_liveTag}</span>`:''}</td>
       <td>${(_isLiveBtc||_isLiveTao||_isLiveUnchained||_isLiveSilver)?`<input type="number" step="0.01" min="0" value="${val>0?val:''}" placeholder="$0" readonly style="background:var(--elevated);cursor:default;color:var(--text-2)"/>`:`<input type="number" step="0.01" min="0" value="${val>0?val:''}" placeholder="$0" onchange="updateNW('${section}','${cat.key}',this.value)"/>`}</td>
@@ -6403,7 +6403,7 @@ let _reloadTicker;
       const t=_d.find(d=>d.sym==='TAO');
       if(typeof appData!=='undefined'&&appData?.netWorth){
         if(b&&b._live){appData.netWorth.assets.bitcoin=r2(2.7*b.price);appData.netWorth.assets.bitcoinIRAUnchained=r2(0.74*b.price);changed=true;}
-        if(t&&t._live){appData.netWorth.assets.cryptoOther=r2(97*t.price);changed=true;}
+        if(t&&t._live){appData.netWorth.assets.cryptoOther=r2(100*t.price);changed=true;}
         if(window._silverPrice){appData.netWorth.assets.otherAssets=r2(34*window._silverPrice);changed=true;}
         if(changed&&typeof saveData==='function')saveData();
         if(changed&&typeof renderNetWorth==='function')renderNetWorth();
