@@ -3501,8 +3501,8 @@ function _mGetForemanFleet(){
           units,
           totalTH:parseFloat(totalTH.toFixed(2)),
           totalW:units.reduce((s,u)=>s+u.power,0),
-          n:clientObj?.miners?.total||allMiners.length||units.length,
-          online:clientObj?.miners?.online??units.filter(u=>u.active).length,
+          n:units.length,
+          online:units.filter(u=>u.active).length,
           synced,
         };
       }
