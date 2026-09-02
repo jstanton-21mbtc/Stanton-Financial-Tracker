@@ -3694,9 +3694,14 @@ function renderMiningDashboard(){
             <div style="font-size:9.5px;letter-spacing:1.2px;color:${_MC.faint};text-transform:uppercase;font-weight:700;margin-bottom:5px;">Fleet Hash Rate</div>
             <div id="m-banner-hr" style="font-size:17px;font-weight:800;color:${_MC.ink};">—</div>
           </div>
-          <div style="flex:1;padding:12px 16px;text-align:center;">
+          <div style="flex:1;padding:12px 16px;border-right:1px solid ${_MC.border};text-align:center;">
             <div style="font-size:9.5px;letter-spacing:1.2px;color:${_MC.faint};text-transform:uppercase;font-weight:700;margin-bottom:5px;">Rev / TH / day</div>
             <div id="m-banner-rev" style="font-size:17px;font-weight:800;color:${_MC.green};">—</div>
+          </div>
+          <div style="flex:1;padding:12px 16px;text-align:center;">
+            <div style="font-size:9.5px;letter-spacing:1.2px;color:${_MC.amber};text-transform:uppercase;font-weight:700;margin-bottom:3px;">5Stack BTC Treasury</div>
+            <div style="font-size:11px;color:${_MC.faint};font-weight:600;margin-bottom:3px;">0.0200 BTC</div>
+            <div id="m-treasury-usd" style="font-size:17px;font-weight:800;color:${_MC.ink};">—</div>
           </div>
         </div>
         <div style="display:grid;grid-template-columns:300px 1fr;gap:18px;align-items:start;">
@@ -3868,6 +3873,8 @@ function _mUpdate(){
   const banRev=document.getElementById('m-banner-rev');
   if(banHr)  banHr.textContent =(_mLiveFleet?`${_mFmt(_mLiveFleet.totalTH,2)} TH/s`:`${_mFmt(m.th,2)} TH/s`);
   if(banRev) banRev.textContent=`$${(m.btcPerThDay*btc).toFixed(4)}`;
+  const tUsd=document.getElementById('m-treasury-usd');
+  if(tUsd) tUsd.textContent=`$${_mFmt(0.02*btc,2)}`;
   // Chart defaults
   Chart.defaults.color=_MC.dim;
   // Price curve chart
