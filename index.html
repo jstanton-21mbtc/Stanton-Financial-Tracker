@@ -3530,27 +3530,74 @@ const _MSNAP_KEY='sft_mining_snapshots_v1';
 function _mGetSnapshots(){try{return JSON.parse(localStorage.getItem(_MSNAP_KEY)||'[]');}catch(e){return[];}}
 function _mSaveSnapshots(arr){localStorage.setItem(_MSNAP_KEY,JSON.stringify(arr));}
 
-function _mSaveSnapshot(){
-  const btcStr=prompt('Enter actual BTC mined this month (from your pool dashboard):');
-  if(!btcStr||!btcStr.trim()) return;
-  const btcMined=parseFloat(btcStr);
-  if(isNaN(btcMined)||btcMined<=0){alert('Invalid BTC amount.');return;}
+function _mOpenSnapshotModal(editIsoDate){
+  let existing=editIsoDate?_mGetSnapshots().find(s=>s.isoDate===editIsoDate):null;
+  // Default month: previous month (good for logging last month's actual)
   const now=new Date();
-  const label=now.toLocaleString('en-US',{month:'short',year:'numeric'});
-  const isoDate=now.toISOString().slice(0,7); // YYYY-MM
-  const btcPrice=_MS.btc||0;
+  const prevMonth=new Date(now.getFullYear(),now.getMonth()-1,1);
+  const defaultMonth=editIsoDate||prevMonth.toISOString().slice(0,7);
+  let modal=document.getElementById('m-snap-modal');
+  if(!modal){
+    modal=document.createElement('div');
+    modal.id='m-snap-modal';
+    modal.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:9999;display:flex;align-items:center;justify-content:center;';
+    modal.onclick=function(e){if(e.target===modal)_mCloseSnapshotModal();};
+    document.body.appendChild(modal);
+  }
+  modal.innerHTML=`<div style="background:${_MC.panel};border:1px solid ${_MC.border};border-radius:14px;padding:28px 30px;width:100%;max-width:420px;box-shadow:0 24px 48px rgba(0,0,0,.5);">
+    <div style="font-size:15px;font-weight:800;color:${_MC.ink};margin-bottom:20px;">${editIsoDate?'Edit':'Add'} Production Snapshot</div>
+    <div style="margin-bottom:14px;">
+      <label style="font-size:11px;font-weight:700;color:${_MC.dim};text-transform:uppercase;letter-spacing:.6px;display:block;margin-bottom:5px;">Month</label>
+      <input id="m-snap-month" type="month" value="${defaultMonth}" style="width:100%;background:${_MC.panel2||'#161b22'};border:1px solid ${_MC.border};border-radius:8px;padding:9px 12px;color:${_MC.ink};font-size:13px;font-family:inherit;box-sizing:border-box;" />
+    </div>
+    <div style="margin-bottom:14px;">
+      <label style="font-size:11px;font-weight:700;color:${_MC.dim};text-transform:uppercase;letter-spacing:.6px;display:block;margin-bottom:5px;">BTC Mined</label>
+      <input id="m-snap-btc" type="number" step="0.000001" placeholder="0.000000" value="${existing?existing.btcMined:''}" style="width:100%;background:${_MC.panel2||'#161b22'};border:1px solid ${_MC.border};border-radius:8px;padding:9px 12px;color:${_MC.ink};font-size:13px;font-family:inherit;box-sizing:border-box;" />
+    </div>
+    <div style="margin-bottom:14px;">
+      <label style="font-size:11px;font-weight:700;color:${_MC.dim};text-transform:uppercase;letter-spacing:.6px;display:block;margin-bottom:5px;">BTC Price (USD)</label>
+      <input id="m-snap-price" type="number" step="1" placeholder="0" value="${existing?existing.btcPrice:(_MS.btc||'')}" style="width:100%;background:${_MC.panel2||'#161b22'};border:1px solid ${_MC.border};border-radius:8px;padding:9px 12px;color:${_MC.ink};font-size:13px;font-family:inherit;box-sizing:border-box;" />
+    </div>
+    <div style="margin-bottom:22px;">
+      <label style="font-size:11px;font-weight:700;color:${_MC.dim};text-transform:uppercase;letter-spacing:.6px;display:block;margin-bottom:5px;">Hosting Cost (USD)</label>
+      <input id="m-snap-hosting" type="number" step="0.01" placeholder="0" value="${existing?existing.hosting:(_MS.host||'')}" style="width:100%;background:${_MC.panel2||'#161b22'};border:1px solid ${_MC.border};border-radius:8px;padding:9px 12px;color:${_MC.ink};font-size:13px;font-family:inherit;box-sizing:border-box;" />
+    </div>
+    <div style="display:flex;gap:10px;justify-content:flex-end;">
+      <button onclick="_mCloseSnapshotModal()" style="background:none;border:1px solid ${_MC.border};color:${_MC.dim};border-radius:7px;padding:9px 18px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;">Cancel</button>
+      <button onclick="_mSubmitSnapshotModal()" style="background:${_MC.amber};color:#0d1117;border:none;border-radius:7px;padding:9px 18px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;">Save Snapshot</button>
+    </div>
+  </div>`;
+  modal.style.display='flex';
+}
+
+function _mCloseSnapshotModal(){
+  const modal=document.getElementById('m-snap-modal');
+  if(modal) modal.style.display='none';
+}
+
+function _mSubmitSnapshotModal(){
+  const monthVal=document.getElementById('m-snap-month').value;
+  const btcMined=parseFloat(document.getElementById('m-snap-btc').value);
+  const btcPrice=parseFloat(document.getElementById('m-snap-price').value);
+  const hosting=parseFloat(document.getElementById('m-snap-hosting').value);
+  if(!monthVal){alert('Please select a month.');return;}
+  if(isNaN(btcMined)||btcMined<=0){alert('Enter a valid BTC amount.');return;}
+  if(isNaN(btcPrice)||btcPrice<=0){alert('Enter a valid BTC price.');return;}
+  if(isNaN(hosting)||hosting<0){alert('Enter a valid hosting cost.');return;}
+  const isoDate=monthVal;
+  const dt=new Date(monthVal+'-02');
+  const label=dt.toLocaleString('en-US',{month:'short',year:'numeric'});
   const usdGross=parseFloat((btcMined*btcPrice).toFixed(2));
-  const hosting=_MS.host||0;
   const netUsd=parseFloat((usdGross-hosting).toFixed(2));
   const fleetTH=_mLiveFleet?_mLiveFleet.totalTH:_MK.TH;
   const units=_mLiveFleet?_mLiveFleet.n:_MK.N;
   const snaps=_mGetSnapshots();
-  // Replace existing entry for same month
   const idx=snaps.findIndex(s=>s.isoDate===isoDate);
   const entry={date:label,isoDate,btcMined,btcPrice,usdGross,hosting,netUsd,fleetTH:parseFloat(fleetTH.toFixed(2)),units};
   if(idx>=0) snaps[idx]=entry; else snaps.push(entry);
   snaps.sort((a,b)=>a.isoDate.localeCompare(b.isoDate));
   _mSaveSnapshots(snaps);
+  _mCloseSnapshotModal();
   _mRenderSnapshots();
   const el=document.getElementById('m-snap-table');
   if(el) el.scrollIntoView({behavior:'smooth',block:'nearest'});
@@ -3576,7 +3623,7 @@ function _mRenderSnapshots(){
   // Build comparison rows newest-first
   const rows=[...snaps].reverse();
   const best=Math.max(...snaps.map(s=>s.netUsd));
-  const hdr=`<div style="display:grid;grid-template-columns:90px 80px 80px 90px 80px 90px 80px 36px;gap:0;font-size:10px;font-weight:700;color:${_MC.dim};text-transform:uppercase;letter-spacing:.7px;padding:6px 10px;border-bottom:1px solid ${_MC.border};">
+  const hdr=`<div style="display:grid;grid-template-columns:90px 80px 80px 90px 80px 90px 80px 70px;gap:0;font-size:10px;font-weight:700;color:${_MC.dim};text-transform:uppercase;letter-spacing:.7px;padding:6px 10px;border-bottom:1px solid ${_MC.border};">
     <span>Month</span><span>BTC Mined</span><span>BTC Price</span><span>Gross USD</span><span>Hosting</span><span>Net USD</span><span>Fleet TH</span><span></span>
   </div>`;
   const bodyRows=rows.map((s,i)=>{
@@ -3584,7 +3631,7 @@ function _mRenderSnapshots(){
     const netChg=prev!=null?s.netUsd-prev.netUsd:null;
     const chgHtml=netChg!=null?`<span style="font-size:10px;color:${netChg>=0?_MC.green:_MC.red};margin-left:5px;">${netChg>=0?'▲':'▼'}${fmt$(Math.abs(netChg))}</span>`:'';
     const isTop=s.netUsd===best&&snaps.length>1;
-    return `<div style="display:grid;grid-template-columns:90px 80px 80px 90px 80px 90px 80px 36px;gap:0;align-items:center;padding:9px 10px;border-bottom:1px solid ${_MC.border};font-size:12px;">
+    return `<div style="display:grid;grid-template-columns:90px 80px 80px 90px 80px 90px 80px 70px;gap:0;align-items:center;padding:9px 10px;border-bottom:1px solid ${_MC.border};font-size:12px;">
       <span style="font-weight:700;color:${_MC.ink};">${s.date}${isTop?` <span style="font-size:9px;background:${_MC.amber};color:#0d1117;border-radius:3px;padding:1px 4px;font-weight:700;">BEST</span>`:''}</span>
       <span style="color:${_MC.amber};font-weight:700;">${fmtBtc(s.btcMined)}</span>
       <span style="color:${_MC.dim};">${fmt$(s.btcPrice)}</span>
@@ -3592,14 +3639,17 @@ function _mRenderSnapshots(){
       <span style="color:${_MC.dim};">${fmt$(s.hosting)}</span>
       <span style="color:${s.netUsd>=0?_MC.green:_MC.red};font-weight:700;">${fmt$(s.netUsd)}${chgHtml}</span>
       <span style="color:${_MC.dim};">${_mFmt(s.fleetTH,0)} TH</span>
-      <span><button onclick="_mDeleteSnapshot('${s.isoDate}')" style="background:none;border:none;color:${_MC.faint};cursor:pointer;font-size:13px;padding:2px 4px;" title="Delete">✕</button></span>
+      <span style="display:flex;gap:4px;align-items:center;">
+        <button onclick="_mOpenSnapshotModal('${s.isoDate}')" style="background:none;border:none;color:${_MC.dim};cursor:pointer;font-size:12px;padding:2px 4px;" title="Edit">✎</button>
+        <button onclick="_mDeleteSnapshot('${s.isoDate}')" style="background:none;border:none;color:${_MC.faint};cursor:pointer;font-size:13px;padding:2px 4px;" title="Delete">✕</button>
+      </span>
     </div>`;
   }).join('');
   // Summary row
   const totalBtc=snaps.reduce((s,r)=>s+r.btcMined,0);
   const totalNet=snaps.reduce((s,r)=>s+r.netUsd,0);
   const avgNet=totalNet/snaps.length;
-  const summary=`<div style="display:grid;grid-template-columns:90px 80px 80px 90px 80px 90px 80px 36px;gap:0;align-items:center;padding:9px 10px;font-size:11.5px;background:${_MC.panel2};border-top:1px solid ${_MC.border};">
+  const summary=`<div style="display:grid;grid-template-columns:90px 80px 80px 90px 80px 90px 80px 70px;gap:0;align-items:center;padding:9px 10px;font-size:11.5px;background:${_MC.panel2};border-top:1px solid ${_MC.border};">
     <span style="font-weight:700;color:${_MC.dim};font-size:10px;text-transform:uppercase;letter-spacing:.5px;">${snaps.length} months</span>
     <span style="color:${_MC.amber};font-weight:700;">${fmtBtc(totalBtc)}</span>
     <span style="color:${_MC.dim};">avg</span>
@@ -3763,7 +3813,7 @@ function renderMiningDashboard(){
               <div style="font-size:14px;font-weight:800;color:${_MC.ink};">Monthly Production Snapshots</div>
               <div style="font-size:11.5px;color:${_MC.dim};margin-top:2px;">Track actual BTC mined month over month</div>
             </div>
-            <button onclick="_mSaveSnapshot()" style="background:${_MC.amber};color:#0d1117;border:none;border-radius:7px;padding:8px 16px;font-size:12.5px;font-weight:700;cursor:pointer;letter-spacing:.3px;">+ Save Snapshot</button>
+            <button onclick="_mOpenSnapshotModal()" style="background:${_MC.amber};color:#0d1117;border:none;border-radius:7px;padding:8px 16px;font-size:12.5px;font-weight:700;cursor:pointer;letter-spacing:.3px;">+ Add Snapshot</button>
           </div>
           <div id="m-snap-table"></div>
         </div>
@@ -8937,7 +8987,7 @@ Extract ALL relevant metrics from the document. For Bitcoin mining: hash rate, u
     }];
   }
 
-  const res = await fetch('/api/anthropic/v1/messages', {
+  const res = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
