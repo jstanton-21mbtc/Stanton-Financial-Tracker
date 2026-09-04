@@ -3817,21 +3817,172 @@ function renderMiningDashboard(){
           </div>
           <div id="m-snap-table"></div>
         </div>
+        <!-- AI Mining Chat -->
+        <div style="margin-top:28px;background:${_MC.panel};border:1px solid ${_MC.border};border-radius:12px;padding:20px 22px;">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:10px;">
+            <div>
+              <div style="font-size:14px;font-weight:800;color:${_MC.ink};">AI Mining Advisor</div>
+              <div style="font-size:11.5px;color:${_MC.dim};margin-top:2px;">Ask anything about your fleet economics, profitability, or strategy</div>
+            </div>
+            <button onclick="_mChatClear()" style="background:transparent;color:${_MC.dim};border:1px solid ${_MC.border};border-radius:7px;padding:6px 12px;font-size:11.5px;cursor:pointer;font-family:inherit;">Clear chat</button>
+          </div>
+          <div id="m-chat-msgs" style="min-height:60px;max-height:320px;overflow-y:auto;display:flex;flex-direction:column;gap:10px;margin-bottom:12px;"></div>
+          <div id="m-chat-suggestions" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px;">
+            <button onclick="_mChatQuick('Am I profitable at the current BTC price?')" style="background:${_MC.panel2};border:1px solid ${_MC.border};color:${_MC.dim};font-size:11px;padding:6px 10px;border-radius:7px;cursor:pointer;font-family:inherit;">Am I profitable?</button>
+            <button onclick="_mChatQuick('What is my monthly net P&amp;L?')" style="background:${_MC.panel2};border:1px solid ${_MC.border};color:${_MC.dim};font-size:11px;padding:6px 10px;border-radius:7px;cursor:pointer;font-family:inherit;">Monthly net P&amp;L</button>
+            <button onclick="_mChatQuick('What is my breakeven BTC price?')" style="background:${_MC.panel2};border:1px solid ${_MC.border};color:${_MC.dim};font-size:11px;padding:6px 10px;border-radius:7px;cursor:pointer;font-family:inherit;">Breakeven price</button>
+            <button onclick="_mChatQuick('How much BTC am I mining per month?')" style="background:${_MC.panel2};border:1px solid ${_MC.border};color:${_MC.dim};font-size:11px;padding:6px 10px;border-radius:7px;cursor:pointer;font-family:inherit;">BTC / month</button>
+            <button onclick="_mChatQuick('What happens to my P&amp;L if BTC drops to $50,000?')" style="background:${_MC.panel2};border:1px solid ${_MC.border};color:${_MC.dim};font-size:11px;padding:6px 10px;border-radius:7px;cursor:pointer;font-family:inherit;">P&amp;L at $50k BTC</button>
+            <button onclick="_mChatQuick('Is LuxOS tuning worth applying to my fleet?')" style="background:${_MC.panel2};border:1px solid ${_MC.border};color:${_MC.dim};font-size:11px;padding:6px 10px;border-radius:7px;cursor:pointer;font-family:inherit;">LuxOS worth it?</button>
+          </div>
+          <div style="display:flex;gap:8px;">
+            <input id="m-chat-input" type="text" placeholder="Ask about profitability, ROI, fleet health…" style="flex:1;background:${_MC.panel2};border:1px solid ${_MC.border};color:${_MC.ink};border-radius:8px;padding:9px 12px;font-size:13px;font-family:inherit;outline:none;" />
+            <button id="m-chat-send" onclick="_mChatSend()" style="background:${_MC.amber};color:#0d1117;border:none;border-radius:8px;padding:9px 18px;font-size:12.5px;font-weight:700;cursor:pointer;font-family:inherit;white-space:nowrap;">Send</button>
+          </div>
+        </div>
       </div>
     </div>`;
     ['btc','diff','host','poolFee'].forEach(k=>{
       document.getElementById('msl-'+k).addEventListener('input',e=>{_MS[k]=parseFloat(e.target.value);_mUpdate();});
     });
     document.getElementById('m-lux').addEventListener('change',e=>{_MS.luxRecover=e.target.checked;_mUpdate();});
+    document.getElementById('m-chat-input').addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();_mChatSend();}});
   }
   _mUpdate();
   _mRenderSnapshots();
+  _mChatRender();
   _mFetchLive();
   _mSilentSyncForeman();
   if(window._mLiveInterval) clearInterval(window._mLiveInterval);
   window._mLiveInterval = setInterval(_mFetchLive, 60000);
   if(window._mForemanSyncInterval) clearInterval(window._mForemanSyncInterval);
   window._mForemanSyncInterval = setInterval(_mSilentSyncForeman, 5*60*1000);
+}
+
+// ── Mining AI Chat ──
+let _mChatHistory = [];
+let _mChatLoading = false;
+
+function _mChatBuildContext() {
+  const m = _mCalc();
+  const snaps = _mGetSnapshots().slice(-6);
+  let ctx = `You are an AI mining advisor built into 5Stack.ai for 5Stack LLC, a Bitcoin mining operation. Answer concisely and helpfully. Bold key numbers with **asterisks**.\n\n`;
+  ctx += `== FLEET OVERVIEW ==\n`;
+  ctx += `Miners: ${_MK.N} units (Antminer S21 Keepers)\n`;
+  ctx += `Fleet hashrate: ${m.th.toFixed(2)} TH/s\n`;
+  ctx += `Hosting facility: Blockware, KY-LF\n\n`;
+  ctx += `== CURRENT ASSUMPTIONS ==\n`;
+  ctx += `BTC price: $${_MS.btc.toLocaleString()}\n`;
+  ctx += `Network difficulty: ${_MS.diff} T\n`;
+  ctx += `Monthly hosting cost: $${_MS.host.toLocaleString()}\n`;
+  ctx += `Pool fee: ${_MS.poolFee}%\n`;
+  ctx += `LuxOS tuning: ${_MS.luxRecover ? 'active (+154 TH on 23 units, 182→189 TH)' : 'not applied'}\n\n`;
+  ctx += `== FLEET ECONOMICS ==\n`;
+  ctx += `BTC per day: ${m.btcDay.toFixed(5)} BTC\n`;
+  ctx += `Gross revenue per day: $${m.revDay.toFixed(2)}\n`;
+  ctx += `Hosting cost per day: $${m.billDay.toFixed(2)}\n`;
+  ctx += `Net P&L per day: $${m.netDay.toFixed(2)}\n`;
+  ctx += `Net P&L per month: $${m.netMo.toFixed(2)}\n`;
+  ctx += `Breakeven BTC price: $${Math.round(m.beBtc).toLocaleString()}\n`;
+  ctx += `Rev per TH per day: $${(m.btcPerThDay * _MS.btc).toFixed(4)}\n`;
+  ctx += `5Stack BTC treasury: 0.0200 BTC (~$${Math.round(0.02 * _MS.btc).toLocaleString()})\n\n`;
+  if (snaps.length) {
+    ctx += `== RECENT PRODUCTION SNAPSHOTS (last ${snaps.length} months) ==\n`;
+    snaps.forEach(s => {
+      ctx += `${s.isoDate}: ${s.btc || '—'} BTC mined, $${s.revenue || '—'} revenue, $${s.cost || '—'} cost, $${s.net || '—'} net\n`;
+    });
+    ctx += '\n';
+  }
+  return ctx;
+}
+
+function _mChatRender() {
+  const msgs = document.getElementById('m-chat-msgs');
+  const sugg = document.getElementById('m-chat-suggestions');
+  if (!msgs) return;
+  const apiKey = localStorage.getItem('sft_anthropic_key_v1') || '';
+  if (!apiKey) {
+    msgs.innerHTML = `<div style="font-size:12.5px;color:${_MC.dim};text-align:center;padding:18px 0;">No API key found. Add your Anthropic key in <a onclick="showTab('settings')" style="color:${_MC.amber};cursor:pointer;text-decoration:underline;">Settings → AI / API</a> to enable the Mining Advisor.</div>`;
+    if (sugg) sugg.style.display = 'none';
+    return;
+  }
+  if (_mChatHistory.length === 0) {
+    msgs.innerHTML = '';
+    if (sugg) sugg.style.display = 'flex';
+    return;
+  }
+  if (sugg) sugg.style.display = 'none';
+  msgs.innerHTML = _mChatHistory.map(m => {
+    const isUser = m.role === 'user';
+    return `<div style="display:flex;flex-direction:column;gap:3px;max-width:85%;align-self:${isUser?'flex-end':'flex-start'};align-items:${isUser?'flex-end':'flex-start'};">
+      <div style="padding:9px 13px;border-radius:12px;font-size:13px;line-height:1.55;${isUser?`background:${_MC.amber};color:#0d1117;border-bottom-right-radius:3px;font-weight:500;`:`background:${_MC.panel2};border:1px solid ${_MC.border};color:${_MC.ink};border-bottom-left-radius:3px;white-space:pre-wrap;`}">${m.content.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\*\*(.*?)\*\*/g,'<b>$1</b>')}</div>
+      <div style="font-size:10px;color:${_MC.faint};">${m.time}</div>
+    </div>`;
+  }).join('');
+  if (_mChatLoading) {
+    msgs.innerHTML += `<div style="display:flex;gap:5px;align-items:center;padding:10px 13px;background:${_MC.panel2};border:1px solid ${_MC.border};border-radius:12px;border-bottom-left-radius:3px;align-self:flex-start;">
+      <span style="width:6px;height:6px;background:${_MC.dim};border-radius:50%;display:inline-block;animation:chatDot .9s ease-in-out infinite;"></span>
+      <span style="width:6px;height:6px;background:${_MC.dim};border-radius:50%;display:inline-block;animation:chatDot .9s ease-in-out infinite .15s;"></span>
+      <span style="width:6px;height:6px;background:${_MC.dim};border-radius:50%;display:inline-block;animation:chatDot .9s ease-in-out infinite .3s;"></span>
+    </div>`;
+  }
+  msgs.scrollTop = msgs.scrollHeight;
+}
+
+function _mChatQuick(text) {
+  const input = document.getElementById('m-chat-input');
+  if (input) { input.value = text; }
+  _mChatSend();
+}
+
+function _mChatClear() {
+  _mChatHistory = [];
+  const sugg = document.getElementById('m-chat-suggestions');
+  if (sugg) sugg.style.display = 'flex';
+  _mChatRender();
+}
+
+async function _mChatSend() {
+  if (_mChatLoading) return;
+  const input = document.getElementById('m-chat-input');
+  const text = (input?.value || '').trim();
+  if (!text) return;
+  const apiKey = localStorage.getItem('sft_anthropic_key_v1') || '';
+  if (!apiKey) { _mChatRender(); return; }
+  const now = new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
+  _mChatHistory.push({ role:'user', content:text, time:now });
+  input.value = '';
+  _mChatLoading = true;
+  const sendBtn = document.getElementById('m-chat-send');
+  if (sendBtn) sendBtn.disabled = true;
+  _mChatRender();
+  try {
+    const systemPrompt = _mChatBuildContext();
+    const apiMessages = _mChatHistory
+      .filter(m => m.role === 'user' || m.role === 'assistant')
+      .map(m => ({ role: m.role, content: m.content }));
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true'
+      },
+      body: JSON.stringify({ model: 'claude-haiku-4-5-20251001', max_tokens: 1024, system: systemPrompt, messages: apiMessages })
+    });
+    if (!res.ok) { const e = await res.json().catch(()=>({})); throw new Error(e?.error?.message || `API error ${res.status}`); }
+    const data = await res.json();
+    const reply = data.content?.[0]?.text || 'No response.';
+    const rt = new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
+    _mChatHistory.push({ role:'assistant', content:reply, time:rt });
+  } catch(e) {
+    const et = new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
+    _mChatHistory.push({ role:'assistant', content:`Error: ${e.message}`, time:et });
+  }
+  _mChatLoading = false;
+  if (sendBtn) sendBtn.disabled = false;
+  _mChatRender();
 }
 
 async function _mFetchLive(){
