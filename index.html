@@ -3793,12 +3793,13 @@ function renderMiningDashboard(){
               <div style="position:relative;height:180px;"><canvas id="m-ch-units"></canvas></div>
             </div>
             <div style="background:${_MC.panel};border:1px solid ${_MC.border};border-radius:12px;padding:16px 18px 12px;grid-column:1/-1;">
-              <div style="font-size:13px;font-weight:700;margin-bottom:2px;">CapEx ROI vs Mining Returns</div>
-              <div id="m-roi-sub" style="font-size:11.5px;color:${_MC.dim};margin-bottom:12px;">Cumulative net revenue vs 5Stack LLC capital investment</div>
+              <div style="font-size:13px;font-weight:700;margin-bottom:2px;">24-Month Forward Returns Projection</div>
+              <div id="m-roi-sub" style="font-size:11.5px;color:${_MC.dim};margin-bottom:12px;">Cumulative net revenue · bear / base / bull BTC price scenarios</div>
               <div style="position:relative;height:160px;"><canvas id="m-ch-roi"></canvas></div>
               <div style="display:flex;gap:16px;font-size:11px;color:${_MC.dim};padding:6px 0 2px;">
-                <span><b style="color:${_MC.green};">—</b> cumulative net</span>
-                <span><b style="color:${_MC.amber};">– –</b> CapEx invested</span>
+                <span><b style="color:${_MC.red};">– –</b> Bear (−30%)</span>
+                <span><b style="color:${_MC.green};">—</b> Base (current)</span>
+                <span><b style="color:${_MC.cyan};">– –</b> Bull (+40%)</span>
               </div>
             </div>
           </div>
@@ -4146,40 +4147,35 @@ function _mUpdate(){
   // Update per-unit chart subtitle
   const uSub=document.getElementById('m-units-sub');
   if(uSub) uSub.textContent=liveU?`Live · ${liveU.length} miners · ${liveU.filter(u=>u.active).length} online`:`Snapshot · ${_MUNITS.length} keepers`;
-  // CapEx ROI chart
-  const cx=_mGetCapEx();
-  const roiRemaining=cx.remaining;
-  const roiMonths=60;
-  const roiLabels=[],roiCum=[],roiCapLine=[];
-  let roiBE=null;
-  for(let i=0;i<=roiMonths;i++){
-    roiLabels.push(i===0?'Now':`Mo ${i}`);
-    const cum=m.netMo*i;
-    roiCum.push(Math.round(cum));
-    roiCapLine.push(roiRemaining>0?Math.round(roiRemaining):null);
-    if(roiBE===null&&roiRemaining>0&&cum>=roiRemaining) roiBE=i;
+  // 24-Month Forward Returns Projection chart
+  const projMonths=24;
+  const btcBase=_MS.btc;
+  const netMo_bear=(m.th*m.btcPerThDay*btcBase*0.70-m.billDay)*_MK.DAYS_MO;
+  const netMo_base=m.netMo;
+  const netMo_bull=(m.th*m.btcPerThDay*btcBase*1.40-m.billDay)*_MK.DAYS_MO;
+  const projLabels=[],projBear=[],projBase=[],projBull=[];
+  for(let i=0;i<=projMonths;i++){
+    projLabels.push(i===0?'Now':`Mo ${i}`);
+    projBear.push(Math.round(netMo_bear*i));
+    projBase.push(Math.round(netMo_base*i));
+    projBull.push(Math.round(netMo_bull*i));
   }
   const roisub=document.getElementById('m-roi-sub');
   if(roisub){
-    if(cx.total>0){
-      let sub=`CapEx: $${_mFmt(cx.total,0)}`;
-      if(cx.returned>0) sub+=` · Recovered: $${_mFmt(cx.returned,0)} · Remaining: $${_mFmt(cx.remaining,0)}`;
-      sub+=roiBE?` · Breakeven Mo ${roiBE} (~${(roiBE/12).toFixed(1)} yr)`:'  · Breakeven >60 mo at current rate';
-      roisub.textContent=sub;
-    } else {
-      roisub.textContent='No CapEx in 5Stack LLC ledger — add expense entries to compute ROI';
-    }
+    const btcMo=(m.btcDay*_MK.DAYS_MO).toFixed(4);
+    roisub.textContent=`Fleet: ${_mFmt(m.th,0)} TH/s · Network: ${_mFmt(m.netEHs,0)} EH/s · ${btcMo} BTC/mo · Base net: $${_mFmt(netMo_base,0)}/mo`;
   }
   const roic=document.getElementById('m-ch-roi');
   if(roic){if(_MCharts.roi)_MCharts.roi.destroy();
     _MCharts.roi=new Chart(roic,{type:'line',
-      data:{labels:roiLabels,datasets:[
-        {label:'Cumulative Net',data:roiCum,borderColor:_MC.green,borderWidth:2.5,pointRadius:0,tension:0.35,fill:true,backgroundColor:'rgba(63,185,80,0.08)'},
-        {label:'Remaining CapEx',data:roiCapLine,borderColor:_MC.amber,borderWidth:2,borderDash:[5,3],pointRadius:0,tension:0},
+      data:{labels:projLabels,datasets:[
+        {label:'Bear (−30%)',data:projBear,borderColor:_MC.red,borderWidth:1.5,borderDash:[5,3],pointRadius:0,tension:0.35,fill:false},
+        {label:'Base',data:projBase,borderColor:_MC.green,borderWidth:2.5,pointRadius:0,tension:0.35,fill:true,backgroundColor:'rgba(63,185,80,0.08)'},
+        {label:'Bull (+40%)',data:projBull,borderColor:_MC.cyan,borderWidth:1.5,borderDash:[5,3],pointRadius:0,tension:0.35,fill:false},
       ]},
       options:{responsive:true,maintainAspectRatio:false,
         scales:{
-          x:{ticks:{color:_MC.dim,maxTicksLimit:10,font:{size:9}},grid:{color:_MC.grid}},
+          x:{ticks:{color:_MC.dim,maxTicksLimit:13,font:{size:9}},grid:{color:_MC.grid}},
           y:{ticks:{color:_MC.dim,callback:v=>v>=1000?`$${Math.round(v/1000)}k`:`$${v}`},grid:{color:_MC.grid}},
         },
         plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>`${c.dataset.label}: $${_mFmt(c.parsed.y,0)}`}}}}});
