@@ -2856,7 +2856,7 @@ function getDefaultData() {
       assets: {
         cashChecking:0, cashSavings:0, emergencyFund:0,
         retirement401k:0, rothIRA:0, brokerageAccount:0,
-        bitcoin:0, cryptoOther:0,
+        bitcoin:0, cryptoOther:0, cryptoNear:0,
         primaryHome:0, rentalProperty:0,
         vehicle:0, lifeInsuranceCash:0, otherAssets:0,
       },
@@ -2971,7 +2971,7 @@ function _getJamesStantonData() {
       may:{...ZERO_DED},jun:{...ZERO_DED},jul:{...ZERO_DED},aug:{...ZERO_DED},
       sep:{...ZERO_DED},oct:{...ZERO_DED},nov:{...ZERO_DED},dec:{...ZERO_DED},
     },
-    netWorth: {assets:{cashChecking:0,cashSavings:0,emergencyFund:0,retirement401k:0,rothIRA:0,brokerageAccount:0,bitcoin:0,cryptoOther:0,primaryHome:0,rentalProperty:0,vehicle:0,lifeInsuranceCash:0,otherAssets:0}, liabilities:{mortgageBalance:0,homeLoanOther:0,vehicleLoan:0,studentLoan:0,creditCardDebt:0,medicalDebt:0,otherDebt:0}, history:[]},
+    netWorth: {assets:{cashChecking:0,cashSavings:0,emergencyFund:0,retirement401k:0,rothIRA:0,brokerageAccount:0,bitcoin:0,cryptoOther:0,cryptoNear:0,primaryHome:0,rentalProperty:0,vehicle:0,lifeInsuranceCash:0,otherAssets:0}, liabilities:{mortgageBalance:0,homeLoanOther:0,vehicleLoan:0,studentLoan:0,creditCardDebt:0,medicalDebt:0,otherDebt:0}, history:[]},
     goals: [],
     scorecard: Object.fromEntries(MK.map(m=>[m,{wins:'',challenges:'',actions:'',notes:''}])),
     notes:     Object.fromEntries(MK.map(m=>[m,{wins:'',challenges:'',actions:'',notes:''}])),
@@ -4988,6 +4988,7 @@ const NW_ASSETS = [
   {key:'bitcoinIRAUnchained', label:'Unchained IRA',              group:'Retirement'},
   {key:'bitcoin',           label:'Bitcoin',                       group:'Crypto'},
   {key:'cryptoOther',       label:'Bittensor',                     group:'Crypto'},
+  {key:'cryptoNear',        label:'NEAR Protocol',                 group:'Crypto'},
   {key:'primaryHome',       label:'Primary Home (Market Value)',   group:'Real Estate'},
   {key:'rentalProperty',    label:'Rental / Investment Property',  group:'Real Estate'},
   {key:'vehicle',           label:'Vehicle (Current Value)',       group:'Personal'},
@@ -5013,10 +5014,11 @@ function renderNetWorth() {
   if(!appData.netWorth) appData.netWorth={assets:{},liabilities:{},history:[]};
   if(!appData.netWorth.customAssets) appData.netWorth.customAssets=[];
   if(!appData.netWorth.customLiabilities) appData.netWorth.customLiabilities=[];
-  // hardset Bitcoin = 2.5 BTC × live price; Unchained Roth IRA = 0.74 BTC × live price; Bittensor = 170 TAO × live price; Silver = 34 oz × live spot; 5Stack LLC = 0.02 BTC × live price + $10,000 hardware
+  // hardset Bitcoin = 2 BTC × live price; Unchained Roth IRA = 0.74 BTC × live price; Bittensor = 315 TAO × live price; NEAR = 2197 NEAR × live price; Silver = 34 oz × live spot; 5Stack LLC = 0.02 BTC × live price + $10,000 hardware
   if(!isDemoMode){
-    try{const p=typeof _getLiveBtcPrice==='function'?_getLiveBtcPrice():null;if(p){appData.netWorth.assets.bitcoin=r2(2.5*p);appData.netWorth.assets.bitcoinIRAUnchained=r2(0.74*p);appData.netWorth.assets.biz5Stack=r2(0.02*p+10000);}}catch(e){}
-    try{const p=typeof _getLiveTaoPrice==='function'?_getLiveTaoPrice():null;if(p)appData.netWorth.assets.cryptoOther=r2(170*p);}catch(e){}
+    try{const p=typeof _getLiveBtcPrice==='function'?_getLiveBtcPrice():null;if(p){appData.netWorth.assets.bitcoin=r2(2*p);appData.netWorth.assets.bitcoinIRAUnchained=r2(0.74*p);appData.netWorth.assets.biz5Stack=r2(0.02*p+10000);}}catch(e){}
+    try{const p=typeof _getLiveTaoPrice==='function'?_getLiveTaoPrice():null;if(p)appData.netWorth.assets.cryptoOther=r2(315*p);}catch(e){}
+    try{const p=typeof _getLiveNearPrice==='function'?_getLiveNearPrice():null;if(p)appData.netWorth.assets.cryptoNear=r2(2197*p);}catch(e){}
     try{const p=typeof _getLiveSilverPrice==='function'?_getLiveSilverPrice():null;if(p)appData.netWorth.assets.otherAssets=r2(34*p);}catch(e){}
   }
   const totalA=nwTotalAssets(), totalL=nwTotalLiabilities(), net=nwNet();
@@ -5054,13 +5056,14 @@ function buildNwTable(cats, section, total, accentColor) {
     }
     const _isLiveBtc=(section==='assets'&&cat.key==='bitcoin');
     const _isLiveTao=(section==='assets'&&cat.key==='cryptoOther');
+    const _isLiveNear=(section==='assets'&&cat.key==='cryptoNear');
     const _isLiveUnchained=(section==='assets'&&cat.key==='bitcoinIRAUnchained');
     const _isLiveSilver=(section==='assets'&&cat.key==='otherAssets');
     const _isLive5Stack=(section==='assets'&&cat.key==='biz5Stack');
-    const _liveTag=_isLiveBtc?'LIVE · 2.5 BTC':_isLiveTao?'LIVE · 170 TAO':_isLiveUnchained?'LIVE · 0.74 BTC':_isLiveSilver?'LIVE · 34 oz':_isLive5Stack?'LIVE · 0.02 BTC + $10K HW':'';
+    const _liveTag=_isLiveBtc?'LIVE · 2 BTC':_isLiveTao?'LIVE · 315 TAO':_isLiveNear?'LIVE · 2,197 NEAR':_isLiveUnchained?'LIVE · 0.74 BTC':_isLiveSilver?'LIVE · 34 oz':_isLive5Stack?'LIVE · 0.02 BTC + $10K HW':'';
     html+=`<tr>
       <td>${cat.label}${_liveTag?`<span style="margin-left:6px;font-size:10px;font-weight:700;color:var(--blue);background:var(--blue-dim);border-radius:4px;padding:1px 5px">${_liveTag}</span>`:''}</td>
-      <td>${(_isLiveBtc||_isLiveTao||_isLiveUnchained||_isLiveSilver||_isLive5Stack)?`<input type="number" step="0.01" min="0" value="${val>0?val:''}" placeholder="$0" readonly style="background:var(--elevated);cursor:default;color:var(--text-2)"/>`:`<input type="number" step="0.01" min="0" value="${val>0?val:''}" placeholder="$0" onchange="updateNW('${section}','${cat.key}',this.value)"/>`}</td>
+      <td>${(_isLiveBtc||_isLiveTao||_isLiveNear||_isLiveUnchained||_isLiveSilver||_isLive5Stack)?`<input type="number" step="0.01" min="0" value="${val>0?val:''}" placeholder="$0" readonly style="background:var(--elevated);cursor:default;color:var(--text-2)"/>`:`<input type="number" step="0.01" min="0" value="${val>0?val:''}" placeholder="$0" onchange="updateNW('${section}','${cat.key}',this.value)"/>`}</td>
       <td>${val>0?`<div style="display:flex;align-items:center;gap:8px;"><div style="flex:1;background:var(--border);border-radius:999px;height:4px;overflow:hidden;min-width:44px"><div style="width:${Math.min(pct,100).toFixed(1)}%;height:100%;background:${accentColor};border-radius:999px"></div></div><span style="font-size:11px;color:var(--text-3);white-space:nowrap">${pct.toFixed(1)}%</span></div>`:'<span class="val-neutral">—</span>'}</td>
       <td></td>
     </tr>`;
@@ -5099,7 +5102,8 @@ function takeSnapshot(){
   const isoDate=_estIsoDate();
   const btcPrice=(typeof _getLiveBtcPrice==='function'?_getLiveBtcPrice():null)||null;
   const taoPrice=(typeof _getLiveTaoPrice==='function'?_getLiveTaoPrice():null)||null;
-  appData.netWorth.history.push({date, isoDate, assets:nwTotalAssets(), liabilities:nwTotalLiabilities(), net:nwNet(), btcPrice, taoPrice});
+  const nearPrice=(typeof _getLiveNearPrice==='function'?_getLiveNearPrice():null)||null;
+  appData.netWorth.history.push({date, isoDate, assets:nwTotalAssets(), liabilities:nwTotalLiabilities(), net:nwNet(), btcPrice, taoPrice, nearPrice});
   saveData(); renderNetWorth(); showToast('Snapshot saved!');
 }
 
@@ -5160,10 +5164,11 @@ function _autoSnapshotIfDue(){
     if(hist.some(s=>s.isoDate===todayEst)) return; // already have today
     const btcPrice=(typeof _getLiveBtcPrice==='function'?_getLiveBtcPrice():null)||null;
     const taoPrice=(typeof _getLiveTaoPrice==='function'?_getLiveTaoPrice():null)||null;
-    if(!btcPrice&&!taoPrice) return; // skip if no live prices yet
+    const nearPrice=(typeof _getLiveNearPrice==='function'?_getLiveNearPrice():null)||null;
+    if(!btcPrice&&!taoPrice&&!nearPrice) return; // skip if no live prices yet
     const date=new Date().toLocaleDateString('en-US',{year:'numeric',month:'short',day:'numeric'});
     if(!appData.netWorth.history) appData.netWorth.history=[];
-    appData.netWorth.history.push({date,isoDate:todayEst,assets:nwTotalAssets(),liabilities:nwTotalLiabilities(),net:nwNet(),btcPrice,taoPrice});
+    appData.netWorth.history.push({date,isoDate:todayEst,assets:nwTotalAssets(),liabilities:nwTotalLiabilities(),net:nwNet(),btcPrice,taoPrice,nearPrice});
     saveData();
     if(typeof renderNetWorth==='function') renderNetWorth();
     if(typeof updateCharts==='function') updateCharts();
@@ -6132,7 +6137,7 @@ function getDemoData() {
       expenses: {mortgage:2640,vehicle:485,insurance:210,phone:95,electric:160,propane:150,water:78,tv:185,groceries:750,dining:350,gas:200,creditCard:0,subscriptions:85,health:180,other:200},
     },
     netWorth: {
-      assets: {cashChecking:14800,cashSavings:22000,emergencyFund:35000,retirement401k:164000,rothIRA:38400,brokerageAccount:26500,bitcoin:0,cryptoOther:0,primaryHome:522000,rentalProperty:0,vehicle:23000,lifeInsuranceCash:9600,otherAssets:2800},
+      assets: {cashChecking:14800,cashSavings:22000,emergencyFund:35000,retirement401k:164000,rothIRA:38400,brokerageAccount:26500,bitcoin:0,cryptoOther:0,cryptoNear:0,primaryHome:522000,rentalProperty:0,vehicle:23000,lifeInsuranceCash:9600,otherAssets:2800},
       liabilities: {mortgageBalance:330000,homeLoanOther:0,vehicleLoan:8400,studentLoan:10200,creditCardDebt:0,medicalDebt:0,otherDebt:0},
       history: [
         {date:'Jan 1, 2025', isoDate:'2025-01-01', assets:694000,liabilities:425000,net:269000},
@@ -6587,6 +6592,7 @@ const TICKER_CATALOG = {
     {sym:'ADA', name:'Cardano',    cg:'cardano',      yf:'ADA-USD',      fp:0.45},
     {sym:'AVAX',name:'Avalanche',  cg:'avalanche-2',  yf:'AVAX-USD',     fp:35},
     {sym:'TAO', name:'Bittensor',  cg:'bittensor',    yf:'TAO22990-USD', fp:350,  big:true},
+    {sym:'NEAR',name:'NEAR Protocol',cg:'near',       yf:'NEAR-USD',     fp:5,    big:true},
     {sym:'DOT', name:'Polkadot',   cg:'polkadot',     yf:'DOT-USD',      fp:7},
     {sym:'LINK',name:'Chainlink',  cg:'chainlink',    yf:'LINK-USD',     fp:14},
     {sym:'LTC', name:'Litecoin',   cg:'litecoin',     yf:'LTC-USD',      fp:85},
@@ -6622,8 +6628,8 @@ const TICKER_CATALOG = {
 function _allCatalog(){ return [...TICKER_CATALOG.crypto,...TICKER_CATALOG.stocks]; }
 function buildTickerCFG(){
   const saved=JSON.parse(localStorage.getItem(TICKER_SEL_KEY)||'null')||DEFAULT_TICKERS;
-  // Always include BTC and TAO for net worth price tracking, even if not in ticker selection
-  const allSyms=[...new Set([...saved,'BTC','TAO'])];
+  // Always include BTC, TAO, and NEAR for net worth price tracking, even if not in ticker selection
+  const allSyms=[...new Set([...saved,'BTC','TAO','NEAR'])];
   return allSyms.map(sym=>_allCatalog().find(t=>t.sym===sym)).filter(Boolean).map(t=>({...t,_showInTicker:saved.includes(t.sym)}));
 }
 
@@ -6760,9 +6766,11 @@ let _reloadTicker;
       let changed=false;
       const b=_d.find(d=>d.sym==='BTC');
       const t=_d.find(d=>d.sym==='TAO');
+      const n=_d.find(d=>d.sym==='NEAR');
       if(typeof appData!=='undefined'&&appData?.netWorth){
-        if(!isDemoMode&&b&&b._live){appData.netWorth.assets.bitcoin=r2(2.5*b.price);appData.netWorth.assets.bitcoinIRAUnchained=r2(0.74*b.price);appData.netWorth.assets.biz5Stack=r2(0.02*b.price+10000);changed=true;}
-        if(!isDemoMode&&t&&t._live){appData.netWorth.assets.cryptoOther=r2(170*t.price);changed=true;}
+        if(!isDemoMode&&b&&b._live){appData.netWorth.assets.bitcoin=r2(2*b.price);appData.netWorth.assets.bitcoinIRAUnchained=r2(0.74*b.price);appData.netWorth.assets.biz5Stack=r2(0.02*b.price+10000);changed=true;}
+        if(!isDemoMode&&t&&t._live){appData.netWorth.assets.cryptoOther=r2(315*t.price);changed=true;}
+        if(!isDemoMode&&n&&n._live){appData.netWorth.assets.cryptoNear=r2(2197*n.price);changed=true;}
         if(!isDemoMode&&window._silverPrice){appData.netWorth.assets.otherAssets=r2(34*window._silverPrice);changed=true;}
         if(changed&&typeof saveData==='function')saveData();
         if(changed&&typeof renderNetWorth==='function')renderNetWorth();
@@ -6774,6 +6782,7 @@ let _reloadTicker;
   _reloadTicker = function(){ init(); load(); };
   window._getLiveBtcPrice = function(){ const b=_d.find(d=>d.sym==='BTC'); return (b&&b._live)?b.price:null; };
   window._getLiveTaoPrice = function(){ const t=_d.find(d=>d.sym==='TAO'); return (t&&t._live)?t.price:null; };
+  window._getLiveNearPrice = function(){ const n=_d.find(d=>d.sym==='NEAR'); return (n&&n._live)?n.price:null; };
   window._getLiveSilverPrice = function(){ return window._silverPrice||null; };
 
   init();
