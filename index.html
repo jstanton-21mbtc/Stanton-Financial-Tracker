@@ -5060,7 +5060,7 @@ function buildNwTable(cats, section, total, accentColor) {
     const _isLiveUnchained=(section==='assets'&&cat.key==='bitcoinIRAUnchained');
     const _isLiveSilver=(section==='assets'&&cat.key==='otherAssets');
     const _isLive5Stack=(section==='assets'&&cat.key==='biz5Stack');
-    const _liveTag=_isLiveBtc?'LIVE · 2 BTC':_isLiveTao?'LIVE · 315 TAO':_isLiveNear?'LIVE · 2,197 NEAR':_isLiveUnchained?'LIVE · 0.74 BTC':_isLiveSilver?'LIVE · 34 oz':_isLive5Stack?'LIVE · 0.02 BTC + $10K HW':'';
+    const _liveTag=_isLiveBtc?'LIVE · 2 BTC':_isLiveTao?'LIVE · 315 TAO':_isLiveNear?'LIVE · 3,531 NEAR':_isLiveUnchained?'LIVE · 0.74 BTC':_isLiveSilver?'LIVE · 34 oz':_isLive5Stack?'LIVE · 0.02 BTC + $10K HW':'';
     html+=`<tr>
       <td>${cat.label}${_liveTag?`<span style="margin-left:6px;font-size:10px;font-weight:700;color:var(--blue);background:var(--blue-dim);border-radius:4px;padding:1px 5px">${_liveTag}</span>`:''}</td>
       <td>${(_isLiveBtc||_isLiveTao||_isLiveNear||_isLiveUnchained||_isLiveSilver||_isLive5Stack)?`<input type="number" step="0.01" min="0" value="${val>0?val:''}" placeholder="$0" readonly style="background:var(--elevated);cursor:default;color:var(--text-2)"/>`:`<input type="number" step="0.01" min="0" value="${val>0?val:''}" placeholder="$0" onchange="updateNW('${section}','${cat.key}',this.value)"/>`}</td>
@@ -6770,7 +6770,7 @@ let _reloadTicker;
       if(typeof appData!=='undefined'&&appData?.netWorth){
         if(!isDemoMode&&b&&b._live){appData.netWorth.assets.bitcoin=r2(2*b.price);appData.netWorth.assets.bitcoinIRAUnchained=r2(0.74*b.price);appData.netWorth.assets.biz5Stack=r2(0.02*b.price+10000);changed=true;}
         if(!isDemoMode&&t&&t._live){appData.netWorth.assets.cryptoOther=r2(315*t.price);changed=true;}
-        if(!isDemoMode&&n&&n._live){appData.netWorth.assets.cryptoNear=r2(2197*n.price);changed=true;}
+        if(!isDemoMode&&n&&n._live){appData.netWorth.assets.cryptoNear=r2(3531*n.price);changed=true;}
         if(!isDemoMode&&window._silverPrice){appData.netWorth.assets.otherAssets=r2(34*window._silverPrice);changed=true;}
         if(changed&&typeof saveData==='function')saveData();
         if(changed&&typeof renderNetWorth==='function')renderNetWorth();
