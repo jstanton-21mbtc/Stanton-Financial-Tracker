@@ -4121,6 +4121,8 @@ function _mUpdate(){
   if(tUsd) tUsd.textContent=`$${_mFmt(0.02*btc,2)}`;
   const banBtcMo=document.getElementById('m-banner-btcmo');
   if(banBtcMo) banBtcMo.textContent=btc>0?_mFmt(m.netMo/btc,4)+' ₿':'—';
+  const banBtcMoSub=document.getElementById('m-banner-btcmo-sub');
+  if(banBtcMoSub) banBtcMoSub.textContent=`$${_mFmt(m.netMo,2)} after hosting`;
   // Chart defaults
   Chart.defaults.color=_MC.dim;
   // Price curve chart
