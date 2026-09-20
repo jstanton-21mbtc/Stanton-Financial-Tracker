@@ -3461,6 +3461,8 @@ let _MS={btc:63819,diff:126.23,host:4283.50,poolFee:1.0,luxRecover:false};
 let _MCharts={};
 let _mBuilt=false;
 let _mLiveFleet=null; // {units:[{serial,th,power,temp,active,model}], totalTH, totalW, n, synced}
+let _mLastTiles=[];
+let _mDragSrc=null;
 
 // Pull fleet data from Foreman integration cache in Business Tracker
 function _mGetForemanFleet(){
@@ -3529,6 +3531,54 @@ function _mFmt(n,d=0){return n.toLocaleString('en-US',{minimumFractionDigits:d,m
 const _MSNAP_KEY='sft_mining_snapshots_v1';
 function _mGetSnapshots(){try{return JSON.parse(localStorage.getItem(_MSNAP_KEY)||'[]');}catch(e){return[];}}
 function _mSaveSnapshots(arr){localStorage.setItem(_MSNAP_KEY,JSON.stringify(arr));}
+
+// ── Mining Tile Prefs (order + size) ──
+const _MTILE_KEY='sft_mining_tile_prefs_v1';
+function _mGetTilePrefs(){try{return JSON.parse(localStorage.getItem(_MTILE_KEY)||'{}')}catch(e){return{}}}
+function _mSaveTilePrefs(p){localStorage.setItem(_MTILE_KEY,JSON.stringify(p))}
+
+function _mTileDragStart(e,id){
+  _mDragSrc=id;
+  e.dataTransfer.effectAllowed='move';
+  setTimeout(()=>{const el=document.querySelector(`[data-tile-id="${id}"]`);if(el)el.style.opacity='0.35';},0);
+}
+function _mTileDragEnd(e){
+  document.querySelectorAll('[data-tile-id]').forEach(t=>{t.style.opacity='';t.style.outline='';});
+}
+function _mTileDragOver(e,id){
+  e.preventDefault();
+  e.dataTransfer.dropEffect='move';
+  document.querySelectorAll('[data-tile-id]').forEach(t=>t.style.outline='');
+  if(id!==_mDragSrc){const el=document.querySelector(`[data-tile-id="${id}"]`);if(el)el.style.outline=`2px solid ${_MC.green}`;}
+}
+function _mTileDrop(e,id){
+  e.preventDefault();
+  if(!_mDragSrc||_mDragSrc===id)return;
+  const p=_mGetTilePrefs();
+  const def=['net-day','be-btc','btc-day','rev-day'];
+  let order=p.order||def;
+  const fi=order.indexOf(_mDragSrc),ti=order.indexOf(id);
+  if(fi<0||ti<0)return;
+  order.splice(fi,1);order.splice(ti,0,_mDragSrc);
+  p.order=order;_mSaveTilePrefs(p);_mDragSrc=null;_mUpdate();
+}
+function _mCycleTileSize(id,e){
+  e.stopPropagation();
+  const p=_mGetTilePrefs();
+  if(!p.sizes)p.sizes={};
+  p.sizes[id]=(p.sizes[id]||1)===1?2:1;
+  _mSaveTilePrefs(p);_mUpdate();
+}
+function _mOpenTileZoom(id){
+  const t=_mLastTiles.find(t=>t.id===id);if(!t)return;
+  const col=t.tone==='pos'?_MC.green:t.tone==='neg'?_MC.red:_MC.ink;
+  document.getElementById('m-zoom-label').textContent=t.label;
+  document.getElementById('m-zoom-val').textContent=t.val;
+  document.getElementById('m-zoom-val').style.color=col;
+  document.getElementById('m-zoom-sub').textContent=t.sub||'';
+  document.getElementById('m-zoom-overlay').style.display='flex';
+}
+function _mCloseTileZoom(){document.getElementById('m-zoom-overlay').style.display='none';}
 
 function _mOpenSnapshotModal(editIsoDate){
   let existing=editIsoDate?_mGetSnapshots().find(s=>s.isoDate===editIsoDate):null;
@@ -3737,7 +3787,17 @@ function renderMiningDashboard(){
           <span style="font-size:12px;color:${_MC.faint};">KY-LF · BLOCKWARE · S21 KEEPER FLEET</span>
         </div>
         <h1 style="font-size:28px;font-weight:800;margin:0 0 2px;letter-spacing:-0.5px;">Fleet Economics</h1>
-        <div id="m-stats" style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:14px;"></div>
+        <div id="m-stats" style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:14px;align-items:stretch;"></div>
+
+        <!-- Tile zoom modal -->
+        <div id="m-zoom-overlay" onclick="_mCloseTileZoom()" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.72);z-index:9999;align-items:center;justify-content:center;">
+          <div onclick="event.stopPropagation()" style="background:${_MC.panel};border:1px solid ${_MC.border};border-radius:20px;padding:44px 56px;min-width:300px;text-align:center;position:relative;box-shadow:0 24px 64px rgba(0,0,0,0.6);">
+            <button onclick="_mCloseTileZoom()" style="position:absolute;top:14px;right:18px;background:none;border:none;color:${_MC.dim};font-size:22px;cursor:pointer;line-height:1;padding:0;">✕</button>
+            <div id="m-zoom-label" style="font-size:10px;letter-spacing:1.8px;text-transform:uppercase;color:${_MC.dim};font-weight:700;margin-bottom:18px;"></div>
+            <div id="m-zoom-val" style="font-size:56px;font-weight:800;line-height:1;font-variant-numeric:tabular-nums;letter-spacing:-1px;"></div>
+            <div id="m-zoom-sub" style="font-size:15px;color:${_MC.faint};margin-top:14px;font-weight:500;"></div>
+          </div>
+        </div>
         <div id="m-alerts" style="margin-bottom:0;"></div>
         <div style="display:flex;gap:0;background:${_MC.panel2};border:1px solid ${_MC.border};border-radius:8px;margin-bottom:22px;overflow:hidden;">
           <div style="flex:1;padding:12px 16px;border-right:1px solid ${_MC.border};text-align:center;">
@@ -4099,13 +4159,46 @@ function _mUpdate(){
     lbl.style.background=luxRecover?'rgba(138,100,32,0.35)':'';
     lbl.style.borderColor=luxRecover?_MC.amber:_MC.border;
   }
-  // Stats
+  // Stats — draggable, resizable, zoomable tiles
   const se=document.getElementById('m-stats');
-  if(se)se.innerHTML=
-    _mStat('Net / day',`$${_mFmt(m.netDay,2)}`,`$${_mFmt(m.netMo,0)} / month`,m.netDay>=0?'pos':'neg')+
-    _mStat('Breakeven BTC',`$${_mFmt(m.beBtc,0)}`,`${btc>=m.beBtc?'+':''}$${_mFmt(btc-m.beBtc,0)} vs live`,btc>=m.beBtc?'pos':'neg')+
-    _mStat('BTC / day',_mFmt(m.btcDay,5),`${_mFmt(m.btcDay*_MK.DAYS_MO,4)} / month`,'')+
-    _mStat('Gross rev / day',`$${_mFmt(m.revDay,2)}`,`hosting $${_mFmt(host,0)}/mo total`,'');
+  if(se){
+    const tileData={
+      'net-day': {id:'net-day', label:'Net / day',      val:`$${_mFmt(m.netDay,2)}`,  sub:`$${_mFmt(m.netMo,0)} / month`,                             tone:m.netDay>=0?'pos':'neg'},
+      'be-btc':  {id:'be-btc',  label:'Breakeven BTC',  val:`$${_mFmt(m.beBtc,0)}`,   sub:`${btc>=m.beBtc?'+':''}$${_mFmt(btc-m.beBtc,0)} vs live`,   tone:btc>=m.beBtc?'pos':'neg'},
+      'btc-day': {id:'btc-day', label:'BTC / day',      val:_mFmt(m.btcDay,5),        sub:`${_mFmt(m.btcDay*_MK.DAYS_MO,4)} / month`,                 tone:''},
+      'rev-day': {id:'rev-day', label:'Gross rev / day',val:`$${_mFmt(m.revDay,2)}`,  sub:`hosting $${_mFmt(host,0)}/mo total`,                        tone:''},
+    };
+    const prefs=_mGetTilePrefs();
+    const def=['net-day','be-btc','btc-day','rev-day'];
+    const order=(prefs.order||def).filter(id=>tileData[id]);
+    const sizes=prefs.sizes||{};
+    _mLastTiles=order.map(id=>tileData[id]);
+    se.innerHTML=order.map(id=>{
+      const t=tileData[id];
+      const flex=sizes[id]||1;
+      const col=t.tone==='pos'?_MC.green:t.tone==='neg'?_MC.red:_MC.ink;
+      const resizeIcon=flex>1
+        ?`<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M4 14H10V20M20 10H14V4M10 14L3 21M21 3L14 10"/></svg>`
+        :`<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M15 3H21V9M9 21H3V15M21 3L14 10M10 14L3 21"/></svg>`;
+      return `<div data-tile-id="${t.id}" draggable="true"
+        ondragstart="_mTileDragStart(event,'${t.id}')"
+        ondragend="_mTileDragEnd(event)"
+        ondragover="_mTileDragOver(event,'${t.id}')"
+        ondrop="_mTileDrop(event,'${t.id}')"
+        onclick="_mOpenTileZoom('${t.id}')"
+        style="background:${_MC.panel};border:1px solid ${_MC.border};border-radius:10px;padding:16px 18px;flex:${flex};min-width:${flex>1?280:150}px;cursor:pointer;position:relative;transition:border-color .15s,opacity .15s;user-select:none;"
+        onmouseenter="this.style.borderColor='${_MC.dim}'"
+        onmouseleave="this.style.borderColor='${_MC.border}'">
+        <button onclick="_mCycleTileSize('${t.id}',event)" title="${flex>1?'Shrink':'Expand'}"
+          style="position:absolute;top:8px;right:8px;background:rgba(255,255,255,0.06);border:none;color:${_MC.faint};cursor:pointer;padding:4px;border-radius:4px;display:flex;align-items:center;justify-content:center;opacity:0.55;transition:opacity .15s;"
+          onmouseenter="this.style.opacity='1'" onmouseleave="this.style.opacity='0.55'">${resizeIcon}</button>
+        <div style="font-size:11px;letter-spacing:1.2px;text-transform:uppercase;color:${_MC.dim};font-weight:600;padding-right:22px;">${t.label}</div>
+        <div style="font-size:${flex>1?32:24}px;font-weight:700;color:${col};margin-top:6px;font-variant-numeric:tabular-nums;line-height:1.1;">${t.val}</div>
+        ${t.sub?`<div style="font-size:11px;color:${_MC.faint};margin-top:3px;">${t.sub}</div>`:''}
+        <div style="font-size:9px;color:${_MC.faint};margin-top:10px;opacity:0.45;letter-spacing:.5px;">&#x283F; DRAG TO REORDER</div>
+      </div>`;
+    }).join('');
+  }
   // Meta
   const me=document.getElementById('m-meta');
   if(me)me.innerHTML=[
