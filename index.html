@@ -3530,6 +3530,36 @@ const _MSNAP_KEY='sft_mining_snapshots_v1';
 function _mGetSnapshots(){try{return JSON.parse(localStorage.getItem(_MSNAP_KEY)||'[]');}catch(e){return[];}}
 function _mSaveSnapshots(arr){localStorage.setItem(_MSNAP_KEY,JSON.stringify(arr));}
 
+// Returns avg daily BTC mined from the most recent Business Tracker mining revenue analysis
+function _mGetAvgDailyBtcFromBizTracker(){
+  const businesses=(appData.businesses||[]).filter(b=>b.type==='Bitcoin Mining');
+  // Collect all uploads with a BTC mined metric, sorted by upload date descending
+  let candidates=[];
+  businesses.forEach(biz=>{
+    (biz.uploads||[]).forEach(up=>{
+      const a=up.analysis;if(!a)return;
+      const m=(a.metrics||[]).find(m=>
+        m.unit&&m.unit.toUpperCase()==='BTC'&&
+        m.label&&/min/i.test(m.label)
+      );
+      if(m&&typeof m.value==='number'&&m.value>0){
+        candidates.push({date:up.date||'',btc:m.value,period:a.period||''});
+      }
+    });
+  });
+  if(candidates.length>0){
+    // Use only the most recent upload
+    candidates.sort((a,b)=>b.date.localeCompare(a.date));
+    const latest=candidates[0];
+    const p=latest.period.toLowerCase();
+    let days=30;
+    if(/annual|year|\d{4}$/.test(p))days=365;
+    else if(/q[1-4]/.test(p))days=91;
+    return latest.btc/days;
+  }
+  return null;
+}
+
 function _mOpenSnapshotModal(editIsoDate){
   let existing=editIsoDate?_mGetSnapshots().find(s=>s.isoDate===editIsoDate):null;
   // Default month: previous month (good for logging last month's actual)
@@ -3748,10 +3778,15 @@ function renderMiningDashboard(){
             <div style="font-size:9.5px;letter-spacing:1.2px;color:${_MC.faint};text-transform:uppercase;font-weight:700;margin-bottom:5px;">Rev / TH / day</div>
             <div id="m-banner-rev" style="font-size:17px;font-weight:800;color:${_MC.green};">—</div>
           </div>
-          <div style="flex:1;padding:12px 16px;text-align:center;">
+          <div style="flex:1;padding:12px 16px;border-right:1px solid ${_MC.border};text-align:center;">
             <div style="font-size:9.5px;letter-spacing:1.2px;color:${_MC.amber};text-transform:uppercase;font-weight:700;margin-bottom:3px;">5Stack BTC Treasury</div>
             <div style="font-size:11px;color:${_MC.faint};font-weight:600;margin-bottom:3px;">0.0200 BTC</div>
             <div id="m-treasury-usd" style="font-size:17px;font-weight:800;color:${_MC.ink};">—</div>
+          </div>
+          <div style="flex:1;padding:12px 16px;text-align:center;">
+            <div style="font-size:9.5px;letter-spacing:1.2px;color:${_MC.faint};text-transform:uppercase;font-weight:700;margin-bottom:5px;">Avg Daily BTC Mined</div>
+            <div id="m-banner-btcday" style="font-size:17px;font-weight:800;color:${_MC.amber};">—</div>
+            <div id="m-banner-btcday-src" style="font-size:9px;color:${_MC.faint};margin-top:3px;"></div>
           </div>
         </div>
         <div style="display:grid;grid-template-columns:300px 1fr;gap:18px;align-items:start;">
@@ -4114,6 +4149,13 @@ function _mUpdate(){
   if(banRev) banRev.textContent=`$${(m.btcPerThDay*btc).toFixed(4)}`;
   const tUsd=document.getElementById('m-treasury-usd');
   if(tUsd) tUsd.textContent=`$${_mFmt(0.02*btc,2)}`;
+  const banBtcDay=document.getElementById('m-banner-btcday');
+  const banBtcDaySrc=document.getElementById('m-banner-btcday-src');
+  if(banBtcDay){
+    const avg=_mGetAvgDailyBtcFromBizTracker();
+    banBtcDay.textContent=avg!==null?avg.toFixed(5)+' ₿':'—';
+    if(banBtcDaySrc)banBtcDaySrc.textContent=avg!==null?'from biz tracker':'upload mining report';
+  }
   // Chart defaults
   Chart.defaults.color=_MC.dim;
   // Price curve chart
