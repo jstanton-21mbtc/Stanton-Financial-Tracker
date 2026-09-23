@@ -5118,9 +5118,9 @@ function renderNetWorth() {
   if(!appData.netWorth.customLiabilities) appData.netWorth.customLiabilities=[];
   // hardset Bitcoin = 1.5 BTC × live price; Unchained Roth IRA = 0.74 BTC × live price; Bittensor = 315 TAO × live price; NEAR = 13343 NEAR × live price; Silver = 34 oz × live spot; 5Stack LLC = 0.02 BTC × live price + $10,000 hardware
   if(!isDemoMode){
-    try{const p=typeof _getLiveBtcPrice==='function'?_getLiveBtcPrice():null;if(p){appData.netWorth.assets.bitcoin=r2(1.5*p);appData.netWorth.assets.bitcoinIRAUnchained=r2(0.74*p);appData.netWorth.assets.biz5Stack=r2(0.02*p+10000);}}catch(e){}
-    try{const p=typeof _getLiveTaoPrice==='function'?_getLiveTaoPrice():null;if(p)appData.netWorth.assets.cryptoOther=r2(315*p);}catch(e){}
-    try{const p=typeof _getLiveNearPrice==='function'?_getLiveNearPrice():null;if(p)appData.netWorth.assets.cryptoNear=r2(13343*p);}catch(e){}
+    try{const p=(typeof _getLiveBtcPrice==='function'&&_getLiveBtcPrice())||(typeof window._getBestBtcPrice==='function'&&window._getBestBtcPrice())||null;if(p){appData.netWorth.assets.bitcoin=r2(1.5*p);appData.netWorth.assets.bitcoinIRAUnchained=r2(0.74*p);appData.netWorth.assets.biz5Stack=r2(0.02*p+10000);}}catch(e){}
+    try{const p=(typeof _getLiveTaoPrice==='function'&&_getLiveTaoPrice())||(typeof window._getBestTaoPrice==='function'&&window._getBestTaoPrice())||null;if(p)appData.netWorth.assets.cryptoOther=r2(315*p);}catch(e){}
+    try{const p=(typeof _getLiveNearPrice==='function'&&_getLiveNearPrice())||(typeof window._getBestNearPrice==='function'&&window._getBestNearPrice())||null;if(p)appData.netWorth.assets.cryptoNear=r2(13343*p);}catch(e){}
     try{const p=typeof _getLiveSilverPrice==='function'?_getLiveSilverPrice():null;if(p)appData.netWorth.assets.otherAssets=r2(34*p);}catch(e){}
   }
   const totalA=nwTotalAssets(), totalL=nwTotalLiabilities(), net=nwNet();
@@ -6886,6 +6886,10 @@ let _reloadTicker;
   window._getLiveTaoPrice = function(){ const t=_d.find(d=>d.sym==='TAO'); return (t&&t._live)?t.price:null; };
   window._getLiveNearPrice = function(){ const n=_d.find(d=>d.sym==='NEAR'); return (n&&n._live)?n.price:null; };
   window._getLiveSilverPrice = function(){ return window._silverPrice||null; };
+  // Best-available: live price if confirmed, else fallback price from ticker config
+  window._getBestBtcPrice  = function(){ const b=_d.find(d=>d.sym==='BTC');  return b?b.price:null; };
+  window._getBestTaoPrice  = function(){ const t=_d.find(d=>d.sym==='TAO');  return t?t.price:null; };
+  window._getBestNearPrice = function(){ const n=_d.find(d=>d.sym==='NEAR'); return n?n.price:null; };
 
   init();
   render();
