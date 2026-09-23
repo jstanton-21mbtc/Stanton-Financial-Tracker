@@ -5162,7 +5162,7 @@ function buildNwTable(cats, section, total, accentColor) {
     const _isLiveUnchained=(section==='assets'&&cat.key==='bitcoinIRAUnchained');
     const _isLiveSilver=(section==='assets'&&cat.key==='otherAssets');
     const _isLive5Stack=(section==='assets'&&cat.key==='biz5Stack');
-    const _liveTag=_isLiveBtc?'LIVE · 2 BTC':_isLiveTao?'LIVE · 315 TAO':_isLiveNear?'LIVE · 3,531 NEAR':_isLiveUnchained?'LIVE · 0.74 BTC':_isLiveSilver?'LIVE · 34 oz':_isLive5Stack?'LIVE · 0.02 BTC + $10K HW':'';
+    const _liveTag=_isLiveBtc?'LIVE · 1.5 BTC':_isLiveTao?'LIVE · 315 TAO':_isLiveNear?'LIVE · 13,343 NEAR':_isLiveUnchained?'LIVE · 0.74 BTC':_isLiveSilver?'LIVE · 34 oz':_isLive5Stack?'LIVE · 0.02 BTC + $10K HW':'';
     html+=`<tr>
       <td>${cat.label}${_liveTag?`<span style="margin-left:6px;font-size:10px;font-weight:700;color:var(--blue);background:var(--blue-dim);border-radius:4px;padding:1px 5px">${_liveTag}</span>`:''}</td>
       <td>${(_isLiveBtc||_isLiveTao||_isLiveNear||_isLiveUnchained||_isLiveSilver||_isLive5Stack)?`<input type="number" step="0.01" min="0" value="${val>0?val:''}" placeholder="$0" readonly style="background:var(--elevated);cursor:default;color:var(--text-2)"/>`:`<input type="number" step="0.01" min="0" value="${val>0?val:''}" placeholder="$0" onchange="updateNW('${section}','${cat.key}',this.value)"/>`}</td>
