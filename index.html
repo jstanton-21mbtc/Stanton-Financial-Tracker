@@ -1156,7 +1156,7 @@
       <div class="sidebar-label">Financials</div>
       <button class="nav-item" onclick="showTab('pl')">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
-        P&amp;L
+        Income
       </button>
       <button class="nav-item" onclick="showTab('expenses')">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
@@ -1273,7 +1273,7 @@
     <div class="drawer-grid">
       <button class="drawer-item" id="mob-pl" onclick="showTab('pl');closeMobDrawer()">
         <svg viewBox="0 0 24 24" fill="none" stroke-width="2"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
-        P&amp;L
+        Income
       </button>
       <button class="drawer-item" id="mob-savings" onclick="showTab('savings');closeMobDrawer()">
         <svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
@@ -1403,11 +1403,11 @@
       <!-- P&L -->
       <div id="tab-pl" class="tab-panel">
         <div class="mob-section-header" style="display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;">
-          <div class="section-title" style="margin-bottom:0;">P&amp;L — Income &amp; Profitability</div>
+          <div class="section-title" style="margin-bottom:0;">Income &amp; Profitability</div>
           <div style="display:flex;gap:8px;flex-wrap:wrap;">
             <button class="btn btn-ghost" onclick="clearPLData()" style="font-size:12.5px;padding:8px 14px;gap:7px;flex-shrink:0;color:var(--red);border-color:var(--red);" title="Clear all income and expense data">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 011-1h4a1 1 0 011 1v2"/></svg>
-              Clear P&amp;L
+              Clear Income
             </button>
             <button class="btn btn-ghost" onclick="resetPaystubData()" style="font-size:12.5px;padding:8px 14px;gap:7px;flex-shrink:0;color:var(--red);border-color:var(--red);" title="Clear all paystub tax data and YTD totals">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 102.13-9.36L1 10"/></svg>
@@ -2113,7 +2113,7 @@
               <div class="learn-label">Recommended Setup Order</div>
               <ul class="learn-steps">
                 <li><span class="learn-num">1</span><span>Set your <strong>fiscal year</strong> in Settings → Profile so all months align correctly.</span></li>
-                <li><span class="learn-num">2</span><span>Enter your <strong>monthly income</strong> in the P&amp;L tab — salary, bonus, freelance, or any recurring income.</span></li>
+                <li><span class="learn-num">2</span><span>Enter your <strong>monthly income</strong> in the Income tab — salary, bonus, freelance, or any recurring income.</span></li>
                 <li><span class="learn-num">3</span><span>Log your <strong>fixed expenses</strong> (rent, car, insurance) in the Expenses tab — these rarely change.</span></li>
                 <li><span class="learn-num">4</span><span>Add your <strong>savings contributions</strong> and <strong>investments</strong> so your net P&amp;L reflects real take-home.</span></li>
                 <li><span class="learn-num">5</span><span>Set up your <strong>Net Worth</strong> snapshot — list all assets and debts for a complete financial picture.</span></li>
@@ -2161,7 +2161,7 @@
           <div class="learn-card" id="lc-pl">
             <div class="learn-card-header" onclick="toggleLearnCard('lc-pl')">
               <div class="learn-icon" style="background:rgba(5,177,105,0.12)"><svg viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="2"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg></div>
-              <div><div class="learn-card-title">P&amp;L (Profit &amp; Loss)</div><div class="learn-card-sub">Income tracking month by month</div></div>
+              <div><div class="learn-card-title">Income</div><div class="learn-card-sub">Income tracking month by month</div></div>
               <svg class="learn-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
             </div>
             <div class="learn-card-body">
@@ -3378,7 +3378,7 @@ function toggleLoginEye() {
 // ── NAVIGATION ──
 const TAB_META = {
   dashboard:   ['Dashboard',         'Track · Analyze · Grow'],
-  pl:          ['P&L',               'Income & profitability tracker'],
+  pl:          ['Income',             'Income & profitability tracker'],
   expenses:    ['Expenses',          'Monthly expense breakdown'],
   savings:     ['Savings',           'Savings & wealth building'],
   investments: ['Investments',       'Property & growth investments'],
@@ -6014,8 +6014,8 @@ const TUTORIAL_STEPS = [
   {
     icon: `<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/></svg>`,
     color: '#05B169', bg: 'rgba(5,177,105,.15)',
-    title: 'Track Income & Expenses (P&L)',
-    body: 'Go to the <strong>P&L tab</strong> to enter your monthly income by category — salary, bonus, freelance, rental, and more.\n\nThe <strong>Expenses tab</strong> lets you track every spending category month by month. All numbers auto-calculate your Net P&L, savings rate, and expense ratio on the Dashboard.'
+    title: 'Track Income & Expenses',
+    body: 'Go to the <strong>Income tab</strong> to enter your monthly income by category — salary, bonus, freelance, rental, and more.\n\nThe <strong>Expenses tab</strong> lets you track every spending category month by month. All numbers auto-calculate your Net P&L, savings rate, and expense ratio on the Dashboard.'
   },
   {
     icon: `<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>`,
