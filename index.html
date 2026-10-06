@@ -5329,7 +5329,7 @@ function renderNwHistory(){
     data:{
       labels:win.labels,
       datasets:[
-        {label:'Net Worth',   data:win.netData,   borderColor:CC.blue,  backgroundColor:'rgba(57,255,20,0.08)', fill:true, tension:.4, spanGaps:true, pointRadius:4, pointHoverRadius:7, pointBackgroundColor:CC.blue,  borderWidth:2.5},
+        {label:'Net Worth',   data:win.netData,   borderColor:CC.blue,  backgroundColor:'rgba(57,255,20,0.08)', fill:true, tension:.4, spanGaps:true, ..._nwPointStyles(win.netData), borderWidth:2.5},
         {label:'Assets',      data:win.assetsData,borderColor:CC.green, backgroundColor:'transparent',          fill:false,tension:.4, spanGaps:true, pointRadius:3, pointHoverRadius:6, pointBackgroundColor:CC.green, borderWidth:1.8, borderDash:[5,4]},
         {label:'Liabilities', data:win.liabData,  borderColor:CC.red,   backgroundColor:'transparent',          fill:false,tension:.4, spanGaps:true, pointRadius:3, pointHoverRadius:6, pointBackgroundColor:CC.red,   borderWidth:1.8, borderDash:[5,4]},
       ]
@@ -5628,6 +5628,21 @@ function _buildNwWin(hist){
 }
 
 // ── CHARTS ──
+// Per-point styles: highlight max NW dot (gold circle) or gold star if >= $1M
+function _nwPointStyles(netData){
+  const vals=netData.filter(v=>v!=null);
+  if(!vals.length) return {pointRadius:[],pointHoverRadius:[],pointBackgroundColor:[],pointBorderColor:[],pointStyle:[]};
+  const maxVal=Math.max(...vals);
+  const maxIdx=netData.findIndex(v=>v===maxVal);
+  const isMillion=maxVal>=1000000;
+  return {
+    pointRadius:        netData.map((_,i)=>i===maxIdx?8:2),
+    pointHoverRadius:   netData.map((_,i)=>i===maxIdx?10:5),
+    pointBackgroundColor:netData.map((_,i)=>i===maxIdx?'#FFD700':CC.blue),
+    pointBorderColor:   netData.map((_,i)=>i===maxIdx?'#FF8C00':CC.blue),
+    pointStyle:         netData.map((_,i)=>i===maxIdx&&isMillion?'star':'circle'),
+  };
+}
 const CC={blue:'#39FF14',blueFade:'rgba(57,255,20,0.15)',green:'#05B169',greenFade:'rgba(5,177,105,0.15)',red:'#CF5252',redFade:'rgba(207,82,82,0.15)',palette:['#39FF14','#05B169','#F5A623','#7B61FF','#CF5252','#39FF14','#FF6F2C','#E879F9','#22D3EE','#84CC16','#FB923C','#A78BFA','#34D399','#FBBF24','#F472B6']};
 const CB={responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:'#5B616E',font:{size:11,family:'Inter'}}}},scales:{x:{ticks:{color:'#5B616E',font:{size:11}},grid:{color:'rgba(44,48,56,0.5)'}},y:{ticks:{color:'#5B616E',font:{size:11}},grid:{color:'rgba(44,48,56,0.5)'}}}};
 
@@ -5644,7 +5659,7 @@ function initCharts(){
     c.setLineDash([3,3]); c.strokeStyle='rgba(255,255,255,0.2)'; c.lineWidth=1;
     c.beginPath(); c.moveTo(x,top); c.lineTo(x,bottom); c.stroke(); c.restore();
   }};
-  charts.nwDash=new Chart(document.getElementById('chart-nw-dash'),{type:'line',data:{labels:_dw.labels,datasets:[{label:'Net Worth',data:_dw.netData,borderColor:CC.blue,backgroundColor:'rgba(57,255,20,0.08)',fill:true,tension:.4,spanGaps:false,pointRadius:2,pointHoverRadius:5,pointBackgroundColor:CC.blue,borderWidth:2}]},options:{...CB,interaction:{mode:'index',intersect:false},plugins:{legend:{display:false},tooltip:{backgroundColor:'rgba(13,15,20,0.96)',borderColor:'rgba(44,48,56,0.9)',borderWidth:1,titleColor:'#fff',bodyColor:'#8A919E',titleFont:{size:11,weight:'700',family:'Inter'},bodyFont:{size:11,family:'Inter'},padding:10,filter:i=>i.parsed.y!==null,callbacks:{title:i=>i[0]?.label||'',label:c=>c.parsed.y==null?null:' Net Worth: '+(c.parsed.y<0?'-':'')+fmt$(Math.abs(c.parsed.y))}}}},plugins:[_dashTodayLine]});
+  charts.nwDash=new Chart(document.getElementById('chart-nw-dash'),{type:'line',data:{labels:_dw.labels,datasets:[{label:'Net Worth',data:_dw.netData,borderColor:CC.blue,backgroundColor:'rgba(57,255,20,0.08)',fill:true,tension:.4,spanGaps:false,..._nwPointStyles(_dw.netData),borderWidth:2}]},options:{...CB,interaction:{mode:'index',intersect:false},plugins:{legend:{display:false},tooltip:{backgroundColor:'rgba(13,15,20,0.96)',borderColor:'rgba(44,48,56,0.9)',borderWidth:1,titleColor:'#fff',bodyColor:'#8A919E',titleFont:{size:11,weight:'700',family:'Inter'},bodyFont:{size:11,family:'Inter'},padding:10,filter:i=>i.parsed.y!==null,callbacks:{title:i=>i[0]?.label||'',label:c=>c.parsed.y==null?null:' Net Worth: '+(c.parsed.y<0?'-':'')+fmt$(Math.abs(c.parsed.y))}}}},plugins:[_dashTodayLine]});
   const eb=expenseBreakdown(),el=Object.keys(eb).filter(k=>eb[k]>0);
   charts.pie=new Chart(document.getElementById('chart-pie'),{type:'doughnut',data:{labels:el.length?el:['No data'],datasets:[{data:el.length?el.map(k=>eb[k]):[1],backgroundColor:el.length?CC.palette:['#2C3038'],borderWidth:0}]},options:{responsive:true,maintainAspectRatio:false,plugins:{tooltip:{callbacks:{label:function(ctx){const total=ctx.dataset.data.reduce((a,b)=>a+b,0);const pct=total>0?((ctx.parsed/total)*100).toFixed(1):0;return` ${ctx.label}: $${ctx.parsed.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})} (${pct}%)`}}},legend:{position:'right',labels:{color:'#5B616E',font:{size:10,family:'Inter'},padding:8}}}}});
 }
@@ -5652,7 +5667,7 @@ function updateCharts(){
   if(!charts.ie)return;
   charts.ie.data.datasets[0].data=MK.map(monthIncome);charts.ie.data.datasets[1].data=MK.map(monthExpense);charts.ie.update();
   charts.pl.data.datasets[0].data=MK.map(monthPL);charts.pl.data.datasets[0].backgroundColor=MK.map(m=>monthPL(m)>=0?CC.greenFade:CC.redFade);charts.pl.data.datasets[0].borderColor=MK.map(m=>monthPL(m)>=0?CC.green:CC.red);charts.pl.update();
-  if(charts.nwDash){const _dw=_buildNwWin(appData.netWorth?.history||[]);charts.nwDash.data.labels=_dw.labels;charts.nwDash.data.datasets[0].data=_dw.netData;charts.nwDash.update();}
+  if(charts.nwDash){const _dw=_buildNwWin(appData.netWorth?.history||[]);const _ds=charts.nwDash.data.datasets[0];_ds.data=_dw.netData;Object.assign(_ds,_nwPointStyles(_dw.netData));charts.nwDash.data.labels=_dw.labels;charts.nwDash.update();}
   const eb=expenseBreakdown(),el=Object.keys(eb).filter(k=>eb[k]>0);
   charts.pie.data.labels=el.length?el:['No data'];charts.pie.data.datasets[0].data=el.length?el.map(k=>eb[k]):[1];charts.pie.data.datasets[0].backgroundColor=el.length?CC.palette:['#2C3038'];charts.pie.update();
 }
@@ -5686,7 +5701,7 @@ function openChartModal(key) {
   } else if (key === 'nw') {
     const _dw=_buildNwWin(appData.netWorth?.history||[]);
     _expandChart = new Chart(canvas, {type:'line',data:{labels:_dw.labels,datasets:[
-      {label:'Net Worth',data:_dw.netData,borderColor:CC.blue,backgroundColor:'rgba(57,255,20,0.08)',fill:true,tension:.4,spanGaps:false,pointRadius:3,pointHoverRadius:6,pointBackgroundColor:CC.blue,borderWidth:2}
+      {label:'Net Worth',data:_dw.netData,borderColor:CC.blue,backgroundColor:'rgba(57,255,20,0.08)',fill:true,tension:.4,spanGaps:false,..._nwPointStyles(_dw.netData),borderWidth:2}
     ]},options:{...CBM,interaction:{mode:'index',intersect:false},plugins:{...CBM.plugins,legend:{display:false},tooltip:{backgroundColor:'rgba(13,15,20,0.96)',borderColor:'rgba(44,48,56,0.9)',borderWidth:1,titleColor:'#fff',bodyColor:'#8A919E',titleFont:{size:12,weight:'700',family:'Inter'},bodyFont:{size:12,family:'Inter'},padding:10,filter:i=>i.parsed.y!==null,callbacks:{title:i=>i[0]?.label||'',label:c=>c.parsed.y==null?null:' Net Worth: '+(c.parsed.y<0?'-':'')+fmt$(Math.abs(c.parsed.y))}}}}});
     _renderModalDetailNW();
   } else if (key === 'pie') {
