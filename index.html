@@ -6889,9 +6889,21 @@ let _reloadTicker;
   }
 
   async function fetchSpcx(){
-    // Yahoo Finance fallback — only runs if CoinGecko didn't set SPCX live
+    // CoinMarketCap public API — only runs if CoinGecko didn't set SPCX live
     const i=_d.findIndex(d=>d.sym==='SPCX');
     if(i>=0&&_d[i]._live)return;
+    try{
+      const r=await fetch('https://pro-api.coinmarketcap.com/public-api/v2/simple/price?symbol=SPCX&convert=USD',{headers:{Accept:'application/json'}});
+      if(r.ok){
+        const j=await r.json();
+        const entry=j?.data?.SPCX;
+        const item=Array.isArray(entry)?entry[0]:entry;
+        const price=item?.quote?.USD?.price;
+        const chg=item?.quote?.USD?.percent_change_24h;
+        if(price&&i>=0){_d[i].price=price;_d[i].chg=+(chg||0).toFixed(2);_d[i]._live=true;return;}
+      }
+    }catch(e){}
+    // Yahoo Finance last resort
     for(const host of ['query1','query2']){
       try{
         const r=await fetch(`https://${host}.finance.yahoo.com/v7/finance/quote?symbols=SPCX`);
