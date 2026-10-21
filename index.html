@@ -6888,9 +6888,26 @@ let _reloadTicker;
     }catch(e){}
   }
 
+  async function fetchSpcx(){
+    // Dedicated fetch for SPCX in case batch request misses it
+    for(const host of ['query1','query2']){
+      try{
+        const r=await fetch(`https://${host}.finance.yahoo.com/v7/finance/quote?symbols=SPCX`);
+        if(!r.ok)continue;
+        const j=await r.json();
+        const q=(j?.quoteResponse?.result||[])[0];
+        if(q&&q.regularMarketPrice){
+          const i=_d.findIndex(d=>d.sym==='SPCX');
+          if(i>=0){_d[i].price=q.regularMarketPrice;_d[i].chg=+(q.regularMarketChangePercent||0).toFixed(2);_d[i]._live=true;}
+          return;
+        }
+      }catch(e){}
+    }
+  }
+
   async function load(){
     _d.forEach(d=>d._live=false);
-    await Promise.allSettled([fetchYF(),fetchCG(),fetchSilver()]);
+    await Promise.allSettled([fetchYF(),fetchCG(),fetchSilver(),fetchSpcx()]);
     render();
     // auto-sync BTC, TAO, and Silver net worth
     try{
